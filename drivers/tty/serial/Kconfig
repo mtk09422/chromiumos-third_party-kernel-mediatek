@@ -1552,6 +1552,35 @@ config SERIAL_MEN_Z135
 	  This driver can also be build as a module. If so, the module will be called
 	  men_z135_uart.ko
 
+# Serial Port Driver
+menuconfig MTK_SERIAL # SERIAL_MT6516 SERIAL_MT6573
+        tristate "MediaTek Serial Port Support"
+        select SERIAL_CORE
+        default y
+        ---help---
+          This selects MediaTek(R) internal UART driver.
+          If you want to use MediaTek(R) internal UART driver, say Y or M here.
+          If unsure, say N.
+
+config MTK_SERIAL_CONSOLE # SERIAL_MT6516_CONSOLE SERIAL_MT6573_CONSOLE
+        bool "MediaTek Console on Serial Port Support"
+        depends on MTK_SERIAL=y
+       select SERIAL_CORE_CONSOLE
+        default y
+        ---help---
+          Say Y here if you wish to use MT6516 internal UART as the system
+          console. You should alter the default console setting by kernel
+          command line option "console=ttyMT0" or "console=ttyMT1".
+
+config MTK_SERIAL_MT8135
+        bool "MediaTek Serial Port Support for 8135"
+        depends on MTK_SERIAL=y
+        default n
+        ---help---
+          Say Y here to use temporary Serial Driver for 8135.
+	  This is a temporary driver so we are not using device tree
+	  to select it.
+
 endmenu
 
 config SERIAL_MCTRL_GPIO
