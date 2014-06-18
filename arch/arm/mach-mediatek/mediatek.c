@@ -19,9 +19,19 @@
 #include <linux/of.h>
 #include <linux/clk-provider.h>
 #include <linux/clocksource.h>
+#include <linux/of_address.h>
+#include <linux/io.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/irqchip.h>
+#include <linux/irqchip/arm-gic.h>
 
 
 #define GPT6_CON_MT65xx 0x10008060
+#define GIC_HW_IRQ_BASE  32
+#define INT_POL_INDEX(a)   ((a) - GIC_HW_IRQ_BASE)
+
+static void __iomem *int_pol_base;
 
 static void __init mediatek_timer_init(void)
 {
@@ -43,6 +53,43 @@ static void __init mediatek_timer_init(void)
 	clocksource_of_init();
 };
 
+
+static int mtk_int_pol_set_type(struct irq_data *d, unsigned int type)
+{
+	unsigned int irq = d->hwirq;
+	u32 offset, reg_index, value;
+
+	offset = INT_POL_INDEX(irq) & 0x1F;
+	reg_index = INT_POL_INDEX(irq) >> 5;
+
+	/* This arch extension was called with irq_controller_lock held,
+	   so the read-modify-write will be atomic */
+	value = readl(int_pol_base + reg_index * 4);
+	if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_EDGE_FALLING)
+		value |= (1 << offset);
+	else
+		value &= ~(1 << offset);
+	writel(value, int_pol_base + reg_index * 4);
+
+	return 0;
+}
+
+static void __init mediatek_init_irq(void)
+{
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-intpol");
+	int_pol_base = of_io_request_and_map(node, 0, "intpol");
+	if (!int_pol_base) {
+		pr_warn("Can't get resource\n");
+		return;
+	}
+
+	gic_arch_extn.irq_set_type = mtk_int_pol_set_type;
+
+	irqchip_init();
+}
+
 static const char * const mediatek_board_dt_compat[] = {
 	"mediatek,mt6589",
 	"mediatek,mt8127",
@@ -52,4 +99,5 @@ static const char * const mediatek_board_dt_compat[] = {
 DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
 	.dt_compat	= mediatek_board_dt_compat,
 	.init_time	= mediatek_timer_init,
+	.init_irq	= mediatek_init_irq,
 MACHINE_END
