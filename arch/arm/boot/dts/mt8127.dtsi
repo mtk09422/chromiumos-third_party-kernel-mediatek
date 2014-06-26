@@ -76,7 +76,7 @@
 		timer: timer@10008000 {
 			compatible = "mediatek,mt6577-timer";
 			reg = <0x10008000 0x80>;
-			interrupts = <GIC_SPI 112 IRQ_TYPE_EDGE_RISING>;
+			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&system_clk>, <&rtc_clk>;
 			clock-names = "system-clk", "rtc-clk";
 		};
@@ -89,6 +89,11 @@
 			      <0x10212000 0x1000>,
 			      <0x10214000 0x2000>,
 			      <0x10216000 0x2000>;
+		};
+
+		intpol: intpol@10200100 {
+			compatible = "mediatek,mt6577-intpol";
+			reg = <0x10200100 0x1c>;
 		};
 	};
 };
