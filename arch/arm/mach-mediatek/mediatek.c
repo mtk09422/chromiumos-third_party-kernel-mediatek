@@ -93,6 +93,7 @@ static void __init mediatek_init_irq(void)
 static const char * const mediatek_board_dt_compat[] = {
 	"mediatek,mt6589",
 	"mediatek,mt8127",
+	"mediatek,mt8135",
 	NULL,
 };
 
