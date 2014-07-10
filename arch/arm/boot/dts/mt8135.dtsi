@@ -19,7 +19,6 @@
 / {
 	compatible = "mediatek,mt8135";
 	interrupt-parent = <&gic>;
-
 	cpu-map {
 		cluster0 {
 			core0 {
@@ -150,5 +149,36 @@
 					     <GIC_SPI 31 IRQ_TYPE_LEVEL_LOW>;
 			};
 		};
+		mtk-msdc {
+			#address-cells = <2>;
+			#size-cells = <2>;
+			compatible = "simple-bus";
+			ranges;
+
+			gpio@10005000 {
+				compatible = "mediatek,GPIO";
+				reg = <0 0x10005000 0 0x1000>;
+			};
+			gpio1@1020c000 {
+				compatible = "mediatek,GPIO1";
+				reg = <0 0x1020c000 0 0x1000>;
+			};
+
+			mmc0@11230000 {
+				compatible = "mediatek,mmc";
+				reg = <0 0x11230000 0 0x108>;
+				interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+				core-power-supply = <&mt6397_vemc_3v3_reg>;
+				io-power-supply = <&mt6397_vio18_reg>;
+			};
+			mmc1@11240000 {
+				compatible = "mediatek,mmc";
+				reg = <0 0x11240000 0 0x108>;
+				interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>;
+				core-power-supply = <&mt6397_vmch_reg>;
+				io-power-supply = <&mt6397_vmc_reg>;
+			};
+		};
+
 	};
 };

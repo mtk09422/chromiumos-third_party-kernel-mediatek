@@ -1,0 +1,23 @@
+* MTK MMC controller
+
+The MTK  MSDC can act as a MMC controller
+to support MMC, SD, and SDIO types of memory cards.
+
+This file documents differences between the core properties in mmc.txt
+and the properties used by the msdc driver.
+
+Required properties:
+- compatible: Should be "mediatek,mmc".
+- interrupts: Should contain MSDC interrupt number
+- core-power-supply: power to the Core
+- io-power-supply: power to the IO
+
+Examples:
+
+mmc0@11230000 {
+	compatible = "mediatek,mmc";
+	reg = <0 0x11230000 0 0x108>;
+	interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+	core-power-supply = <&mt6397_vemc_3v3_reg>;
+	io-power-supply = <&mt6397_vio18_reg>;
+};
