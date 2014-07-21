@@ -122,9 +122,11 @@
 		};
 
 		cci@10320000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
 			compatible = "arm,cci-400";
-			reg = <0 0x10320000 0 0x10000>;
-			ranges = <0x0 0x0 0x10320000 0x10000>;
+			reg = <0x10320000 0x10000>;
+			ranges = <0x0 0x10320000 0x10000>;
 
 			cci_control1: slave-if@4000 {
 				compatible = "arm,cci-400-ctrl-if";
