@@ -699,7 +699,7 @@ struct device_node *of_find_matching_node_by_address(struct device_node *from,
  *		return PTR_ERR(base);
  */
 void __iomem *of_io_request_and_map(struct device_node *np, int index,
-					char *name)
+					const char *name)
 {
 	struct resource res;
 	void __iomem *mem;
