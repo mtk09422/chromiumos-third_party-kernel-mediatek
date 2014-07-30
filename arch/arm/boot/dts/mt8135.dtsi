@@ -14,7 +14,7 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
-#include "skeleton.dtsi"
+#include "skeleton64.dtsi"
 
 / {
 	compatible = "mediatek,mt8135";
@@ -74,8 +74,8 @@
 	};
 
 	clocks {
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <2>;
 		compatible = "simple-bus";
 		ranges;
 
@@ -93,14 +93,14 @@
 	};
 
 	soc {
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <2>;
 		compatible = "simple-bus";
 		ranges;
 
 		timer: timer@10008000 {
 			compatible = "mediatek,mt6577-timer";
-			reg = <0x10008000 0x80>;
+			reg = <0 0x10008000 0 0x80>;
 			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&system_clk>, <&rtc_clk>;
 			clock-names = "system-clk", "rtc-clk";
@@ -110,23 +110,23 @@
 			compatible = "arm,cortex-a15-gic";
 			interrupt-controller;
 			#interrupt-cells = <3>;
-			reg = <0x10211000 0x1000>,
-			      <0x10212000 0x1000>,
-			      <0x10214000 0x2000>,
-			      <0x10216000 0x2000>;
+			reg = <0 0x10211000 0 0x1000>,
+			      <0 0x10212000 0 0x1000>,
+			      <0 0x10214000 0 0x2000>,
+			      <0 0x10216000 0 0x2000>;
 		};
 
 		intpol: intpol@10200030 {
 			compatible = "mediatek,mt6577-intpol";
-			reg = <0x10200030 0x1c>;
+			reg = <0 0x10200030 0 0x1c>;
 		};
 
 		cci@10320000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			compatible = "arm,cci-400";
-			reg = <0x10320000 0x10000>;
-			ranges = <0x0 0x10320000 0x10000>;
+			reg = <0 0x10320000 0 0x10000>;
+			ranges = <0x0 0x0 0x10320000 0x10000>;
 
 			cci_control1: slave-if@4000 {
 				compatible = "arm,cci-400-ctrl-if";
