@@ -158,6 +158,14 @@
 					     <GIC_SPI 31 IRQ_TYPE_LEVEL_LOW>;
 			};
 		};
+
+		pio: pinctrl@10005000 {
+			compatible = "mediatek,mt8135-pinctrl";
+			reg = <0 0x10005000 0 0xf30>,
+			      <0 0x1020C000 0 0x930>;
+			gpio-controller;
+		};
+
 		mtk-msdc {
 			#address-cells = <2>;
 			#size-cells = <2>;

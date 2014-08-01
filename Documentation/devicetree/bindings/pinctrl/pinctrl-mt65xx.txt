@@ -1,0 +1,74 @@
+* Mediatek MT65XX Pin Controller
+
+The Mediatek's Pin controller is used to control GPIO pins.
+
+Required properties:
+- compatible: value should be either of the following.
+    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
+- reg: Should contain the register physical address and length for the
+  pin controller.
+
+Please refer to pinctrl-bindings.txt in this directory for details of the
+common pinctrl bindings used by client devices.
+
+A pinctrl node should contain at least one subnodes representing the
+pinctrl groups available on the machine. Each subnode will list the
+pins it needs, and how they should be configured, with regard to muxer
+configuration and pullups. If one of these options is
+not set, its actual value will be unspecified.
+
+Required subnode-properties:
+
+- mediatek,pins: List of strings containing the pin name.
+- mediatek,function: Function to mux the pins listed above to.
+
+Optional subnode-properties:
+- mediatek,pull: Integer.
+    0: No resistor
+    1: Pull-up resistor
+    2: Pull-down resistor
+
+Examples:
+
+pinctrl@01c20800 {
+	compatible = "mediatek,mt8135-pinctrl";
+	reg = <0x01c20800 0x400>;
+
+	i2c0_pins_a: i2c0@0 {
+		mediatek,pins = "W9", "W11";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+
+	i2c1_pins_a: i2c1@0 {
+		mediatek,pins = "F2", "F3";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+
+	i2c2_pins_a: i2c2@0 {
+		mediatek,pins = "G2", "F4";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+
+	i2c3_pins_a: i2c3@0 {
+		mediatek,pins = "L19", "L20";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+
+	uart2_pins_a: uart2@0 {
+		mediatek,pins = "R18", "R17";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+
+	uart3_pins_a: uart3@0 {
+		mediatek,pins = "C3", "B2";
+		mediatek,function = <1>;
+		mediatek,pull = <0>;
+	};
+	...
+
+};
