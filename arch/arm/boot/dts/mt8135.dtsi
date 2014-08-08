@@ -115,6 +115,15 @@
 			      <0 0x10216000 0 0x2000>;
 		};
 
+		PWRAP@0x1000F000 {
+        		compatible = "mediatek,mt8135-pwrap";
+			reg = <0 0x1000F000 0 0x1000>,
+			      	<0 0x10000000 0 0x1000>,
+			      	<0 0x10001000 0 0x1000>,
+			      	<0 0x10003000 0 0x1000>,
+			      	<0 0x11017000 0 0x1000>;
+			};
+
 		intpol: intpol@10200030 {
 			compatible = "mediatek,mt6577-intpol";
 			reg = <0 0x10200030 0 0x1c>;
@@ -182,3 +191,4 @@
 
 	};
 };
+#include "mt6397.dtsi"
