@@ -28,6 +28,8 @@
 
 static struct mfd_cell mt6397_devs[] = {
 	{  .name = "mt6397-pmic", -1},
+	{  .name = "mt6397-regulator", -1},
+
 };
 
 static int mt6397_probe(struct platform_device *pdev)
@@ -36,13 +38,23 @@ static int mt6397_probe(struct platform_device *pdev)
 	u32 reg_value = 0;
 
 	struct mt6397_chip *mt6397 = NULL;
+	struct mt6397_platform_data *pdata = NULL;
 
 	mt6397 = devm_kzalloc(&pdev->dev,
 			sizeof(struct mt6397_chip), GFP_KERNEL);
-	if (mt6397 == NULL)
+	if (!mt6397)
 		return -ENOMEM;
 
 	mt6397->dev = &pdev->dev;
+
+	pdata = devm_kzalloc(&pdev->dev,
+			sizeof(struct mt6397_platform_data), GFP_KERNEL);
+	if (!pdata) {
+		devm_kfree(&pdev->dev, mt6397);
+		return -ENOMEM;
+	}
+
+	pdev->dev.platform_data = pdata;
 
 	/* init mt_regmap_config */
 	mt6397->regmap = devm_regmap_init(&pdev->dev, NULL,
@@ -51,10 +63,8 @@ static int mt6397_probe(struct platform_device *pdev)
 		ret = PTR_ERR(mt6397->regmap);
 		dev_err(mt6397->dev, "Failed to allocate register map: %d\n",
 			ret);
-		kfree(mt6397);
-		return ret;
+		goto err;
 	}
-
 	platform_set_drvdata(pdev, mt6397);
 
 	/* Read PMIC chip revision */
@@ -63,7 +73,7 @@ static int mt6397_probe(struct platform_device *pdev)
 		ret = -ENODEV;
 		goto err;
 	} else{
-		pr_info("Chip ID = 0x%x\n", reg_value);
+		dev_info(mt6397->dev, "Chip ID = 0x%x\n", reg_value);
 	}
 
 	/* add mfd devices */
@@ -75,17 +85,19 @@ static int mt6397_probe(struct platform_device *pdev)
 err_mfd:
 	mfd_remove_devices(mt6397->dev);
 err:
-	kfree(mt6397);
+	devm_kfree(&pdev->dev, pdata);
+	devm_kfree(&pdev->dev, mt6397);
 	return ret;
 }
 
 static int mt6397_remove(struct platform_device *pdev)
 {
-	struct mt6397_chip *mt6397;
-
-	mt6397 = platform_get_drvdata(pdev);
+	struct mt6397_chip *mt6397 = platform_get_drvdata(pdev);
+	struct mt6397_platform_data *pdata = dev_get_platdata(mt6397->dev);
 
 	mfd_remove_devices(mt6397->dev);
+	devm_kfree(&pdev->dev, pdata);
+	devm_kfree(&pdev->dev, mt6397);
 	return 0;
 }
 

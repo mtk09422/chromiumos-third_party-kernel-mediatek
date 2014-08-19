@@ -23,11 +23,18 @@ struct mt6397_chip {
 
 	/* Control interface */
 	struct regmap	*regmap;
+};
 
-	/* Interrupts */
-	int		chip_irq;
-	unsigned int	irq_base;
-	struct regmap_irq_chip_data *regmap_irq;
+struct mt6397_regulator_data {
+	int id;
+	const char *name;
+	struct regulator_init_data *initdata;
+	struct device_node *reg_node;
+};
+
+struct mt6397_platform_data {
+	struct mt6397_regulator_data *regulators;
+	unsigned int num_regulators;
 };
 
 #endif /* __MFD_MT6397_CORE_H__ */
