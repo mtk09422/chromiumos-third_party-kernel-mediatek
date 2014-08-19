@@ -116,14 +116,15 @@
 			      <0 0x10216000 0 0x2000>;
 		};
 
-		PWRAP@0x1000F000 {
-        		compatible = "mediatek,mt8135-pwrap";
+		pwrap: pwrap@0x1000F000 {
+			compatible = "mediatek,mt8135-pwrap";
 			reg = <0 0x1000F000 0 0x1000>,
-			      	<0 0x10000000 0 0x1000>,
-			      	<0 0x10001000 0 0x1000>,
-			      	<0 0x10003000 0 0x1000>,
-			      	<0 0x11017000 0 0x1000>;
-			};
+			      <0 0x10000000 0 0x1000>,
+			      <0 0x10001000 0 0x1000>,
+			      <0 0x10003000 0 0x1000>,
+			      <0 0x11017000 0 0x1000>;
+			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
+		};
 
 		intpol: intpol@10200030 {
 			compatible = "mediatek,mt6577-intpol";

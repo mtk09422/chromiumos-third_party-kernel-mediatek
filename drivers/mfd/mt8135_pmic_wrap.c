@@ -714,7 +714,6 @@ static int pwrap_init_reg_clock(struct pmic_wrapper *wrp, u32 regck_sel)
 	return 0;
 }
 
-#if 0				/* to do: IRQ is not ready */
 /*Interrupt handler function*/
 static irqreturn_t mt_pmic_wrap_interrupt(int irqno, void *dev_id)
 {
@@ -752,7 +751,6 @@ static irqreturn_t mt_pmic_wrap_interrupt(int irqno, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-#endif
 
 int pwrap_init(struct pmic_wrapper *wrp)
 {
@@ -1233,6 +1231,7 @@ static int mt_pmic_wrap_probe(struct platform_device *pdev)
 	u32 rdata;
 	unsigned long flags;
 	struct pmic_wrapper *wrp;
+	int irq;
 
 	ret = mt_pmic_iomap_init();
 	if (ret) {
@@ -1275,15 +1274,16 @@ static int mt_pmic_wrap_probe(struct platform_device *pdev)
 		pr_err("!!clear event flag fail, err=%d\n", ret);
 		goto err_out;
 	}
-#if 0				/* to do: IRQ is not ready */
-	ret = request_threaded_irq(MT_PMIC_WRAP_IRQ_ID,
-					mt_pmic_wrap_interrupt, NULL,
+
+	irq = platform_get_irq(pdev, 0);
+	pr_info("pwrap get irq #%d", irq);
+	ret = request_threaded_irq(irq,
+			mt_pmic_wrap_interrupt, NULL,
 			IRQF_TRIGGER_HIGH, PMIC_WRAP_DEVICE, wrp);
 	if (ret) {
 		pr_err("register IRQ failed (%d)\n", ret);
 		goto err_out;
 	}
-#endif
 
 	ret = device_create_file(&pdev->dev, &dev_attr_pwrap);
 	if (ret)

@@ -2,10 +2,6 @@
 #define __PMIC_WRAP_REGS_H__
 #include <linux/cdev.h>
 
-
-/* force define for this address */
-#define MT8135_PMIC_WRAP_IRQ_ID (32+128)
-
 /*
  * Define macros.
  */
@@ -25,9 +21,6 @@ int pwrap_write(u32 adr, u32 wdata);
 int pwrap_wacs2(bool write, u32 adr, u32 wdata, u32 *rdata);
 
 #define SLV_6397
-
-#define MT_PMIC_WRAP_IRQ_ID MT8135_PMIC_WRAP_IRQ_ID
-
 /* -------macro for timeout setting-------------------------------- */
 /******************************************************************************
 global variable and  sys interface
