@@ -7,7 +7,6 @@
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
@@ -97,51 +96,6 @@
 		#size-cells = <2>;
 		compatible = "simple-bus";
 		ranges;
-
-                pio: pinctrl@10005000 {
-                        compatible = "mediatek,mt8135-pinctrl";
-                        reg = <0 0x10005000 0 0xf30>,
-                              <0 0x1020C000 0 0x930>;
-                        gpio-controller;
-
-                        i2c0_pins_a: i2c0@0 {
-                                mediatek,pins = "W9", "W11";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
-
-                        i2c1_pins_a: i2c1@0 {
-                                mediatek,pins = "F2", "F3";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
-
-                        i2c2_pins_a: i2c2@0 {
-                                mediatek,pins = "G2", "F4";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
-
-                        i2c3_pins_a: i2c3@0 {
-                                mediatek,pins = "L19", "L20";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
-
-                        mmc0_pins_a: mmc0@0 {
-                                mediatek,pins = "D21", "D22", "E22", "F21", "F20",
-                                        "G18", "G21", "E21", "E23", "F22", "G22";
-                                mediatek,function = <1>;
-                                mediatek,pull = <1>;
-                        };
-
-                        mmc1_pins_a: mmc1@0 {
-                                mediatek,pins = "AC19", "AA19", "AA20", "AA21",
-                                        "AB19", "AB20";
-                                mediatek,function = <1>;
-                                mediatek,pull = <1>;
-                        };
-                };
 
 		timer: timer@10008000 {
 			compatible = "mediatek,mt6577-timer";
@@ -260,6 +214,12 @@
 				mediatek,function = <1>;
 				mediatek,pull = <1>;
 			};
+
+                        usb0_pins_a: usb0@0 {
+                                mediatek,pins = "N19";
+                                mediatek,function = <1>;
+                                mediatek,pull = <1>;
+                        };
 		};
 
 		i2c0: i2c@1100d000 {
@@ -339,6 +299,21 @@
 				clocks = <&msdc20_2_ck>, <&msdcpll>;
 				clock-names = "src_clk", "pll_clk";
 			};
+		};
+
+		usb0@11200000 {
+			compatible = "mediatek,mt6577-usb0";
+			reg = <0 0x11200000 0 0x10000>,
+				  <0 0x11220000 0 0x10000>;
+			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "mc";
+			mode = <1>;
+			multipoint = <1>;
+			num_eps = <16>;
+			ram_bits = <11>;
+			clocks =<&usb0_ck>, <&univpll>;
+			clock-names = "usb0_clk_main", "univpll_clk";
+			usb-power-supply = <&mt6397_usb_reg>;
 		};
 
 	};

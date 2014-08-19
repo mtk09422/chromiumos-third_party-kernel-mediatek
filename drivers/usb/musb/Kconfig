@@ -101,6 +101,16 @@ config USB_MUSB_JZ4740
 	depends on USB_MUSB_GADGET
 	depends on USB_OTG_BLACKLIST_HUB
 
+config USB_MUSB_MT65XX
+	tristate "MT65xx platforms"
+	select USB_INVENTRA_DMA
+	depends on USB_MUSB_DUAL_ROLE
+	help
+	  This selects the MediaTek(R) Integrated Inter Circuit USB driver
+	  for MT81xx and MT65XX.
+	  If you want to use MediaTek(R)USB IP, say Y or M here.
+	  If unsure, say N.
+
 endchoice
 
 config USB_MUSB_AM335X_CHILD
@@ -128,7 +138,7 @@ config USB_UX500_DMA
 
 config USB_INVENTRA_DMA
 	bool 'Inventra'
-	depends on USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN
+	depends on USB_MUSB_OMAP2PLUS || USB_MUSB_BLACKFIN || USB_MUSB_MT65XX
 	help
 	  Enable DMA transfers using Mentor's engine.
 

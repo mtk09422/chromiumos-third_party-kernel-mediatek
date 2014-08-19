@@ -188,6 +188,9 @@
 #define MUSB_RXCSR_FIFOFULL		0x0002
 #define MUSB_RXCSR_RXPKTRDY		0x0001
 
+#ifdef CONFIG_USB_MUSB_MT65XX
+#define MUSB_EP_RXPKTCOUNT		0x0300
+#endif
 /* RXCSR in Peripheral mode */
 #define MUSB_RXCSR_P_ISO		0x4000
 #define MUSB_RXCSR_P_SENTSTALL		0x0040
@@ -306,6 +309,7 @@
 
 #define MUSB_TXCSR_MODE			0x2000
 
+#ifndef CONFIG_USB_MUSB_MT65XX
 /* "bus control"/target registers, for host side multipoint (external hubs) */
 #define MUSB_TXFUNCADDR		0x00
 #define MUSB_TXHUBADDR		0x02
@@ -317,6 +321,21 @@
 
 #define MUSB_BUSCTL_OFFSET(_epnum, _offset) \
 	(0x80 + (8*(_epnum)) + (_offset))
+#else
+#define MUSB_TXFUNCADDR		0x0480
+#define MUSB_TXHUBADDR		0x0482
+#define MUSB_TXHUBPORT		0x0483
+#define MUSB_RXFUNCADDR		0x0484
+#define MUSB_RXHUBADDR		0x0486
+#define MUSB_RXHUBPORT		0x0487
+/* Toggle registers */
+#define MUSB_RXTOG          0x0080
+#define MUSB_RXTOGEN        0x0082
+#define MUSB_TXTOG          0x0084
+#define MUSB_TXTOGEN        0x0086
+#define MUSB_BUSCTL_OFFSET(_epnum, _offset) \
+	((8*(_epnum)) + (_offset))
+#endif
 
 static inline void musb_write_txfifosz(void __iomem *mbase, u8 c_size)
 {

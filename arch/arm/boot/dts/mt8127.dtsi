@@ -125,5 +125,19 @@
 			flags = <0x2>;
 		};
 
+		usb0@0x11200000 {
+			compatible = "mediatek,mt6577-usb0";
+			reg = <0 0x11200000 0 0x10000>,
+				  <0 0x1121000 0 0x10000>;
+			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_LOW>;
+			mode = <1>;
+			multipoint = <1>;
+			num_eps = <16>;
+			ram_bits = <11>;
+			clocks =<&usb0_ck>, <&univpll>;
+			clock-names = "usb0_clk_main", "univpll_clk";
+			usb-power-supply = <&mt6397_usb_reg>;
+		};
+
 	};
 };

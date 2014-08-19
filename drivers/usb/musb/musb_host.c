@@ -323,6 +323,7 @@ __acquires(musb->lock)
 static inline void musb_save_toggle(struct musb_qh *qh, int is_in,
 				    struct urb *urb)
 {
+#ifndef CONFIG_USB_MUSB_MT65XX
 	void __iomem		*epio = qh->hw_ep->regs;
 	u16			csr;
 
@@ -337,7 +338,50 @@ static inline void musb_save_toggle(struct musb_qh *qh, int is_in,
 		csr = musb_readw(epio, MUSB_TXCSR) & MUSB_TXCSR_H_DATATOGGLE;
 
 	usb_settoggle(urb->dev, qh->epnum, !is_in, csr ? 1 : 0);
+#else
+	struct musb *musb = qh->hw_ep->musb;
+	int toggle;
+	u8 epnum = qh->hw_ep->epnum;
+
+	pr_debug("qh->hw_ep->epnum %d, qh->epnum %d\n",
+				qh->hw_ep->epnum, qh->epnum);
+	if (is_in) {
+		toggle = musb_readl(musb->mregs, MUSB_RXTOG);
+		pr_debug("toggle_IN=0x%x\n", toggle);
+	} else {
+		toggle = musb_readl(musb->mregs, MUSB_TXTOG);
+		pr_debug("toggle_OUT=0x%x\n", toggle);
+	}
+	if (toggle & (1<<epnum))
+		usb_settoggle(urb->dev, qh->epnum, !is_in, 1);
+	else
+		usb_settoggle(urb->dev, qh->epnum, !is_in, 0);
+#endif
 }
+
+#ifdef CONFIG_USB_MUSB_MT65XX
+static inline void musb_set_toggle(struct musb_qh *qh, int is_in,
+				    struct urb *urb)
+{
+	struct musb *musb = qh->hw_ep->musb;
+	u8 epnum = qh->hw_ep->epnum;
+	int toggle;
+
+	toggle = usb_gettoggle(urb->dev, qh->epnum, !is_in);
+	if (is_in) {
+		pr_debug("qh->dev->toggle[IN]=0x%x\n", qh->dev->toggle[!is_in]);
+		musb_writel(musb->mregs, MUSB_RXTOG,
+					(((1<<epnum)<<16)|(toggle<<epnum)));
+		musb_writel(musb->mregs, MUSB_RXTOG, (toggle<<epnum));
+	} else {
+		pr_debug("qh->dev->toggle[OUT]=0x%x\n",
+					qh->dev->toggle[!is_in]);
+		musb_writel(musb->mregs, MUSB_TXTOG,
+					(((1<<epnum)<<16)|(toggle<<epnum)));
+		musb_writel(musb->mregs, MUSB_TXTOG, (toggle<<epnum));
+	}
+}
+#endif
 
 /*
  * Advance this hardware endpoint's queue, completing the specified URB and
@@ -589,7 +633,11 @@ musb_rx_reinit(struct musb *musb, struct musb_qh *qh, struct musb_hw_ep *ep)
 			WARNING("rx%d, packet/%d ready?\n", ep->epnum,
 				musb_readw(ep->regs, MUSB_RXCOUNT));
 
+		#ifndef CONFIG_USB_MUSB_MT65XX
 		musb_h_flush_rxfifo(ep, MUSB_RXCSR_CLRDATATOG);
+		#else
+		musb_h_flush_rxfifo(ep, 0);
+		#endif
 	}
 
 	/* target addr and (for multipoint) hub addr/port */
@@ -779,6 +827,7 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 					| MUSB_TXCSR_H_ERROR
 					| MUSB_TXCSR_TXPKTRDY
 					);
+			#ifndef CONFIG_USB_MUSB_MT65XX
 			csr |= MUSB_TXCSR_MODE;
 
 			if (!hw_ep->tx_double_buffered) {
@@ -788,6 +837,10 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 				else
 					csr |= MUSB_TXCSR_CLRDATATOG;
 			}
+			#else
+			/* init the toggle */
+			musb_set_toggle(qh, !is_out, urb);
+			#endif
 
 			musb_writew(epio, MUSB_TXCSR, csr);
 			/* REVISIT may need to clear FLUSHFIFO ... */
@@ -876,12 +929,17 @@ finish:
 
 		if (hw_ep->rx_reinit) {
 			musb_rx_reinit(musb, qh, hw_ep);
+#ifndef CONFIG_USB_MUSB_MT65XX
 
 			/* init new state: toggle and NYET, maybe DMA later */
 			if (usb_gettoggle(urb->dev, qh->epnum, 0))
 				csr = MUSB_RXCSR_H_WR_DATATOGGLE
 					| MUSB_RXCSR_H_DATATOGGLE;
 			else
+#else
+			/* wz add to init the toggle */
+			musb_set_toggle(qh, !is_out, urb);
+#endif
 				csr = 0;
 			if (qh->type == USB_ENDPOINT_XFER_INT)
 				csr |= MUSB_RXCSR_DISNYET;
@@ -1575,7 +1633,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 		 */
 		dev_dbg(musb->controller, "BOGUS RX%d ready, csr %04x, count %d\n", epnum, val,
 			musb_readw(epio, MUSB_RXCOUNT));
+		#ifndef CONFIG_USB_MUSB_MT65XX
 		musb_h_flush_rxfifo(hw_ep, MUSB_RXCSR_CLRDATATOG);
+		#else
+		musb_h_flush_rxfifo(hw_ep, 0);
+		#endif
 		return;
 	}
 
@@ -1643,7 +1705,11 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 			(void) musb->dma_controller->channel_abort(dma);
 			xfer_len = dma->actual_len;
 		}
-		musb_h_flush_rxfifo(hw_ep, MUSB_RXCSR_CLRDATATOG);
+		#ifndef CONFIG_USB_MUSB_MT65XX
+			musb_h_flush_rxfifo(hw_ep, MUSB_RXCSR_CLRDATATOG);
+		#else
+			musb_h_flush_rxfifo(hw_ep, 0);
+		#endif
 		musb_writeb(epio, MUSB_RXINTERVAL, 0);
 		done = true;
 		goto finish;
@@ -2130,6 +2196,7 @@ static int musb_urb_enqueue(
 	 * Some musb cores don't support high bandwidth ISO transfers; and
 	 * we don't (yet!) support high bandwidth interrupt transfers.
 	 */
+	#ifndef CONFIG_USB_MUSB_MT65XX
 	qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
 	if (qh->hb_mult > 1) {
 		int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
@@ -2143,6 +2210,7 @@ static int musb_urb_enqueue(
 		}
 		qh->maxpacket &= 0x7ff;
 	}
+	#endif
 
 	qh->epnum = usb_endpoint_num(epd);
 
@@ -2240,8 +2308,9 @@ static int musb_urb_enqueue(
 		 */
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
-
+#ifndef CONFIG_USB_MUSB_MT65XX
 done:
+#endif
 	if (ret != 0) {
 		spin_lock_irqsave(&musb->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);

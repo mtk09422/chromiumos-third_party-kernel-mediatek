@@ -236,7 +236,7 @@ static int dma_channel_abort(struct dma_channel *channel)
 	return 0;
 }
 
-static irqreturn_t dma_controller_irq(int irq, void *private_data)
+irqreturn_t dma_controller_irq(int irq, void *private_data)
 {
 	struct musb_dma_controller *controller = private_data;
 	struct musb *musb = controller->private_data;
@@ -394,6 +394,7 @@ struct dma_controller *dma_controller_create(struct musb *musb, void __iomem *ba
 	controller->controller.channel_program = dma_channel_program;
 	controller->controller.channel_abort = dma_channel_abort;
 
+    #ifndef CONFIG_USB_MUSB_MT65XX
 	if (request_irq(irq, dma_controller_irq, 0,
 			dev_name(musb->controller), &controller->controller)) {
 		dev_err(dev, "request_irq %d failed!\n", irq);
@@ -401,6 +402,7 @@ struct dma_controller *dma_controller_create(struct musb *musb, void __iomem *ba
 
 		return NULL;
 	}
+    #endif
 
 	controller->irq = irq;
 

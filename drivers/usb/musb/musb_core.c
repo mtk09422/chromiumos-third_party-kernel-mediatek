@@ -101,7 +101,11 @@
 #include <linux/dma-mapping.h>
 
 #include "musb_core.h"
-
+#ifdef CONFIG_USB_MUSB_MT65XX
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#endif
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)
 
 
@@ -1043,6 +1047,8 @@ static ushort fifo_mode = 4;
 #elif defined(CONFIG_USB_MUSB_UX500)			\
 	|| defined(CONFIG_USB_MUSB_UX500_MODULE)
 static ushort fifo_mode = 5;
+#elif defined(CONFIG_USB_MUSB_MT65XX)
+static ushort fifo_mode = 6;
 #else
 static ushort fifo_mode = 2;
 #endif
@@ -1154,6 +1160,26 @@ static struct musb_fifo_cfg mode_5_cfg[] = {
 { .hw_ep_num = 13, .style = FIFO_RXTX, .maxpacket = 512, },
 { .hw_ep_num = 14, .style = FIFO_RXTX, .maxpacket = 1024, },
 { .hw_ep_num = 15, .style = FIFO_RXTX, .maxpacket = 1024, },
+};
+
+/* mode 6 - fits in 8KB */
+static struct musb_fifo_cfg mode_6_cfg[] = {
+{ .hw_ep_num = 1, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 1, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 2, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 2, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 3, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 3, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 4, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 4, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 5, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 5, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 6, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 6, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 7, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 7, .style = FIFO_RX, .maxpacket = 512, },
+{ .hw_ep_num = 8, .style = FIFO_TX, .maxpacket = 512, },
+{ .hw_ep_num = 8, .style = FIFO_RX, .maxpacket = 64, },
 };
 
 /*
@@ -1278,6 +1304,11 @@ static int ep_config_from_table(struct musb *musb)
 		cfg = mode_5_cfg;
 		n = ARRAY_SIZE(mode_5_cfg);
 		break;
+	case 6:
+		cfg = mode_6_cfg;
+		n = ARRAY_SIZE(mode_6_cfg);
+		break;
+
 	}
 
 	printk(KERN_DEBUG "%s: setup fifo_mode %d\n",
@@ -1964,6 +1995,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		status = -ENODEV;
 		goto fail3;
 	}
+    #ifndef CONFIG_USB_MUSB_MT65XX
 	musb->nIrq = nIrq;
 	/* FIXME this handles wakeup irqs wrong */
 	if (enable_irq_wake(nIrq) == 0) {
@@ -1972,7 +2004,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	} else {
 		musb->irq_wake = 0;
 	}
-
+    #endif
 	/* program PHY to use external vBus if required */
 	if (plat->extvbus) {
 		u8 busctl = musb_read_ulpi_buscontrol(musb->mregs);

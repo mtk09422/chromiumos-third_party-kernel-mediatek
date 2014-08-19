@@ -1,0 +1,23 @@
+MT65XX MUSB
+
+Required properties:
+ - compatible : Should be "stericsson,db8500-musb"
+ - reg        : Offset and length of registers
+ - interrupts : Interrupt; mode, number and trigger
+ - mode    : Dual-role; either host mode "0", peripheral mode "1"
+                or both otg mode "2"
+
+Example:
+
+USB0@0x11200000 {
+	compatible = "mediatek,mt6577-usb0";
+	cell-index = <0>;
+	reg = <0 0x11200000 0 0x10000>,
+		<0 0x11220000 0 0x10000>;
+	interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_LOW>;
+	mode = <2>;
+	multipoint = <1>;
+	num_eps = <16>;
+	clocks =<&usb0_ck>, <&univpll>;
+	clock-names = "usb0_clk_main", "univpll_clk";
+};
