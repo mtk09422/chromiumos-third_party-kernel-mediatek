@@ -28,6 +28,7 @@
 
 static struct mfd_cell mt6397_devs[] = {
 	{  .name = "mt6397-pmic", -1},
+	{  .name = "mt6397-rtc", -1},
 	{  .name = "mt6397-regulator", -1},
 
 };
