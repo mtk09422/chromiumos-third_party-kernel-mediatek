@@ -1,0 +1,48 @@
+Mediatek MT8135 IOMMU H/W
+
+/******************************************************/
+/*             hardware block diagram                 */
+/******************************************************/
+              EMI (External memory interface)
+               |
+           +---+---+
+           |       |
+         m4u0     m4u1   Some IC have two m4u(some have only one m4u).
+           |       |
+           +---+---+
+               |
+              smi
+               |
+    +---------+-------   ...
+    |         |          ...
+    |         |          ... Some IC have multiple port.
+    |         |          ...
+vdec larb   disp larb    ...
+
+
+
+/******************************************************/
+/*                  iommu                             */
+/******************************************************/
+Required properties:
+- compatible : "mediatek,mt8135-iommu"
+- reg : m4u register base
+- interrupts : Should contain the general interrupt of m4u0 and m4u1.
+- clocks : m4u clock, smi clock
+- iova-size: the iova size.please align 256M.
+- larb-port-mapping : there are 2 m4u, we can adjust some local arbiter to which m4u.
+        for example, the disp module we config it to m4u1, other modules we config it to m4u0.
+
+Example:
+		iommu: iommu@10205000 {
+			compatible = "mediatek,mt8135-iommu";
+			reg = <0 0x10205000 0 0x1000>,/*m4u base*/
+			        <0 0x1000e000 0 0x1000>, /*smi common AO*/
+				<0 0x10202000 0 0x1000>; /*smi common ext*/
+			interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>, /*m4u0 irq*/
+				<GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>; /*m4u1 irq*/
+			clocks = <&m4u_ck>,<&smi_ck>;
+			clock-names = "m4uclk","smiclk";
+			iova-size = <0x40000000>;
+			larb-port-mapping = <1 1 0 1 1>;
+		};
