@@ -246,7 +246,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <1>;
+					clock-div = <2>;
 				};
 
 				syspll_d4: syspll_d4 {
@@ -254,7 +254,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <2>;
+					clock-div = <4>;
 				};
 
 				syspll_d6: syspll_d6 {
@@ -262,7 +262,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <3>;
+					clock-div = <6>;
 				};
 
 				syspll_d8: syspll_d8 {
@@ -270,7 +270,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <4>;
+					clock-div = <8>;
 				};
 
 				syspll_d10: syspll_d10 {
@@ -278,7 +278,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <5>;
+					clock-div = <10>;
 				};
 
 				syspll_d12: syspll_d12 {
@@ -286,7 +286,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <6>;
+					clock-div = <12>;
 				};
 
 				syspll_d16: syspll_d16 {
@@ -294,7 +294,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <8>;
+					clock-div = <16>;
 				};
 
 				syspll_d24: syspll_d24 {
@@ -302,7 +302,7 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_806m>;
 					clock-mult = <1>;
-					clock-div = <12>;
+					clock-div = <24>;
 				};
 
 				syspll_d3: syspll_d3 {
@@ -310,14 +310,14 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_537p3m>;
 					clock-mult = <1>;
-					clock-div = <1>;
+					clock-div = <2>;
 				};
 
 				syspll_d2p5: syspll_d2p5 {
 					compatible = "mediatek,clk-fixed_factor";
 					#clock-cells = <0>;
 					clocks = <&mainpll_322p4m>;
-					clock-mult = <2>;
+					clock-mult = <1>;
 					clock-div = <1>;
 				};
 
@@ -326,14 +326,14 @@
 					#clock-cells = <0>;
 					clocks = <&mainpll_322p4m>;
 					clock-mult = <1>;
-					clock-div = <1>;
+					clock-div = <2>;
 				};
 
 				syspll_d3p5: syspll_d3p5 {
 					compatible = "mediatek,clk-fixed_factor";
 					#clock-cells = <0>;
 					clocks = <&mainpll_230p3m>;
-					clock-mult = <2>;
+					clock-mult = <1>;
 					clock-div = <1>;
 				};
 
@@ -438,7 +438,7 @@
 					#clock-cells = <0>;
 					clocks = <&univpll_249p6m>;
 					clock-mult = <1>;
-					clock-div = <5>;
+					clock-div = <2>;
 				};
 
 				univpll_d26: univpll_d26 {
