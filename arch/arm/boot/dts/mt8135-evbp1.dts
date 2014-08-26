@@ -18,11 +18,16 @@
 
 / {
 	model = "mt8135-evbp1";
-
 	memory {
 		reg = <0 0x80000000 0 0x40000000>;
 	};
+
 	soc {
+			spi1@11016000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi1_pins_a>;
+			status = "okay";
+		};
 
 		mmc0@11230000 {
 			pinctrl-names = "default";

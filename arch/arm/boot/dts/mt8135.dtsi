@@ -178,28 +178,28 @@
 				     <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
 
 			i2c0_pins_a: i2c0@0 {
-                                mediatek,pins = "W9", "W11";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
+				mediatek,pins = "W9", "W11";
+				mediatek,function = <1>;
+				mediatek,pull = <0>;
+			};
 
 			i2c1_pins_a: i2c1@0 {
-                                mediatek,pins = "F2", "F3";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
+				mediatek,pins = "F2", "F3";
+				mediatek,function = <1>;
+				mediatek,pull = <0>;
+			};
 
 			i2c2_pins_a: i2c2@0 {
-                                mediatek,pins = "G2", "F4";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
+				mediatek,pins = "G2", "F4";
+				mediatek,function = <1>;
+				mediatek,pull = <0>;
+			};
 
 			i2c3_pins_a: i2c3@0 {
-                                mediatek,pins = "L19", "L20";
-                                mediatek,function = <1>;
-                                mediatek,pull = <0>;
-                        };
+				mediatek,pins = "L19", "L20";
+				mediatek,function = <1>;
+				mediatek,pull = <0>;
+			};
 
 			mmc0_pins_a: mmc0@0 {
 				mediatek,pins = "D21", "D22", "E22", "F21", "F20",
@@ -231,6 +231,13 @@
 				mediatek,function = <1>;
 				mediatek,pull = <2>;
 			};
+
+			spi1_pins_a: spi1@0 {
+				mediatek,pins = "AA8", "AC4", "AC6", "AA7";
+				mediatek,function = <7>;
+				mediatek,pull = <0>;
+			};
+
 		};
 
 		i2c0: i2c@1100d000 {
@@ -276,6 +283,14 @@
 			clocks = <&i2c3_ck>, <&ap_dma_ck>;
 			clock-names = "main", "dma";
 		};
+
+		spi@11016000 {
+			compatible = "mediatek,mt6577-spi";
+			reg = <0 0x11016000 0 0x1000>;
+			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
+			cell-index = <0>;
+			clocks = <&spi1_ck>;
+                };
 
 		mtk-msdc {
 			#address-cells = <2>;
