@@ -1,0 +1,178 @@
+Mediatek MT8135 Clock Controller
+
+This binding uses the common clock binding:
+Documentation/devicetree/bindings/clock/clock-bindings.txt
+
+The Mediatek MT8135 clock controller generates and supplies clock to various
+controllers within Mediatek MT8135 SoC.
+
+
+Root clock:
+
+Required properties:
+- compatible : shall be:
+  "mediatek,clk-fixed_rate" - root clock with fixed rate.
+- #clock-cells : from common clock binding; shall be set to 0.
+- clock-frequency : frequency of clock in Hz. Should be a single cell.
+
+Example:
+
+	clk26m: clk26m {
+		compatible = "mediatek,clk-fixed_rate";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+	};
+
+
+PLL:
+
+Required properties:
+- compatible : shall be one of:
+  "mediatek,clk-pll-arm" - armpll on MT8135.
+  "mediatek,clk-pll-main" - mainpll on MT8135.
+  "mediatek,clk-pll-univ" - univpll on MT8135.
+  "mediatek,clk-pll-mm" - mmpll on MT8135.
+  "mediatek,clk-pll-msdc" - msdcpll on MT8135.
+  "mediatek,clk-pll-tvd" - tvdpll on MT8135.
+  "mediatek,clk-pll-lvds" - lvdspll on MT8135.
+  "mediatek,clk-pll-aud" - audpll on MT8135.
+  "mediatek,clk-pll-vdec" - vdecpll on MT8135.
+- #clock-cells : from common clock binding; shall be set to 0.
+- reg : address and length of the register set for controlling the clock.
+- clocks : link to phandle of parent clocks.
+
+Example:
+
+	mainpll: mainpll@1020921c {
+		compatible = "mediatek,clk-pll-main";
+		#clock-cells = <0>;
+		reg = <0 0x1020921c 0 0x4>, <0 0x10209234 0 0x4>;
+		clocks = <&clk26m>;
+	};
+
+
+Divider:
+
+Required properties :
+- compatible : shall be:
+  "mediatek,clk-fixed_factor" - divider with fixed factor.
+- #clock-cells : from common clock binding; shall be set to 0.
+- clocks : link to phandle of parent clocks.
+- clock-mult : fixed multiplier.
+- clock-div : fixed divider.
+
+Example:
+
+	mainpll_806m: mainpll_806m {
+		compatible = "mediatek,clk-fixed_factor";
+		#clock-cells = <0>;
+		clocks = <&mainpll>;
+		clock-mult = <1>;
+		clock-div = <2>;
+	};
+
+
+Multiplexer:
+
+Required properties :
+- compatible : shall be:
+  "mediatek,clk-mux" - multiplexer with optional gate.
+- reg : address and length of the register set for controlling the clock.
+- #clock-cells : from common clock binding; shall be set to 0.
+- clocks : link to phandle of parent clocks.
+- bit-shift : number of bits to shift the bit-mask.
+- bit-width : number of bits of the bit-mask.
+
+Optional properties:
+- gate-bit : bit to gate the MUX, unable to gate if not present.
+
+Example:
+
+	top0: clk@10000140 {
+		compatible = "mediatek,clk-mux";
+		reg = <0 0x10000140 0 0x4>;
+
+		top0_clocks: clocks {
+			axi_sel: axi_sel {
+				#clock-cells = <0>;
+				clocks = <&clk26m>, <&syspll_d3>;
+				bit-shift = <0>;
+				bit-width = <3>;
+			};
+
+			irda_sel: irda_sel {
+				#clock-cells = <0>;
+				clocks = <&clk26m>, <&univpll2_d8>, <&univpll1_d6>;
+				bit-shift = <24>;
+				bit-width = <2>;
+				gate-bit = <31>;
+			};
+		};
+	};
+
+
+Clock gate:
+
+Required properties :
+- compatible : shall be one of:
+  "mediatek,clk-gate" - clock gate with state / clear / set registers.
+  "mediatek,clk-gate-inv" - clock gate with inversed setting: 1 for enable,
+			    0 for disable.
+- reg : address and length of the register set for controlling the clock.
+	shall be 3 cells to present state / clear / set registers.
+- #clock-cells : from common clock binding; shall be set to 0.
+- clocks : link to phandle of parent clocks.
+- bit-shift : bit shift for programming the clock gate.
+
+Example:
+
+	cg_infra: clk@10001040 {
+		compatible = "mediatek,clk-gate";
+		reg = <0 0x10001048 0 0x4>, <0 0x10001044 0 0x4>, <0 0x10001040 0 0x4>;
+
+		cg_infra_clocks: clocks {
+			audio_ck: audio_ck {
+				#clock-cells = <0>;
+				clocks = <&aud_intbus_sel>;
+				bit-shift = <5>;
+			};
+
+			smi_ck: smi_ck {
+				#clock-cells = <0>;
+				clocks = <&smi_sel>;
+				bit-shift = <1>;
+			};
+		};
+	};
+
+
+Audio clock gate:
+
+Required properties :
+- compatible : shall be:
+  "mediatek,clk-gate-audio" - clock gate with 2 parents.
+- #clock-cells : from common clock binding; shall be set to 0.
+- reg : address and length of the register set for controlling the clock.
+- clocks : link to phandle of parent clocks, shall be 2 cells.
+- bit-shift : bit shift for programming the clock gate.
+
+Example:
+
+	cg_audio: clk@12070000 {
+		compatible = "mediatek,clk-gate-audio";
+		reg = <0 0x12070000 0 0x4>;
+
+		cg_audio_clocks: clocks {
+			afe_ck: afe_ck {
+				#clock-cells = <0>;
+				clocks = <&audio_sel>, <&audio_ck>;
+				bit-shift = <2>;
+			};
+
+			spdf_ck: spdf_ck {
+				#clock-cells = <0>;
+				clocks = <&apll_sel>, <&audio_ck>;
+				bit-shift = <21>;
+			};
+		};
+	};
