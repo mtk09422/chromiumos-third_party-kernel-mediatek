@@ -11,6 +11,8 @@ Required properties:
 - interrupts: Should contain MSDC interrupt number
 - core-power-supply: power to the Core
 - io-power-supply: power to the IO
+- clocks: MSDC source clock, PLL clock
+- clock-names: src_clk, pll_clk
 
 Examples:
 
@@ -20,4 +22,6 @@ mmc0@11230000 {
 	interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
 	core-power-supply = <&mt6397_vemc_3v3_reg>;
 	io-power-supply = <&mt6397_vio18_reg>;
+	clocks = <&msdc20_1_ck>, <&msdcpll>;
+	clock-names = "src_clk", "pll_clk";
 };

@@ -22,6 +22,8 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/regulator/consumer.h>
+#include <linux/clk.h>
+#include <linux/err.h>
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/core.h>
@@ -35,6 +37,7 @@
 
 #define VOL_3300	(3300000)
 #define VOL_1800	(1800000)
+#define CLK_RATE_200MHZ	(200000000UL)
 #define DRV_NAME            "mtk-msdc"
 
 #define MMC_CMD23_ARG_SPECIAL (0xFFFF0000)
@@ -46,10 +49,7 @@ static struct device_node *gpio_node;
 static struct device_node *gpio1_node;
 static void __iomem *gpio_base;
 static void __iomem *gpio1_base;
-/* clock source for host: global */
-/* static u32 hclks[] = {26000000, 197000000, 208000000, 0}; */
 /* 50M -> 26/4 = 6.25 MHz */
-static u32 hclks[] = { 200000000, 200000001, 197000000, 0 };
 /* VMCH is for T-card main power.
  * VMC for T-card when no emmc, for eMMC when has emmc.
  * VGP for T-card when has emmc.
@@ -560,8 +560,8 @@ static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div)
 			dev_err(host->dev,
 				"host->onclock(%d) failed; retry again\n",
 				host->core_clkon);
-			/* disable_clock(sdr_clksrc(host->id), "SD"); */
-			/* enable_clock(sdr_clksrc(host->id), "SD"); */
+			clk_disable(host->src_clk);
+			clk_enable(host->src_clk);
 		}
 		retry = 3;
 		sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
@@ -646,6 +646,7 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 	}
 
 	msdc_irq_restore(flags);
+	dev_dbg(host->dev, "sclk: %d\n", host->sclk);
 }
 
 static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
@@ -655,12 +656,11 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 	if (on) {
 		if (!host->core_clkon) {
 			/* turn on SDHC functional clock */
-			/*if (enable_clock(sdr_clksrc(host->id), "SD")) { */
-			if (0) {
+			if (clk_enable(host->src_clk)) {
 				pr_err("msdc%d on clock failed, retry once\n",
 						host->id);
-				/* disable_clock(sdr_clksrc(host->id), "SD"); */
-				/* enable_clock(sdr_clksrc(host->id), "SD"); */
+				clk_disable(host->src_clk);
+				clk_enable(host->src_clk);
 			}
 			host->core_clkon = 1;
 			udelay(10);
@@ -681,7 +681,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 			/* turn off SDHC functional clock */
-			/* disable_clock(sdr_clksrc(host->id), "SD"); */
+			clk_disable(host->src_clk);
 			host->core_clkon = 0;
 		}
 	}
@@ -1227,12 +1227,6 @@ static void msdc_tasklet_card(unsigned long arg)
 			mmc_detect_change(host->mmc, msecs_to_jiffies(10));
 	}
 	dev_err(host->dev, "insert_workqueue(%d)", host->sd_cd_insert_work);
-}
-
-static void msdc_select_clksrc(struct msdc_host *host, int clksrc)
-{
-	host->hclk = hclks[clksrc];
-	host->hw->clk_src = clksrc;
 }
 
 static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
@@ -2324,10 +2318,6 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	default:
 		break;
 	}
-	if (host->clock_src != hw->clk_src) {
-		hw->clk_src = host->clock_src;
-		msdc_select_clksrc(host, hw->clk_src);
-	}
 
 	if (host->mclk != ios->clock || host->ddr != ddr) {
 		/* not change when clock Freq. not changed ddr need set clock */
@@ -2630,10 +2620,9 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Power on */
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP);
-	/* enable_clock(sdr_clksrc(host->id), "SD"); */
+	clk_prepare(host->src_clk);
+	clk_enable(host->src_clk);
 	host->core_clkon = 1;
-	/* Bug Fix: If clock is disabed, Version Register Can't be read. */
-	msdc_select_clksrc(host, hw->clk_src);
 
 	/* Configure to MMC/SD mode */
 	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
@@ -2705,6 +2694,8 @@ static void msdc_deinit_hw(struct msdc_host *host)
 	sdr_clr_bits(MSDC_INTEN, sdr_read32(MSDC_INTEN));
 	sdr_write32(MSDC_INT, sdr_read32(MSDC_INT));
 
+	clk_disable(host->src_clk);
+	clk_unprepare(host->src_clk);
 	/* Disable card detection */
 	if (host->cd_irq)
 		free_irq(host->cd_irq, host);
@@ -2886,7 +2877,6 @@ static void msdc_add_device_attrs(struct msdc_host *host,
 }
 
 struct msdc_hw msdc0_hw = {
-	.clk_src = MSDC_CLKSRC_200MHZ,
 	.cmd_edge = MSDC_SMPL_RISING,
 	.rdata_edge = MSDC_SMPL_RISING,
 	.wdata_edge = MSDC_SMPL_RISING,
@@ -2930,7 +2920,6 @@ struct msdc_hw msdc0_hw = {
 };
 
 struct msdc_hw msdc1_hw = {
-	.clk_src		= MSDC_CLKSRC_200MHZ,
 	.cmd_edge       = MSDC_SMPL_RISING,
 	.rdata_edge     = MSDC_SMPL_RISING,
 	.wdata_edge     = MSDC_SMPL_RISING,
@@ -2978,6 +2967,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	void __iomem *base;
 	struct regulator *core_power;
 	struct regulator *io_power;
+	struct clk *src_clk;
+	struct clk *pll_clk = NULL;
 	int ret, irq;
 
 	pr_info("of msdc DT probe %s!\n", pdev->dev.of_node->name);
@@ -2993,9 +2984,27 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	core_power = devm_regulator_get(&pdev->dev, "core-power");
 	io_power = devm_regulator_get(&pdev->dev, "io-power");
 	if (!core_power || !io_power) {
-		pr_err("Cannot get core/io power from the device tree!\n");
+		dev_err(&pdev->dev,
+			"Cannot get core/io power from the device tree!\n");
 		return -EINVAL;
 	}
+
+	src_clk = devm_clk_get(&pdev->dev, "src_clk");
+	BUG_ON(IS_ERR(src_clk));
+	if (!pll_clk) {
+		pll_clk = devm_clk_get(&pdev->dev, "pll_clk");
+		BUG_ON(IS_ERR(pll_clk));
+		ret = clk_set_rate(pll_clk, CLK_RATE_200MHZ);
+		if (ret) {
+			dev_err(&pdev->dev, "%s: clk_set_rate returned %d\n",
+					__func__, ret);
+			return ret;
+		} else {
+			dev_dbg(&pdev->dev, "host clock: %ld\n",
+					clk_get_rate(src_clk));
+		}
+	}
+
 	if (gpio_node == NULL) {
 		gpio_node = of_find_compatible_node(NULL, NULL,
 				"mediatek,GPIO");
@@ -3096,9 +3105,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->error = 0;
 	host->irq = irq;
 	host->base = base;
+	host->src_clk = src_clk;
 	host->mclk = 0; /* mclk: the request clock of mmc sub-system */
 	/* hclk: clock of clock source to msdc controller */
-	host->hclk = hclks[hw->clk_src];
+	host->hclk = clk_get_rate(host->src_clk);
 	host->sclk = 0; /* sclk: the really clock after divition */
 	host->suspend = 0;
 	host->core_clkon = 0;
@@ -3144,7 +3154,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 				&host->dma.bd_addr, GFP_KERNEL);
 	BUG_ON((!host->dma.gpd) || (!host->dma.bd));
 	msdc_init_gpd_bd(host, &host->dma);
-	host->clock_src = hw->clk_src;
 	host->host_mode = mmc->caps;
 	/*for emmc */
 	host->read_time_tune = 0;

@@ -1296,6 +1296,7 @@ struct msdc_host {
 	u32 erase_start;
 	u32 erase_end;
 
+	struct clk *src_clk;	/* msdc source clock */
 	u32 mclk;		/* mmc subsystem clock */
 	u32 hclk;		/* host clock speed */
 	u32 sclk;		/* SD/MS clock speed */
@@ -1333,7 +1334,6 @@ struct msdc_host {
 	bool block_bad_card;
 	struct dma_addr *latest_dma_address;
 	int latest_operation_type;
-	u8 clock_src;
 	u32 host_mode;
 	u32 io_power_state;
 	u32 core_power_state;
@@ -1687,9 +1687,6 @@ typedef void (*msdc_pm_callback_t) (void *data, bool power_enable);
 #define MSDC_SDIO_FLAG    (MSDC_EXT_SDIO_IRQ | MSDC_HIGHSPEED|MSDC_REMOVABLE)
 #define MSDC_EMMC_FLAG    (MSDC_SYS_SUSPEND | MSDC_HIGHSPEED)
 
-enum {
-	MSDC_CLKSRC_200MHZ = 0
-};
 #define MSDC_BOOT_EN (1)
 #define MSDC_CD_HIGH (1)
 #define MSDC_CD_LOW  (0)
@@ -1715,7 +1712,6 @@ struct msdc_pinctrl {
 };
 
 struct msdc_hw {
-	unsigned char clk_src;	/* host clock source */
 	unsigned char cmd_edge;	/* command latch edge */
 	unsigned char rdata_edge;	/* read data latch edge */
 	unsigned char wdata_edge;	/* write data latch edge */
