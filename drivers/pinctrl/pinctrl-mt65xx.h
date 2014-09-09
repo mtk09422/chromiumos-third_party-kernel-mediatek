@@ -17,8 +17,35 @@
 
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/spinlock.h>
+#define MT_EDGE_SENSITIVE           0
+#define MT_LEVEL_SENSITIVE          1
+#define EINT_DBNC_SET_DBNC_BITS    (4)
+#define EINT_DBNC_SET_EN_BITS      (0)
+#define EINT_DBNC_SET_RST_BITS     (1)
+#define EINT_DBNC_EN_BIT           (0x1)
+#define EINT_DBNC_RST_BIT          (0x1)
+#define EINT_DBNC_SET_EN           (0x1)
 
-#define PIN_NUM_BASE 0
+struct mt_eint_offsets {
+	const char *name;
+	unsigned int  stat;
+	unsigned int  ack;
+	unsigned int  mask;
+	unsigned int  mask_set;
+	unsigned int  mask_clr;
+	unsigned int  sens;
+	unsigned int  sens_set;
+	unsigned int  sens_clr;
+	unsigned int  pol;
+	unsigned int  pol_set;
+	unsigned int  pol_clr;
+	unsigned int  dom_en;
+	unsigned int  dbnc_ctrl;
+	unsigned int  dbnc_set;
+	unsigned int  dbnc_clr;
+	u8  port_mask;
+	u8  ports;
+};
 
 struct mt_desc_function {
 	const char *name;
@@ -36,6 +63,8 @@ struct mt_desc_pin {
 struct mt_pinctrl_desc {
 	const struct mt_desc_pin	*pins;
 	int				npins;
+	int				ap_num;
+	int				db_cnt;
 };
 
 #define MT_PIN(_pin, _pad, _chip, ...)				\
@@ -69,7 +98,7 @@ struct mt_pinctrl_function {
 
 struct mt_pinctrl_group {
 	const char	*name;
-	const char  *pad;
+	const char	*pad;
 	unsigned long	config;
 	unsigned	pin;
 };
@@ -79,7 +108,7 @@ struct mt_pinctrl {
 	void __iomem            *membase2;
 	struct mt_pinctrl_desc  *desc;
 	struct device           *dev;
-	struct gpio_chip		*chip;
+	struct gpio_chip	*chip;
 	spinlock_t              lock;
 	struct mt_pinctrl_group	*groups;
 	unsigned			ngroups;
@@ -87,6 +116,8 @@ struct mt_pinctrl {
 	unsigned			nfunctions;
 	struct pinctrl_dev      *pctl_dev;
 	struct gpio_offsets     *offset;
+	void __iomem		*eint_reg_base;
+	struct irq_domain	*domain;
 };
 
 struct gpio_offsets {
@@ -101,6 +132,7 @@ struct gpio_offsets {
 	unsigned int pinmux_offset;
 	unsigned short type1_start;
 	unsigned short type1_end;
+	struct mt_eint_offsets eint_offsets;
 };
 
 #endif /* __PINCTRL_MT65XX_H */
