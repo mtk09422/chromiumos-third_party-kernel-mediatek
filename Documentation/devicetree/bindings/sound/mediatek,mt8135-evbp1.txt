@@ -1,0 +1,19 @@
+Mediatek MT8135 evbp1 audio setups
+
+Required properties:
+- compatible = "mediatek,mt8135-evbp1";
+- clock-names : Must include the following entries:
+  - infra_audio_clk
+  - afe_clk
+- mediatek,audio-codec: The phandle of the MT6397 audio codec.
+
+Example:
+
+	sound {
+		compatible = "mediatek,mt8135-evbp1";
+		clocks = <&audio_ck>,
+			<&afe_ck>;
+		clock-names =   "infra_audio_clk",
+				"afe_clk";
+		mediatek,audio-codec = <&mt6397codec>;
+	};

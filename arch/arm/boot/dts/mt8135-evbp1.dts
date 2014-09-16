@@ -37,6 +37,18 @@
 			status = "okay";
 		};
 	};
+
+	sound {
+		compatible = "mediatek,mt8135-evbp1";
+		clocks = <&audio_ck>,
+			<&afe_ck>;
+		clock-names =   "infra_audio_clk",
+				"afe_clk";
+		mediatek,audio-codec = <&mt6397codec>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&aud_mtkif>;
+		status = "okay";
+	};
 };
 &i2c0 {
 	pinctrl-names = "default";

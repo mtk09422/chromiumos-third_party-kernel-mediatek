@@ -1,0 +1,8 @@
+config SND_SOC_MT8135
+		bool "SoC Audio support for MT8135"
+		depends on ARCH_MEDIATEK
+		help
+			Select Y if you want to add support
+			for the Mediatek MT8135 SoC Audio.
+			You must also select audio codec
+			from the codec driver list.

@@ -1,0 +1,18 @@
+Mediatek DL1 PCM controller
+
+Required properties:
+- compatible = "mediatek,mt-soc-dl1-pcm";
+- reg :
+	- first element: DL1 SRAM location and length
+	- second element: registers location and length
+- interrupts : Should contain PCM interrupt
+
+Example:
+
+	mt-soc-dl1-pcm {
+		compatible = "mediatek,mt-soc-dl1-pcm";
+		reg = <0 0x12008000 0 0x4000>,
+		      <0 0x12070000 0 0x10000>;
+		interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+	};
+

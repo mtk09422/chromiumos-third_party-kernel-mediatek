@@ -225,6 +225,12 @@
                                 mediatek,function = <1>;
                                 mediatek,pull = <1>;
                         };
+
+			aud_mtkif: aud_mtkif {
+				mediatek,pins = "L21", "L23", "L22";
+				mediatek,function = <1>;
+				mediatek,pull = <2>;
+			};
 		};
 
 		i2c0: i2c@1100d000 {
@@ -321,5 +327,11 @@
 			usb-power-supply = <&mt6397_usb_reg>;
 		};
 
+		mt-soc-dl1-pcm {
+			compatible = "mediatek,mt-soc-dl1-pcm";
+			reg = <0 0x12008000 0 0x4000>,
+			      <0 0x12070000 0 0x10000>;
+			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+		};
 	};
 };
