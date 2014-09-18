@@ -15,9 +15,11 @@
 / {
 	pmic {
 		compatible = "mediatek,mt6397";
+                #address-cells = <1>;
+                #size-cells = <1>;
 
 		rtc:rtc@8000 {
-			reg = <0 0x8000 0 0x3e>;
+			reg = <0x8000 0x3e>;
 		};
 
 		regulators {

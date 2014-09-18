@@ -98,6 +98,51 @@
 		compatible = "simple-bus";
 		ranges;
 
+                pio: pinctrl@10005000 {
+                        compatible = "mediatek,mt8135-pinctrl";
+                        reg = <0 0x10005000 0 0xf30>,
+                              <0 0x1020C000 0 0x930>;
+                        gpio-controller;
+
+                        i2c0_pins_a: i2c0@0 {
+                                mediatek,pins = "W9", "W11";
+                                mediatek,function = <1>;
+                                mediatek,pull = <0>;
+                        };
+
+                        i2c1_pins_a: i2c1@0 {
+                                mediatek,pins = "F2", "F3";
+                                mediatek,function = <1>;
+                                mediatek,pull = <0>;
+                        };
+
+                        i2c2_pins_a: i2c2@0 {
+                                mediatek,pins = "G2", "F4";
+                                mediatek,function = <1>;
+                                mediatek,pull = <0>;
+                        };
+
+                        i2c3_pins_a: i2c3@0 {
+                                mediatek,pins = "L19", "L20";
+                                mediatek,function = <1>;
+                                mediatek,pull = <0>;
+                        };
+
+                        mmc0_pins_a: mmc0@0 {
+                                mediatek,pins = "D21", "D22", "E22", "F21", "F20",
+                                        "G18", "G21", "E21", "E23", "F22", "G22";
+                                mediatek,function = <1>;
+                                mediatek,pull = <1>;
+                        };
+
+                        mmc1_pins_a: mmc1@0 {
+                                mediatek,pins = "AC19", "AA19", "AA20", "AA21",
+                                        "AB19", "AB20";
+                                mediatek,function = <1>;
+                                mediatek,pull = <1>;
+                        };
+                };
+
 		timer: timer@10008000 {
 			compatible = "mediatek,mt6577-timer";
 			reg = <0 0x10008000 0 0x80>;
@@ -105,6 +150,21 @@
 			clocks = <&system_clk>, <&rtc_clk>;
 			clock-names = "system-clk", "rtc-clk";
 		};
+
+                pwrap: pwrap@0x1000F000 {
+                        compatible = "mediatek,mt8135-pwrap";
+                        reg = <0 0x1000F000 0 0x1000>,
+                              <0 0x10000000 0 0x1000>,
+                              <0 0x10001000 0 0x1000>,
+                              <0 0x10003000 0 0x1000>,
+                              <0 0x11017000 0 0x1000>;
+                        interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
+                };
+
+                intpol: intpol@10200030 {
+                        compatible = "mediatek,mt6577-intpol";
+                        reg = <0 0x10200030 0 0x1c>;
+                };
 
 		gic: interrupt-controller@10211000 {
 			compatible = "arm,cortex-a15-gic";
@@ -114,21 +174,6 @@
 			      <0 0x10212000 0 0x1000>,
 			      <0 0x10214000 0 0x2000>,
 			      <0 0x10216000 0 0x2000>;
-		};
-
-		pwrap: pwrap@0x1000F000 {
-			compatible = "mediatek,mt8135-pwrap";
-			reg = <0 0x1000F000 0 0x1000>,
-			      <0 0x10000000 0 0x1000>,
-			      <0 0x10001000 0 0x1000>,
-			      <0 0x10003000 0 0x1000>,
-			      <0 0x11017000 0 0x1000>;
-			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-		};
-
-		intpol: intpol@10200030 {
-			compatible = "mediatek,mt6577-intpol";
-			reg = <0 0x10200030 0 0x1c>;
 		};
 
 		cci@10320000 {
@@ -159,52 +204,6 @@
 					     <GIC_SPI 30 IRQ_TYPE_LEVEL_LOW>,
 					     <GIC_SPI 31 IRQ_TYPE_LEVEL_LOW>;
 			};
-		};
-
-		pio: pinctrl@10005000 {
-			compatible = "mediatek,mt8135-pinctrl";
-			reg = <0 0x10005000 0 0xf30>,
-			      <0 0x1020C000 0 0x930>;
-			gpio-controller;
-
-			i2c0_pins_a: i2c0@0 {
-				mediatek,pins = "W9", "W11";
-				mediatek,function = <1>;
-				mediatek,pull = <0>;
-			};
-
-			i2c1_pins_a: i2c1@0 {
-				mediatek,pins = "F2", "F3";
-				mediatek,function = <1>;
-				mediatek,pull = <0>;
-			};
-
-			i2c2_pins_a: i2c2@0 {
-				mediatek,pins = "G2", "F4";
-				mediatek,function = <1>;
-				mediatek,pull = <0>;
-			};
-
-			i2c3_pins_a: i2c3@0 {
-				mediatek,pins = "L19", "L20";
-				mediatek,function = <1>;
-				mediatek,pull = <0>;
-			};
-
-			mmc0_pins_a: mmc0@0 {
-				mediatek,pins = "D21", "D22", "E22", "F21", "F20",
-					"G18", "G21", "E21", "E23", "F22", "G22";
-				mediatek,function = <1>;
-				mediatek,pull = <1>;
-			};
-
-			mmc1_pins_a: mmc1@0 {
-				mediatek,pins = "AC19", "AA19", "AA20", "AA21",
-					"AB19", "AB20";
-				mediatek,function = <1>;
-				mediatek,pull = <1>;
-			};
-
 		};
 
 		i2c0: i2c@1100d000 {
@@ -288,4 +287,3 @@
 
 	};
 };
-#include "mt6397.dtsi"

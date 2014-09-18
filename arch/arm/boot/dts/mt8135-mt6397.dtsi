@@ -12,6 +12,8 @@
  * GNU General Public License for more details.
  */
 
+#include "mt6397.dtsi"
+
 / {
 	soc {
 		i2c4: i2c@11011000 {
