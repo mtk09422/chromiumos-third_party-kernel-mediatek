@@ -1,0 +1,12 @@
+Mediatek MT65XX Watchdog Timer (WDT) Controller
+
+Required properties:
+compatible:
+- "mediatek,mt6577-watchdog" for mt6577
+
+Examples:
+
+watchdog: watchdog@10000000 {
+	compatible = "mediatek,mt6577-watchdog";
+	reg = <0 0x10000000 0 0x100>;
+};

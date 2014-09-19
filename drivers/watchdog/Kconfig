@@ -443,6 +443,15 @@ config TEGRA_WATCHDOG
 	  To compile this driver as a module, choose M here: the
 	  module will be called tegra_wdt.
 
+config MT65XX_WATCHDOG
+	tristate "Mediatek mt65xx watchdog driver"
+	depends on ARCH_MEDIATEK
+	help
+	  This selects the Mediatek(R) WDT driver
+	  If you want to use Mediatek(R) WDT interface,
+	  select Y or M here.
+	  If unsure, please select N.
+
 # AVR32 Architecture
 
 config AT32AP700X_WDT
