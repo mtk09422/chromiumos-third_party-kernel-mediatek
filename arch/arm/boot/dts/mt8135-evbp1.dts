@@ -32,7 +32,8 @@
 
 		mmc1@11240000 {
 			pinctrl-names = "default";
-			pinctrl-0 = <&mmc1_pins_a>;
+			pinctrl-0 = <&mmc1_pins_a>,
+				<&mmc1_cd_pin_reference_design>;
 			status = "okay";
 		};
 	};

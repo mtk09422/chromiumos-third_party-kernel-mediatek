@@ -215,6 +215,11 @@
 				mediatek,pull = <1>;
 			};
 
+			mmc1_cd_pin_reference_design: mmc1_cd_pin@0 {
+				mediatek,pins = "V18";
+				mediatek,function = <1>;
+				meidatek,pull = <1>;
+			};
                         usb0_pins_a: usb0@0 {
                                 mediatek,pins = "N19";
                                 mediatek,function = <1>;
@@ -284,7 +289,7 @@
 			mmc0@11230000 {
 				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
 				reg = <0 0x11230000 0 0x108>;
-				interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+				interrupts-extended = <&gic GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
 				core-power-supply = <&mt6397_vemc_3v3_reg>;
 				io-power-supply = <&mt6397_vio18_reg>;
 				clocks = <&msdc20_1_ck>, <&msdcpll>;
@@ -293,7 +298,7 @@
 			mmc1@11240000 {
 				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
 				reg = <0 0x11240000 0 0x108>;
-				interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>;
+				interrupts-extended = <&gic GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>, <&pio 15 IRQ_TYPE_LEVEL_LOW>;
 				core-power-supply = <&mt6397_vmch_reg>;
 				io-power-supply = <&mt6397_vmc_reg>;
 				clocks = <&msdc20_2_ck>, <&msdcpll>;

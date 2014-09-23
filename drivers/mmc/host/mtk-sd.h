@@ -775,417 +775,6 @@ struct mt_bdma_desc {
 	u32 rsv3:16;
 };
 
-/*--------------------------------------------------------------------------*/
-/* Register Debugging Structure                                             */
-/*--------------------------------------------------------------------------*/
-
-struct msdc_cfg_reg {
-	u32 msdc:1;
-	u32 ckpwn:1;
-	u32 rst:1;
-	u32 pio:1;
-	u32 ckdrven:1;
-	u32 start18v:1;
-	u32 pass18v:1;
-	u32 ckstb:1;
-	u32 ckdiv:8;
-	u32 ckmod:2;
-	u32 pad:14;
-};
-
-struct msdc_iocon_reg {
-	u32 sdr104cksel:1;
-	u32 rsmpl:1;
-	u32 dsmpl:1;
-	u32 ddlysel:1;
-	u32 ddr50ckd:1;
-	u32 dsplsel:1;
-	u32 pad1:10;
-	u32 d0spl:1;
-	u32 d1spl:1;
-	u32 d2spl:1;
-	u32 d3spl:1;
-	u32 d4spl:1;
-	u32 d5spl:1;
-	u32 d6spl:1;
-	u32 d7spl:1;
-	u32 riscsz:1;
-	u32 pad2:7;
-};
-
-struct msdc_ps_reg {
-	u32 cden:1;
-	u32 cdsts:1;
-	u32 pad1:10;
-	u32 cddebounce:4;
-	u32 dat:8;
-	u32 cmd:1;
-	u32 pad2:6;
-	u32 wp:1;
-};
-
-struct msdc_int_reg {
-	u32 mmcirq:1;
-	u32 cdsc:1;
-	u32 pad1:1;
-	u32 atocmdrdy:1;
-	u32 atocmdtmo:1;
-	u32 atocmdcrc:1;
-	u32 dmaqempty:1;
-	u32 sdioirq:1;
-	u32 cmdrdy:1;
-	u32 cmdtmo:1;
-	u32 rspcrc:1;
-	u32 csta:1;
-	u32 xfercomp:1;
-	u32 dxferdone:1;
-	u32 dattmo:1;
-	u32 datcrc:1;
-	u32 atocmd19done:1;
-	u32 pad2:15;
-};
-
-struct msdc_inten_reg {
-	u32 mmcirq:1;
-	u32 cdsc:1;
-	u32 pad1:1;
-	u32 atocmdrdy:1;
-	u32 atocmdtmo:1;
-	u32 atocmdcrc:1;
-	u32 dmaqempty:1;
-	u32 sdioirq:1;
-	u32 cmdrdy:1;
-	u32 cmdtmo:1;
-	u32 rspcrc:1;
-	u32 csta:1;
-	u32 xfercomp:1;
-	u32 dxferdone:1;
-	u32 dattmo:1;
-	u32 datcrc:1;
-	u32 atocmd19done:1;
-	u32 pad2:15;
-};
-
-struct msdc_fifocs_reg {
-	u32 rxcnt:8;
-	u32 pad1:8;
-	u32 txcnt:8;
-	u32 pad2:7;
-	u32 clr:1;
-};
-
-struct msdc_txdat_reg {
-	u32 val;
-};
-
-struct msdc_rxdat_reg {
-	u32 val;
-};
-
-struct sdc_cfg_reg {
-	u32 sdiowkup:1;
-	u32 inswkup:1;
-	u32 pad1:14;
-	u32 buswidth:2;
-	u32 pad2:1;
-	u32 sdio:1;
-	u32 sdioide:1;
-	u32 intblkgap:1;
-	u32 pad4:2;
-	u32 dtoc:8;
-};
-
-struct sdc_cmd_reg {
-	u32 cmd:6;
-	u32 brk:1;
-	u32 rsptyp:3;
-	u32 pad1:1;
-	u32 dtype:2;
-	u32 rw:1;
-	u32 stop:1;
-	u32 goirq:1;
-	u32 blklen:12;
-	u32 atocmd:2;
-	u32 volswth:1;
-	u32 pad2:1;
-};
-
-struct sdc_arg_reg {
-	u32 arg;
-};
-
-struct sdc_sts_reg {
-	u32 sdcbusy:1;
-	u32 cmdbusy:1;
-	u32 pad:29;
-	u32 swrcmpl:1;
-};
-
-struct sdc_resp0_reg {
-	u32 val;
-};
-
-struct sdc_resp1_reg {
-	u32 val;
-};
-
-struct sdc_resp2_reg {
-	u32 val;
-};
-
-struct sdc_resp3_reg {
-	u32 val;
-};
-
-struct sdc_blknum_reg {
-	u32 num;
-};
-
-struct sdc_csts_reg {
-	u32 sts;
-};
-
-struct sdc_cstsen_reg {
-	u32 sts;
-};
-
-struct sdc_datcrcsts_reg {
-	u32 datcrcsts:8;
-	u32 ddrcrcsts:4;
-	u32 pad:20;
-};
-
-struct emmc_cfg0_reg {
-	u32 bootstart:1;
-	u32 bootstop:1;
-	u32 bootmode:1;
-	u32 pad1:9;
-	u32 bootwaidly:3;
-	u32 bootsupp:1;
-	u32 pad2:16;
-};
-
-struct emmc_cfg1_reg {
-	u32 bootcrctmc:16;
-	u32 pad:4;
-	u32 bootacktmc:12;
-};
-
-struct emmc_sts_reg {
-	u32 bootcrcerr:1;
-	u32 bootackerr:1;
-	u32 bootdattmo:1;
-	u32 bootacktmo:1;
-	u32 bootupstate:1;
-	u32 bootackrcv:1;
-	u32 bootdatrcv:1;
-	u32 pad:25;
-};
-
-struct emmc_iocon_reg {
-	u32 bootrst:1;
-	u32 pad:31;
-};
-
-struct msdc_acmd_resp_reg {
-	u32 val;
-};
-
-struct msdc_acmd19_trg_reg {
-	u32 tunesel:4;
-	u32 pad:28;
-};
-
-struct msdc_acmd19_sts_reg {
-	u32 val;
-};
-
-struct msdc_dma_sa_reg {
-	u32 addr;
-};
-
-struct msdc_dma_ca_reg {
-	u32 addr;
-};
-
-struct msdc_dma_ctrl_reg {
-	u32 start:1;
-	u32 stop:1;
-	u32 resume:1;
-	u32 pad1:5;
-	u32 mode:1;
-	u32 pad2:1;
-	u32 lastbuf:1;
-	u32 pad3:1;
-	u32 brustsz:3;
-	u32 pad4:1;
-	u32 xfersz:16;
-};
-
-struct msdc_dma_cfg_reg {
-	u32 status:1;
-	u32 decsen:1;
-	u32 pad1:2;
-	u32 bdcsen:1;
-	u32 gpdcsen:1;
-	u32 pad2:26;
-};
-
-struct msdc_dbg_sel_reg {
-	u32 sel:16;
-	u32 pad2:16;
-};
-
-struct msdc_dbg_out_reg {
-	u32 val;
-};
-
-struct msdc_pad_ctl0_reg {
-	u32 clkdrvn:3;
-	u32 rsv0:1;
-	u32 clkdrvp:3;
-	u32 rsv1:1;
-	u32 clksr:1;
-	u32 rsv2:7;
-	u32 clkpd:1;
-	u32 clkpu:1;
-	u32 clksmt:1;
-	u32 clkies:1;
-	u32 clktdsel:4;
-	u32 clkrdsel:8;
-};
-
-struct msdc_pad_ctl1_reg {
-	u32 cmddrvn:3;
-	u32 rsv0:1;
-	u32 cmddrvp:3;
-	u32 rsv1:1;
-	u32 cmdsr:1;
-	u32 rsv2:7;
-	u32 cmdpd:1;
-	u32 cmdpu:1;
-	u32 cmdsmt:1;
-	u32 cmdies:1;
-	u32 cmdtdsel:4;
-	u32 cmdrdsel:8;
-};
-
-struct msdc_pad_ctl2_reg {
-	u32 datdrvn:3;
-	u32 rsv0:1;
-	u32 datdrvp:3;
-	u32 rsv1:1;
-	u32 datsr:1;
-	u32 rsv2:7;
-	u32 datpd:1;
-	u32 datpu:1;
-	u32 datsmt:1;
-	u32 daties:1;
-	u32 dattdsel:4;
-	u32 datrdsel:8;
-};
-
-struct msdc_pad_tune_reg {
-	u32 wrrxdly:3;
-	u32 pad1:5;
-	u32 rdrxdly:8;
-	u32 pad2:16;
-};
-
-struct msdc_dat_rddly0 {
-	u32 dat0:5;
-	u32 rsv0:3;
-	u32 dat1:5;
-	u32 rsv1:3;
-	u32 dat2:5;
-	u32 rsv2:3;
-	u32 dat3:5;
-	u32 rsv3:3;
-};
-
-struct msdc_dat_rddly1 {
-	u32 dat4:5;
-	u32 rsv4:3;
-	u32 dat5:5;
-	u32 rsv5:3;
-	u32 dat6:5;
-	u32 rsv6:3;
-	u32 dat7:5;
-	u32 rsv7:3;
-};
-
-struct msdc_hw_dbg_reg {
-	u32 dbg0sel:8;
-	u32 dbg1sel:6;
-	u32 pad1:2;
-	u32 dbg2sel:6;
-	u32 pad2:2;
-	u32 dbg3sel:6;
-	u32 pad3:2;
-};
-
-struct msdc_version_reg {
-	u32 val;
-};
-
-struct msdc_eco_ver_reg {
-	u32 val;
-};
-
-struct msdc_regs {
-	struct msdc_cfg_reg msdc_cfg;	/* base+0x00h */
-	struct msdc_iocon_reg msdc_iocon;	/* base+0x04h */
-	struct msdc_ps_reg msdc_ps;	/* base+0x08h */
-	struct msdc_int_reg msdc_int;	/* base+0x0ch */
-	struct msdc_inten_reg msdc_inten;	/* base+0x10h */
-	struct msdc_fifocs_reg msdc_fifocs;	/* base+0x14h */
-	struct msdc_txdat_reg msdc_txdat;	/* base+0x18h */
-	struct msdc_rxdat_reg msdc_rxdat;	/* base+0x1ch */
-	u32 rsv1[4];
-	struct sdc_cfg_reg sdc_cfg;	/* base+0x30h */
-	struct sdc_cmd_reg sdc_cmd;	/* base+0x34h */
-	struct sdc_arg_reg sdc_arg;	/* base+0x38h */
-	struct sdc_sts_reg sdc_sts;	/* base+0x3ch */
-	struct sdc_resp0_reg sdc_resp0;	/* base+0x40h */
-	struct sdc_resp1_reg sdc_resp1;	/* base+0x44h */
-	struct sdc_resp2_reg sdc_resp2;	/* base+0x48h */
-	struct sdc_resp3_reg sdc_resp3;	/* base+0x4ch */
-	struct sdc_blknum_reg sdc_blknum;	/* base+0x50h */
-	u32 rsv2[1];
-	struct sdc_csts_reg sdc_csts;	/* base+0x58h */
-	struct sdc_cstsen_reg sdc_cstsen;	/* base+0x5ch */
-	struct sdc_datcrcsts_reg sdc_dcrcsta;	/* base+0x60h */
-	u32 rsv3[3];
-	struct emmc_cfg0_reg emmc_cfg0;	/* base+0x70h */
-	struct emmc_cfg1_reg emmc_cfg1;	/* base+0x74h */
-	struct emmc_sts_reg emmc_sts;	/* base+0x78h */
-	struct emmc_iocon_reg emmc_iocon;	/* base+0x7ch */
-	struct msdc_acmd_resp_reg acmd_resp;	/* base+0x80h */
-	struct msdc_acmd19_trg_reg acmd19_trg;	/* base+0x84h */
-	struct msdc_acmd19_sts_reg acmd19_sts;	/* base+0x88h */
-	u32 rsv4[1];
-	struct msdc_dma_sa_reg dma_sa;	/* base+0x90h */
-	struct msdc_dma_ca_reg dma_ca;	/* base+0x94h */
-	struct msdc_dma_ctrl_reg dma_ctrl;	/* base+0x98h */
-	struct msdc_dma_cfg_reg dma_cfg;	/* base+0x9ch */
-	struct msdc_dbg_sel_reg dbg_sel;	/* base+0xa0h */
-	struct msdc_dbg_out_reg dbg_out;	/* base+0xa4h */
-	u32 rsv5[2];
-	u32 patch0;		/* base+0xb0h */
-	u32 patch1;		/* base+0xb4h */
-	u32 rsv6[10];
-	struct msdc_pad_ctl0_reg pad_ctl0;	/* base+0xe0h */
-	struct msdc_pad_ctl1_reg pad_ctl1;	/* base+0xe4h */
-	struct msdc_pad_ctl2_reg pad_ctl2;	/* base+0xe8h */
-	struct msdc_pad_tune_reg pad_tune;	/* base+0xech */
-	struct msdc_dat_rddly0 dat_rddly0;	/* base+0xf0h */
-	struct msdc_dat_rddly1 dat_rddly1;	/* base+0xf4h */
-	struct msdc_hw_dbg_reg hw_dbg;	/* base+0xf8h */
-	u32 rsv7[1];
-	struct msdc_version_reg version;	/* base+0x100h */
-	struct msdc_eco_ver_reg eco_ver;	/* base+0x104h */
-};
-
 struct scatterlist_ex {
 	u32 cmd;
 	u32 arg;
@@ -1300,8 +889,6 @@ struct msdc_host {
 	u32 mclk;		/* mmc subsystem clock */
 	u32 hclk;		/* host clock speed */
 	u32 sclk;		/* SD/MS clock speed */
-	u8 core_clkon;		/* Host core clock on ? */
-	u8 card_clkon;		/* Card clock on ? */
 	/* u8 core_power; */		/* core power */
 	u8 power_mode;		/* host power mode */
 	u8 card_inserted;	/* card inserted ? */
@@ -1310,7 +897,6 @@ struct msdc_host {
 	u8 app_cmd;		/* for app command */
 	u32 app_cmd_arg;
 	u64 starttime;
-	struct timer_list timer;
 	struct tune_counter t_counter;
 	u32 rwcmd_time_tune;
 	u32 read_time_tune;
@@ -1367,35 +953,6 @@ struct dma_addr {
 	struct dma_addr *next;
 };
 
-static inline unsigned int uffs(unsigned int x)
-{
-	unsigned int r = 1;
-
-	if (!x)
-		return 0;
-	if (!(x & 0xffff)) {
-		x >>= 16;
-		r += 16;
-	}
-	if (!(x & 0xff)) {
-		x >>= 8;
-		r += 8;
-	}
-	if (!(x & 0xf)) {
-		x >>= 4;
-		r += 4;
-	}
-	if (!(x & 3)) {
-		x >>= 2;
-		r += 2;
-	}
-	if (!(x & 1)) {
-		x >>= 1;
-		r += 1;
-	}
-	return r;
-}
-
 #define sdr_read8(reg)           readb(reg)
 #define sdr_read16(reg)          readw(reg)
 #define sdr_read32(reg)          readl(reg)
@@ -1418,13 +975,13 @@ static inline unsigned int uffs(unsigned int x)
 	do {	\
 		unsigned int tv = sdr_read32(reg);	\
 		tv &= ~(field); \
-		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+		tv |= ((val) << (ffs((unsigned int)field) - 1)); \
 		sdr_write32(reg, tv); \
 	} while (0)
 #define sdr_get_field(reg, field, val) \
 	do {	\
 		unsigned int tv = sdr_read32(reg);	\
-		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+		val = ((tv & (field)) >> (ffs((unsigned int)field) - 1)); \
 	} while (0)
 #define sdr_set_field_discrete(reg, field, val) \
 	do {	\
@@ -1485,34 +1042,15 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 #define sdc_send_cmd(cmd, arg) \
 	do { \
 		sdr_write32(SDC_ARG, (arg)); \
-		mb();/* ensure ARG register write is gone */ \
 		sdr_write32(SDC_CMD, (cmd)); \
 	} while (0)
 
 #define is_card_present(h)     (((struct msdc_host *)(h))->card_inserted)
 #define is_card_sdio(h)        (((struct msdc_host *)(h))->hw->sdio.irq.valid)
 
-#ifdef CONFIG_MMC_MTK_EMMC
-#define MTK_EMMC_ETT_TO_DRIVER	/* for eMMC off-line apply to driver */
-#endif
-
 #define MSDC_PREPARE_FLAG BIT(0)
 #define MSDC_ASYNC_FLAG BIT(1)
 #define MSDC_MMAP_FLAG BIT(2)
-
-#define UNSTUFF_BITS(resp, start, size)					\
-	({								\
-		const int __size = size;				\
-		const u32 __mask = (__size < 32 ? 1 << __size : 0) - 1;	\
-		const int __off = 3 - ((start) / 32);			\
-		const int __shft = (start) & 31;			\
-		u32 __res;						\
-									\
-		__res = resp[__off] >> __shft;				\
-		if (__size + __shft > 32)				\
-			__res |= resp[__off-1] << ((32 - __shft) % 32);	\
-		__res & __mask;						\
-	})
 
 #define msdc_retry(expr, retry, cnt, id) \
 	do { \
@@ -1533,7 +1071,6 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 	do { \
 		int retry = 3, cnt = 1000; \
 		sdr_set_bits(MSDC_CFG, MSDC_CFG_RST); \
-		mb(); /* ensure reset is written */ \
 		msdc_retry(sdr_read32(MSDC_CFG) & MSDC_CFG_RST, \
 				retry, cnt, id); \
 	} while (0)
@@ -1584,6 +1121,7 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 /* data timeout counter. 65536x40(75/77) /1048576 * 3(83/85) sclk. */
 #define DEFAULT_DTOC        (3)
 
+#define MTK_MMC_AUTOSUSPEND_DELAY	(500)
 #define CMD_TIMEOUT         (HZ/10 * 5)	/* 100ms x5 */
 #define DAT_TIMEOUT         (HZ    * 5)	/* 1000ms x5 */
 #define CLK_TIMEOUT         (HZ    * 5)	/* 5s    */
@@ -1610,10 +1148,6 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 #define MSDC_MAX_FREQ_DIV   (2)	/* 200 / (4 * 2) */
 #define MSDC_MAX_TIMEOUT_RETRY	(1)
 #define	MSDC_MAX_POWER_CYCLE	(3)
-
-#ifdef CONFIG_MMC_MTK_EMMC
-#define MTK_EMMC_ETT_TO_DRIVER	/* for eMMC off-line apply to driver */
-#endif
 
 #define MSDC_DEV_ATTR(name, fmt, val, fmt_type)				\
 static ssize_t msdc_attr_##name##_show(struct device *dev,	\
@@ -1716,11 +1250,6 @@ struct msdc_hw {
 	unsigned char rdata_edge;	/* read data latch edge */
 	unsigned char wdata_edge;	/* write data latch edge */
 
-	u32 max_pio;
-	u32 max_dma_polling;
-	u32 max_busy_time;
-	u32 max_poll_time;
-	u32 poll_sleep_base;
 	/* support up to 4 different sets of parameters */
 	struct msdc_pinctrl pin_ctl[4];
 
