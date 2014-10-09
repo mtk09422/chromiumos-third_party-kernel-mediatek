@@ -19,34 +19,10 @@ enum {
 #define MAX_BD_NUM          (1024)
 #define MAX_BD_PER_GPD      (MAX_BD_NUM)
 #define HOST_MAX_NUM        (5)
-#define CLK_SRC_MAX_NUM		(1)
-#define PERI_MSDC0_PDN      (MT_CG_PERI_MSDC20_1_PDN)
-#define PERI_MSDC1_PDN      (MT_CG_PERI_MSDC20_2_PDN)
-#define PERI_MSDC2_PDN      (MT_CG_PERI_MSDC30_1_PDN)
-#define PERI_MSDC3_PDN      (MT_CG_PERI_MSDC30_2_PDN)
-#define PERI_MSDC4_PDN      (MT_CG_PERI_MSDC30_3_PDN)
 
-#define CUST_EINT_POLARITY_LOW              0
-#define CUST_EINT_POLARITY_HIGH             1
-#define CUST_EINT_DEBOUNCE_DISABLE          0
-#define CUST_EINT_DEBOUNCE_ENABLE           1
-#define CUST_EINT_EDGE_SENSITIVE            0
-#define CUST_EINT_LEVEL_SENSITIVE           1
 #define SDIO_ERROR_BYPASS
 /* ///////////////////////////////////////////////////////////////////////// */
 
-
-#define EINT_MSDC2_INS_NUM              14
-#define EINT_MSDC2_INS_DEBOUNCE_CN      1
-#define EINT_MSDC2_INS_POLARITY         CUST_EINT_POLARITY_LOW
-#define EINT_MSDC2_INS_SENSITIVE        CUST_EINT_LEVEL_SENSITIVE
-#define EINT_MSDC2_INS_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_ENABLE
-
-#define EINT_MSDC1_INS_NUM              15
-#define EINT_MSDC1_INS_DEBOUNCE_CN      1
-#define EINT_MSDC1_INS_POLARITY         CUST_EINT_POLARITY_LOW
-#define EINT_MSDC1_INS_SENSITIVE        CUST_EINT_LEVEL_SENSITIVE
-#define EINT_MSDC1_INS_DEBOUNCE_EN      CUST_EINT_DEBOUNCE_ENABLE
 
 /* #define MSDC_CLKSRC_REG     (0xf100000C) */
 #define MSDC_DESENSE_REG	(0xf0007070)
@@ -725,22 +701,6 @@ enum {
 #define MSDC4_PUPD_CLK_SFT      (0)
 #define MSDC4_PUPD_CLK          (MSDC4_PUPD_CLK_MASK << MSDC4_PUPD_CLK_SFT)
 
-enum MSDC_POWER {
-
-	MSDC_VIO18_MC1 = 0,
-	MSDC_VIO18_MC2,
-	MSDC_VIO28_MC1,
-	MSDC_VIO28_MC2,
-	MSDC_VMC,
-	MSDC_VGP6,
-	MSDC_VEMC_3V3,
-};
-
-#define MSDC_POWER_MC1     MSDC_VEMC_3V3
-#define MSDC_POWER_MC2     MSDC_VMC
-
-
-
 /*--------------------------------------------------------------------------*/
 /* Descriptor Structure                                                     */
 /*--------------------------------------------------------------------------*/
@@ -896,17 +856,7 @@ struct msdc_host {
 	u8 reserved;
 	u8 app_cmd;		/* for app command */
 	u32 app_cmd_arg;
-	u64 starttime;
-	struct tune_counter t_counter;
-	u32 rwcmd_time_tune;
-	u32 read_time_tune;
-	u32 write_time_tune;
 	u8 autocmd;
-	u32 sw_timeout;
-	u32 power_cycle;	/* power cycle done in tuning flow */
-	bool power_cycle_enable;	/*Enable power cycle */
-	bool tune;
-	bool shutdown:1;
 	bool ddr;
 	struct msdc_saved_para saved_para;
 	int cd_pin;
@@ -919,16 +869,10 @@ struct msdc_host {
 	   when boot up phone with card insert */
 	bool block_bad_card;
 	struct dma_addr *latest_dma_address;
-	int latest_operation_type;
-	u32 host_mode;
 	u32 io_power_state;
 	u32 core_power_state;
 	unsigned long request_ts;
 	u8 ext_csd[512];
-	int offset;
-	bool offset_valid;
-	char partition_access;
-
 #ifdef MSDC_DMA_VIOLATION_DEBUG
 	int dma_debug;
 #endif
@@ -938,12 +882,6 @@ struct msdc_host {
 #endif
 	void (*power_control)(struct msdc_host *host, u32 on);
 	void (*power_switch)(struct msdc_host *host, u32 on);
-};
-
-enum {
-	OPER_TYPE_READ,
-	OPER_TYPE_WRITE,
-	OPER_TYPE_NUM
 };
 
 struct dma_addr {
@@ -996,27 +934,6 @@ struct dma_addr {
 		val = (val == field) ? 1 : 0;\
 	} while (0)
 
-static inline unsigned int sdr_clksrc(unsigned int id)
-{
-	/*
-	switch (id) {
-	case 0:
-		return PERI_MSDC0_PDN;
-	case 1:
-		return PERI_MSDC1_PDN;
-	case 2:
-		return PERI_MSDC2_PDN;
-	case 3:
-		return PERI_MSDC3_PDN;
-	case 4:
-		return PERI_MSDC4_PDN;
-	default:
-		pr_info("[SD?] Invalid host id = %d\n", id);
-		return PERI_MSDC0_PDN;
-	} */
-	return 0;
-}
-
 #define REQ_CMD_EIO  (0x1 << 0)
 #define REQ_CMD_TMO  (0x1 << 1)
 #define REQ_DAT_ERR  (0x1 << 2)
@@ -1052,27 +969,11 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 #define MSDC_ASYNC_FLAG BIT(1)
 #define MSDC_MMAP_FLAG BIT(2)
 
-#define msdc_retry(expr, retry, cnt, id) \
-	do { \
-		int backup = cnt; \
-		while (retry) { \
-			if (!(expr)) \
-				break; \
-			if (cnt-- == 0) { \
-				retry--; \
-				mdelay(1); \
-				cnt = backup; \
-			} \
-		} \
-		WARN_ON(retry == 0); \
-	} while (0)
-
 #define msdc_reset(id) \
 	do { \
-		int retry = 3, cnt = 1000; \
 		sdr_set_bits(MSDC_CFG, MSDC_CFG_RST); \
-		msdc_retry(sdr_read32(MSDC_CFG) & MSDC_CFG_RST, \
-				retry, cnt, id); \
+		while (sdr_read32(MSDC_CFG) & MSDC_CFG_RST) \
+			cpu_relax(); \
 	} while (0)
 
 #define msdc_clr_int() \
@@ -1083,10 +984,9 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 
 #define msdc_clr_fifo(id) \
 	do { \
-		int retry = 3, cnt = 1000; \
 		sdr_set_bits(MSDC_FIFOCS, MSDC_FIFOCS_CLR); \
-		msdc_retry(sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR, \
-				retry, cnt, id); \
+		while (sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR) \
+			cpu_relax(); \
 	} while (0)
 
 #define msdc_reset_hw(id) \
@@ -1105,7 +1005,6 @@ static inline unsigned int sdr_clksrc(unsigned int id)
 #define msdc_irq_restore(val) \
 	sdr_set_bits(MSDC_INTEN, val)
 
-#define HOST_MAX_MCLK       (200000000)
 #define HOST_MIN_MCLK       (260000)
 
 #define HOST_MAX_BLKSZ      (2048)
@@ -1254,7 +1153,6 @@ struct msdc_hw {
 	struct msdc_pinctrl pin_ctl[4];
 
 	unsigned long flags;	/* hardware capability flags */
-	unsigned long data_pins;	/* data pins */
 	unsigned long data_offset;	/* data address offset */
 	unsigned char dat0rddly;	/* read; range: 0~31 */
 	unsigned char dat1rddly;	/* read; range: 0~31 */
@@ -1268,7 +1166,6 @@ struct msdc_hw {
 	unsigned char cmdrrddly;	/* cmd; range: 0~31 */
 	unsigned char cmdrddly;	/* cmd; range: 0~31 */
 	unsigned char ckgen_msdc_dly_sel;
-	int shutdown_delay_ms;
 	int power_state;
 
 	struct sdio_config {

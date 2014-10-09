@@ -579,15 +579,23 @@
 				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
 				reg = <0 0x11230000 0 0x108>;
 				interrupts-extended = <&gic GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+				bus-width = <8>;
+				max-frequency = <50000000>;
+				cap-mmc-highspeed;
 				core-power-supply = <&mt6397_vemc_3v3_reg>;
 				io-power-supply = <&mt6397_vio18_reg>;
 				clocks = <&msdc20_1_ck>, <&msdcpll>;
 				clock-names = "src_clk", "pll_clk";
+				non-removable;
 			};
 			mmc1@11240000 {
 				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
 				reg = <0 0x11240000 0 0x108>;
 				interrupts-extended = <&gic GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>, <&pio 15 IRQ_TYPE_LEVEL_LOW>;
+				bus-width = <4>;
+				max-frequency = <50000000>;
+				cap-sd-highspeed;
+				sd-uhs-sdr25;
 				core-power-supply = <&mt6397_vmch_reg>;
 				io-power-supply = <&mt6397_vmc_reg>;
 				clocks = <&msdc20_2_ck>, <&msdcpll>;
