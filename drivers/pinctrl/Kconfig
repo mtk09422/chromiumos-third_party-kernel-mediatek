@@ -257,10 +257,6 @@ config PINCTRL_MSM8X74
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
 
-config PINCTRL_MT65XX
-	bool
-	select PINMUX
-	select GENERIC_PINCONF
 
 config PINCTRL_NOMADIK
 	bool "Nomadik pin controller driver"
@@ -404,6 +400,7 @@ source "drivers/pinctrl/sh-pfc/Kconfig"
 source "drivers/pinctrl/spear/Kconfig"
 source "drivers/pinctrl/sunxi/Kconfig"
 source "drivers/pinctrl/vt8500/Kconfig"
+source "drivers/pinctrl/mediatek/Kconfig"
 
 config PINCTRL_XWAY
 	bool

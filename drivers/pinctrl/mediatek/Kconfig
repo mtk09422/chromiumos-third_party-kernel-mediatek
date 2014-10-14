@@ -1,0 +1,16 @@
+if ARCH_MEDIATEK
+
+config PINCTRL_MTK_COMMON
+	bool
+	select PINMUX
+	select GENERIC_PINCONF
+
+config PINCTRL_MT8135
+	def_bool MACH_MT8135
+	select PINCTRL_MTK_COMMON
+
+config PINCTRL_MT6397
+	bool "Mediatek PMIC MT6397 Pinctrl Driver"
+	depends on PINCTRL_MT8135 && PINCTRL_MTK_COMMON
+
+endif
