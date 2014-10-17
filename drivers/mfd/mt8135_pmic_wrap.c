@@ -1,16 +1,16 @@
 /*
-* Copyright (c) 2014 MediaTek Inc.
-* Author: Flora.Fu <flora.fu@mediatek.com>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*/
+ * Copyright (c) 2014 MediaTek Inc.
+ * Author: Flora.Fu <flora.fu@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 #include <linux/fs.h>
 #include <linux/interrupt.h>
@@ -18,8 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/spinlock.h>
-#include <linux/syscore_ops.h>
+#include <linux/mutex.h>
 #include <linux/timer.h>
 #include <linux/types.h>
 #include <linux/sched.h>
@@ -27,69 +26,35 @@
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/reset.h>
+#include <linux/clk.h>
+#include <linux/regmap.h>
+#include "mt_pmic_wrap.h"
 #include "mt8135_pmic_wrap.h"
 
 #define PMIC_WRAP_DEVICE "mt8135-pwrap"
 
-struct pwrap_debug_data {
-	u64 wacs_time;
-	int operation;
-	int result;
-	u32 addr;
-	u32 data;
-};
-
-#define PWRAP_DEBUG_COUNT 50
-
-struct pmic_wrapper {
-	struct platform_device *pdev;
-	spinlock_t trace_lock;
-	spinlock_t lock;
-	bool suspended;
-	struct pwrap_debug_data pwrap_debug_data[PWRAP_DEBUG_COUNT];
-	u32 pwrap_debug_index;
-};
-
-static struct pmic_wrapper mt_wrp;
-static struct pmic_wrapper *g_wrp;
-
-/* for iomap */
-void __iomem *pwrap_base;
-static void __iomem *pwrap_bridge_base;
-static void __iomem *infracfg_base;
-static void __iomem *toprgu_base;
-static void __iomem *pericfg_base;
-
-#define PWRAP_EVENT_GPIO 47
-
-#define PWRAP_TIMEOUT
-#ifdef PWRAP_TIMEOUT
-static u64 _pwrap_get_current_time(void)
-{
-	return sched_clock();
-}
-
-static bool _pwrap_timeout_ns(u64 start_time_ns, u64 timeout_time_ns)
+static bool _pwrap_timeout_ns(struct pmic_wrapper *wrp,
+		u64 start_time_ns, u64 timeout_time_ns)
 {
 	u64 cur_time = 0;
 	u64 elapse_time = 0;
 
-	cur_time = _pwrap_get_current_time();	/* ns */
+	cur_time = sched_clock();
 	if (cur_time < start_time_ns) {
-		pr_err("%s: Timer overflow! start%lld cur timer%lld\n",
-			 __func__, start_time_ns, cur_time);
+		dev_err(&wrp->pdev->dev,
+			"%s: Timer overflow! start%lld cur timer%lld\n",
+			__func__, start_time_ns, cur_time);
 		start_time_ns = cur_time;
 		timeout_time_ns = 255 * 1000;	/* 255us */
-		pr_err("%s: reset timer! start%lld setting%lld\n",
-			 __func__, start_time_ns, timeout_time_ns);
+		dev_err(&wrp->pdev->dev,
+			"%s: reset timer! start%lld setting%lld\n",
+			__func__, start_time_ns, timeout_time_ns);
 	}
 	elapse_time = cur_time - start_time_ns;
 
-	/* check if timeout */
-	if (timeout_time_ns <= elapse_time) {
-		/* timeout */
+	if (timeout_time_ns <= elapse_time)
 		return true;
-	}
 
 	return false;
 }
@@ -99,229 +64,71 @@ static u64 _pwrap_time2ns(u64 time_us)
 	return time_us * 1000;
 }
 
-#else
-static u64 _pwrap_get_current_time(void)
-{
-	return 0;
-}
-
-static bool _pwrap_timeout_ns(u64 start_time_ns, u64 elapse_time)
-{
-	return false;
-}
-
-static u64 _pwrap_time2ns(u64 time_us)
-{
-	return 0;
-}
-
-
-#endif
-
-static int pwrap_wacs2_locked(bool write, bool dochk, u32 adr, u32 *data);
-static void pwrap_trace_wacs2(struct pmic_wrapper *wrp);
-
-static inline int pwrap_read_locked(u32 adr, u32 *rdata)
-{
-	return pwrap_wacs2_locked(PWRAP_READ, false, adr, rdata);
-}
-
-static inline int pwrap_write_locked(u32 adr, u32 wdata)
-{
-	u32 data = wdata;
-
-	return pwrap_wacs2_locked(PWRAP_WRITE, false, adr, &data);
-}
-
-static void pwrap_trace(struct pmic_wrapper *wrp, u64 wacs_time,
-			int result, bool write, u32 addr, u32 data)
-{
-	struct pwrap_debug_data *dbg;
-	u32 index;
-	unsigned long flags;
-
-	spin_lock_irqsave(&wrp->trace_lock, flags);
-	index = wrp->pwrap_debug_index;
-	dbg = &wrp->pwrap_debug_data[index];
-	dbg->operation = write ? PWRAP_WRITE : PWRAP_READ;
-	dbg->wacs_time = wacs_time;
-	dbg->result = result;
-	dbg->addr = addr;
-	dbg->data = data;
-	index++;
-	if (index == PWRAP_DEBUG_COUNT)
-		index = 0;
-	wrp->pwrap_debug_index = index;
-	spin_unlock_irqrestore(&wrp->trace_lock, flags);
-}
-
-static void pwrap_dump_all_register(struct pmic_wrapper *wrp)
-{
-	u32 i = 0;
-	u32 reg_addr = 0;
-	u32 reg_value = 0;
-
-	pr_info("dump pwrap register\n");
-	for (i = 0; i < 90; i++) {
-		reg_addr = (u32)(pwrap_base + i * 4);
-		reg_value = WRAP_RD32(reg_addr);
-		pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-	}
-	pr_info("dump peri_pwrap register\n");
-	for (i = 0; i < 25; i++) {
-		reg_addr = (u32)(pwrap_bridge_base + i * 4);
-		reg_value = WRAP_RD32(reg_addr);
-		pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-	}
-	pr_info("dump dewrap register\n");
-	for (i = 0; i < 25; i++) {
-		reg_addr = (DEW_BASE + i * 2);
-		pwrap_read(reg_addr, &reg_value);
-		pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-	}
-
-}
-
-static void pwrap_dump_ap_register(void)
-{
-	u32 i = 0;
-	u32 reg_addr = 0;
-	u32 reg_value = 0;
-
-	pr_info("dump pwrap register\n");
-	for (i = 0; i < 90; i++) {
-		reg_addr = (u32)(pwrap_base + i * 4);
-		reg_value = WRAP_RD32(reg_addr);
-		pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-	}
-	pr_info("dump peri_pwrap register\n");
-	for (i = 0; i < 25; i++) {
-		reg_addr = (u32)(pwrap_bridge_base + i * 4);
-		reg_value = WRAP_RD32(reg_addr);
-		pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-	}
-}
-
-typedef bool(*loop_condition_fp) (u32);	/* define a function pointer */
-
-static inline bool wait_for_fsm_idle(u32 x)
+static inline bool is_fsm_idle(u32 x)
 {
 	return GET_WACS0_FSM(x) != WACS_FSM_IDLE;
 }
 
-static inline bool wait_for_fsm_vldclr(u32 x)
+static inline bool is_fsm_vldclr(u32 x)
 {
 	return GET_WACS0_FSM(x) != WACS_FSM_WFVLDCLR;
 }
 
-static inline bool wait_for_sync(u32 x)
+static inline bool is_sync_idle(u32 x)
 {
 	return GET_SYNC_IDLE0(x) != WACS_SYNC_IDLE;
 }
 
-static inline bool wait_for_idle_and_sync(u32 x)
+static inline bool is_fsm_idle_and_sync_idle(u32 x)
 {
 	return (GET_WACS0_FSM(x) != WACS_FSM_IDLE) ||
 	 (GET_SYNC_IDLE0(x) != WACS_SYNC_IDLE);
 }
 
-static inline bool wait_for_wrap_idle(u32 x)
-{
-	return (GET_WRAP_FSM(x) != 0x0) || (GET_WRAP_CH_DLE_RESTCNT(x) != 0x0);
-}
-
-static inline bool wait_for_wrap_state_idle(u32 x)
-{
-	return GET_WRAP_AG_DLE_RESTCNT(x) != 0;
-}
-
-static inline bool wait_for_man_idle_and_noreq(u32 x)
-{
-	return (GET_MAN_REQ(x) != MAN_FSM_NO_REQ) ||
-	(GET_MAN_FSM(x) != MAN_FSM_IDLE);
-}
-
-static inline bool wait_for_man_vldclr(u32 x)
-{
-	return GET_MAN_FSM(x) != MAN_FSM_WFVLDCLR;
-}
-
-static inline bool wait_for_cipher_ready(u32 x)
+static inline bool is_cipher_ready(u32 x)
 {
 	return x != 1;
 }
 
-static inline bool wait_for_stdupd_idle(u32 x)
-{
-	return GET_STAUPD_FSM(x) != 0x0;
-}
-
-static inline int wait_for_state_ready_init(loop_condition_fp fp,
-					    u32 timeout_us, void *wacs_register,
-							 u32 *read_reg)
-{
-	u32 reg_rdata = 0x0;
-	u64 start_time_ns = 0, timeout_ns = 0;
-
-	start_time_ns = _pwrap_get_current_time();
-	timeout_ns = _pwrap_time2ns(timeout_us);
-
-	do {
-		reg_rdata = WRAP_RD32(wacs_register);
-
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
-			pr_err("timeout wait_for_state_ready_init\n");
-			return -ETIMEDOUT;
-		}
-	} while (fp(reg_rdata));	/* IDLE State */
-	if (read_reg)
-		*read_reg = reg_rdata;
-
-	return 0;
-}
-
-static inline int wait_for_state_idle(loop_condition_fp fp, u32 timeout_us,
-		void *wacs_register, void *wacs_vldclr_register,
-		u32 *read_reg)
+static inline int wait_for_state_ready(struct pmic_wrapper *wrp,
+		bool (*fp)(u32), u32 timeout_us, void *wacs_register,
+		void *wacs_vldclr_register, u32 *read_reg)
 {
 	u64 start_time_ns = 0, timeout_ns = 0;
 	u32 reg_rdata;
 
-	start_time_ns = _pwrap_get_current_time();
+	start_time_ns = sched_clock();
 	timeout_ns = _pwrap_time2ns(timeout_us);
 
-	reg_rdata = WRAP_RD32(wacs_register);
-	if (GET_INIT_DONE0(reg_rdata) != WACS_INIT_DONE) {
-		pr_err("initialization isn't finished\n");
-		return -ENODEV;
-	}
 	do {
-		/* if last read command timeout,clear vldclr bit */
-		/* read command state machine:
-		   FSM_REQ-->wfdle-->WFVLDCLR;write:FSM_REQ-->idle */
-		switch (GET_WACS0_FSM(reg_rdata)) {
-		case WACS_FSM_WFVLDCLR:
-			WRAP_WR32(wacs_vldclr_register, 1);
-			pr_err("WACS_FSM = PMIC_WRAP_WACS_VLDCLR\n");
-			break;
-		case WACS_FSM_WFDLE:
-			pr_err("WACS_FSM = WACS_FSM_WFDLE\n");
-			break;
-		case WACS_FSM_REQ:
-			pr_err("WACS_FSM = WACS_FSM_REQ\n");
-			break;
-		default:
-			break;
+		reg_rdata = readl(wacs_register);
+		if ((wrp->is_done) && (NULL != wacs_vldclr_register)) {
+			/*
+			 * if last read command timeout,clear vldclr bit
+			 * read command state machine:
+			 * FSM_REQ-->wfdle-->WFVLDCLR;write:FSM_REQ-->idle
+			 */
+			switch (GET_WACS0_FSM(reg_rdata)) {
+			case WACS_FSM_WFVLDCLR:
+				writel(1, wacs_vldclr_register);
+				dev_err(&wrp->pdev->dev,
+					"WACS_FSM = PMIC_WRAP_WACS_VLDCLR\n");
+				break;
+			case WACS_FSM_WFDLE:
+				dev_err(&wrp->pdev->dev, "WACS_FSM = WACS_FSM_WFDLE\n");
+				break;
+			case WACS_FSM_REQ:
+				dev_err(&wrp->pdev->dev, "WACS_FSM = WACS_FSM_REQ\n");
+				break;
+			default:
+				break;
+			}
 		}
-
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
-			pr_err("timeout when waiting for idle\n");
-			pwrap_dump_ap_register();
-			pwrap_trace_wacs2(g_wrp);
+		if (_pwrap_timeout_ns(wrp, start_time_ns, timeout_ns)) {
+			dev_err(&wrp->pdev->dev, "timeout when waiting for idle\n");
 			return -ETIMEDOUT;
 		}
-		reg_rdata = WRAP_RD32(wacs_register);
-	} while (fp(reg_rdata));	/* IDLE State */
+	} while (fp(reg_rdata));
 
 	if (read_reg)
 		*read_reg = reg_rdata;
@@ -329,256 +136,216 @@ static inline int wait_for_state_idle(loop_condition_fp fp, u32 timeout_us,
 	return 0;
 }
 
-static inline int wait_for_state_ready(loop_condition_fp fp,
-		u32 timeout_us, void *wacs_register,
-		u32 *read_reg)
+static int pwrap_write(struct pmic_wrapper *wrp, u32 adr, u32 wdata)
 {
-	u64 start_time_ns = 0, timeout_ns = 0;
-	u32 reg_rdata;
-
-	start_time_ns = _pwrap_get_current_time();
-	timeout_ns = _pwrap_time2ns(timeout_us);
-
-	reg_rdata = WRAP_RD32(wacs_register);
-
-	if (GET_INIT_DONE0(reg_rdata) != WACS_INIT_DONE) {
-		pr_err("initialization isn't finished\n");
-		return -ENODEV;
-	}
-	do {
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
-			pr_err("timeout when waiting for idle\n");
-			pwrap_dump_ap_register();
-			return -ETIMEDOUT;
-		}
-		reg_rdata = WRAP_RD32(wacs_register);
-	} while (fp(reg_rdata));	/* IDLE State */
-
-	if (read_reg)
-		*read_reg = reg_rdata;
-
-	return 0;
-}
-
-static int pwrap_wacs2_locked(bool write, bool dochk, u32 adr, u32 *data)
-{
-	u32 reg_rdata = 0x0;
-	u32 wacs_write = 0x0;
-	u32 wacs_adr = 0x0;
-	u32 wacs_cmd = 0x0;
+	u32 wacs_cmd;
 	int ret;
-	u32 wdata;
-	/* PWRAPFUC(); */
-	/* Check argument validation */
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	if ((adr & ~(0xfffe)) != 0 || !data)
-		return -EINVAL;
-
-	/* Check IDLE */
-	if (dochk)
-		ret = wait_for_state_idle(wait_for_fsm_idle,
-			TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA,
-			PMIC_WRAP_WACS2_VLDCLR, 0);
-	else
-		ret = wait_for_state_ready_init(wait_for_fsm_idle,
-			TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA, 0);
-	if (ret < 0) {
-		pr_err("%s write command fail, ret=%d\n", __func__, ret);
+	ret = wait_for_state_ready(wrp, is_fsm_idle,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA,
+		pwrap_base + PMIC_WRAP_WACS2_VLDCLR, 0);
+	if (ret) {
+		dev_err(&wrp->pdev->dev, "%s write command fail, ret=%d\n",
+			__func__, ret);
 		return ret;
 	}
 
-	if (write) {
-		wdata = *data & 0xFFFF;
-		wacs_write = 1 << 31;
-	} else
-		wdata = 0;
-	wacs_adr = (adr >> 1) << 16;
-	wacs_cmd = wacs_write | wacs_adr | wdata;
-	WRAP_WR32(PMIC_WRAP_WACS2_CMD, wacs_cmd);
+	wacs_cmd = (1 << 31) | ((adr >> 1) << 16) | wdata;
+	writel(wacs_cmd, pwrap_base + PMIC_WRAP_WACS2_CMD);
 
-	if (!write) {
-		u32 rval;
-		/* wait for read data ready */
-		ret = wait_for_state_ready_init(wait_for_fsm_vldclr,
-				TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA,
-				&reg_rdata);
-		if (ret < 0) {
-			pr_err("%s read fail, ret=%d\n", __func__, ret);
-			return ret;
-		}
-		rval = GET_WACS0_RDATA(reg_rdata);
-		WRAP_WR32(PMIC_WRAP_WACS2_VLDCLR, 1);
-		*data = rval;
-	}
 	return 0;
 }
 
-struct pwrap_rwspin_record {
-	u32 addr;
-	bool write;
-	bool spin_lock;
-};
-
-static struct pwrap_rwspin_record rwspin_record;
-
-void pwrap_dump_rwspin_user(void)
+static int pwrap_read(struct pmic_wrapper *wrp, u32 adr, u32 *rdata)
 {
-	pr_err("[Power/PWRAP] [pwrap_dump_rwspin_user]R/W(%d)[%d] 0x%x\n",
-	rwspin_record.write, rwspin_record.spin_lock, rwspin_record.addr);
+	u32 reg_rdata;
+	u32 wacs_cmd;
+	int ret;
+	u32 rval;
+	void __iomem *pwrap_base = wrp->pwrap_base;
+
+	if (!rdata)
+		return -EINVAL;
+
+	ret = wait_for_state_ready(wrp, is_fsm_idle,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA,
+		pwrap_base + PMIC_WRAP_WACS2_VLDCLR, 0);
+	if (ret) {
+		dev_err(&wrp->pdev->dev, "%s read command fail, ret=%d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	wacs_cmd = (adr >> 1) << 16;
+	writel(wacs_cmd, pwrap_base + PMIC_WRAP_WACS2_CMD);
+
+	ret = wait_for_state_ready(wrp, is_fsm_vldclr,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA, NULL, &reg_rdata);
+	if (ret) {
+		dev_err(&wrp->pdev->dev, "%s read fail, ret=%d\n",
+			__func__, ret);
+		return ret;
+	}
+	rval = GET_WACS0_RDATA(reg_rdata);
+	writel(1, pwrap_base + PMIC_WRAP_WACS2_VLDCLR);
+	*rdata = rval;
+
+	return 0;
 }
 
-static int pwrap_wacs2_internal(struct pmic_wrapper *wrp, bool write,
-			u32 adr, u32 *data)
+static int pwrap_regmap_read(void *context, u32 adr, u32 *rdata)
 {
-	int ret = 0;
-	u64 wrap_access_time = 0;
-	unsigned long flags = 0;
+	struct pmic_wrapper *wrp = context;
 
-	wrap_access_time = _pwrap_get_current_time();
-	spin_lock_irqsave(&wrp->lock, flags);
-	rwspin_record.addr = adr;
-	rwspin_record.write = write;
-	rwspin_record.spin_lock = true;
-	if (wrp->suspended) {
-		pr_err("PMIC WRAPPER device in in suspend.");
-		ret = -EAGAIN;
-	}
-	if (!ret)
-		ret = pwrap_wacs2_locked(write, true, adr, data);
-	rwspin_record.spin_lock = false;
-	spin_unlock_irqrestore(&wrp->lock, flags);
+	if (!wrp->is_done)
+		return -ENODEV;
 
-	pwrap_trace(wrp, wrap_access_time, ret, write, adr, *data);
+	return pwrap_read(wrp, adr, rdata);
+}
 
-	/* EINVAL is indication of invalid arguments,
-	 * not real transaction failure. Do not  */
-	WARN_ON(ret < 0 && ret != -EINVAL);
+static int pwrap_regmap_write(void *context, u32 adr, u32 wdata)
+{
+	struct pmic_wrapper *wrp = context;
 
-	return ret;
+	if (!wrp->is_done)
+		return -ENODEV;
+
+	return pwrap_write(wrp, adr, wdata);
 }
 
 static int pwrap_init_dio(struct pmic_wrapper *wrp, u32 dio_en)
 {
-	u32 arb_en_backup = 0x0;
-	u32 rdata = 0x0;
+	u32 arb_en_backup;
+	u32 rdata;
 	int ret;
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	/* PWRAPFUC(); */
-	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x8);	/* only WACS2 */
-	pwrap_write_locked(DEW_DIO_EN, dio_en);
+	arb_en_backup = readl(pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(WACS2, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	pwrap_write(wrp, DEW_DIO_EN, dio_en);
 
 	/* Check IDLE & INIT_DONE in advance */
-	ret =
-	    wait_for_state_ready_init(wait_for_idle_and_sync, TIMEOUT_WAIT_IDLE,
-				      PMIC_WRAP_WACS2_RDATA, 0);
-	if (ret < 0) {
-		pr_err("pwrap_init_dio fail,ret=%d\n", ret);
+	ret = wait_for_state_ready(wrp, is_fsm_idle_and_sync_idle,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA, NULL, 0);
+	if (ret) {
+		dev_err(&wrp->pdev->dev, "pwrap_init_dio fail, ret=%d\n", ret);
 		return ret;
 	}
-	WRAP_WR32(PMIC_WRAP_DIO_EN, dio_en);
+	writel(dio_en, pwrap_base + PMIC_WRAP_DIO_EN);
+
 	/* Read Test */
-	pwrap_read_locked(DEW_READ_TEST, &rdata);
+	pwrap_read(wrp, DEW_READ_TEST, &rdata);
 	if (rdata != DEFAULT_VALUE_READ_TEST) {
-		pr_err("[Dio_mode][Read Test]Fail dio_en=%x,rdata=%x\n",
+		dev_err(&wrp->pdev->dev,
+			"[Dio_mode][Read Test]Fail dio_en=%x, rdata=%x\n",
 			dio_en, rdata);
 		return -EFAULT;
 	}
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
+
+	writel(arb_en_backup, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
 	return 0;
 }
 
 static int pwrap_init_cipher(struct pmic_wrapper *wrp)
 {
 	int ret;
-	u32 arb_en_backup = 0;
-	u32 rdata = 0;
+	u32 arb_en_backup;
+	u32 rdata;
 	u32 start_time_ns = 0, timeout_ns = 0;
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	/* PWRAPFUC(); */
-	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
+	arb_en_backup = readl(pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
 
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x8);	/* only WACS0 */
-
-	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 1);
-	WRAP_WR32(PMIC_WRAP_CIPHER_SWRST, 0);
-	WRAP_WR32(PMIC_WRAP_CIPHER_KEY_SEL, 1);
-	WRAP_WR32(PMIC_WRAP_CIPHER_IV_SEL, 2);
-	WRAP_WR32(PMIC_WRAP_CIPHER_LOAD, 1);
-	WRAP_WR32(PMIC_WRAP_CIPHER_START, 1);
+	writel(WACS2, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(1, pwrap_base + PMIC_WRAP_CIPHER_SWRST);
+	writel(0, pwrap_base + PMIC_WRAP_CIPHER_SWRST);
+	writel(1, pwrap_base + PMIC_WRAP_CIPHER_KEY_SEL);
+	writel(2, pwrap_base + PMIC_WRAP_CIPHER_IV_SEL);
+	writel(1, pwrap_base + PMIC_WRAP_CIPHER_LOAD);
+	writel(1, pwrap_base + PMIC_WRAP_CIPHER_START);
 
 	/* Config CIPHER @ PMIC */
-	pwrap_write_locked(DEW_CIPHER_SWRST, 0x1);
-	pwrap_write_locked(DEW_CIPHER_SWRST, 0x0);
-	pwrap_write_locked(DEW_CIPHER_KEY_SEL, 0x1);
-	pwrap_write_locked(DEW_CIPHER_IV_SEL, 0x2);
-	pwrap_write_locked(DEW_CIPHER_LOAD, 0x1);
-	pwrap_write_locked(DEW_CIPHER_START, 0x1);
+	pwrap_write(wrp, DEW_CIPHER_SWRST, 0x1);
+	pwrap_write(wrp, DEW_CIPHER_SWRST, 0x0);
+	pwrap_write(wrp, DEW_CIPHER_KEY_SEL, 0x1);
+	pwrap_write(wrp, DEW_CIPHER_IV_SEL, 0x2);
+	pwrap_write(wrp, DEW_CIPHER_LOAD, 0x1);
+	pwrap_write(wrp, DEW_CIPHER_START, 0x1);
 
 	/* wait for cipher data ready@AP */
-	ret =
-	    wait_for_state_ready_init(wait_for_cipher_ready, TIMEOUT_WAIT_IDLE,
-				      PMIC_WRAP_CIPHER_RDY, 0);
-	if (ret < 0) {
-		pr_err("wait for cipher data ready@AP fail,ret=%d\n", ret);
+	ret = wait_for_state_ready(wrp, is_cipher_ready,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_CIPHER_RDY, NULL, 0);
+	if (ret) {
+		dev_err(&wrp->pdev->dev,
+			"wait for cipher data ready@AP fail, ret=%d\n", ret);
 		return ret;
 	}
+
 	/* wait for cipher data ready@PMIC */
-	start_time_ns = _pwrap_get_current_time();
+	start_time_ns = sched_clock();
 	timeout_ns = _pwrap_time2ns(0xFFFFFF);
 	do {
-		pwrap_read_locked(DEW_CIPHER_RDY, &rdata);
-		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
-			pr_err("wait for cipher data ready@PMIC\n");
+		pwrap_read(wrp, DEW_CIPHER_RDY, &rdata);
+		if (_pwrap_timeout_ns(wrp, start_time_ns, timeout_ns)) {
+			dev_err(&wrp->pdev->dev, "wait for cipher data ready@PMIC\n");
 			return -ETIMEDOUT;
 		}
-	} while (rdata != 0x1);	/* cipher_ready */
+	} while (rdata != 0x1);
 
-	pwrap_write_locked(DEW_CIPHER_MODE, 0x1);
 	/* wait for cipher mode idle */
-	ret =
-	    wait_for_state_ready_init(wait_for_idle_and_sync, TIMEOUT_WAIT_IDLE,
-				      PMIC_WRAP_WACS2_RDATA, 0);
-	if (ret < 0) {
-		pr_err("wait for cipher mode idle fail,ret=%d\n", ret);
+	pwrap_write(wrp, DEW_CIPHER_MODE, 0x1);
+	ret = wait_for_state_ready(wrp, is_fsm_idle_and_sync_idle,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA, NULL, 0);
+	if (ret) {
+		dev_err(&wrp->pdev->dev,
+			"wait for cipher mode idle fail, ret=%d\n", ret);
 		return ret;
 	}
-	WRAP_WR32(PMIC_WRAP_CIPHER_MODE, 1);
+	writel(1, pwrap_base + PMIC_WRAP_CIPHER_MODE);
 
 	/* Read Test */
-	pwrap_read_locked(DEW_READ_TEST, &rdata);
+	pwrap_read(wrp, DEW_READ_TEST, &rdata);
 	if (rdata != DEFAULT_VALUE_READ_TEST) {
-		pr_err("pwrap_init_cipher, error code=%x, rdata=%x\n",
+		dev_err(&wrp->pdev->dev,
+			"pwrap_init_cipher, error code=%x, rdata=%x\n",
 			1, rdata);
 		return -EFAULT;
 	}
 
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
+	writel(arb_en_backup, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
 	return 0;
 }
 
 static int pwrap_init_sidly(struct pmic_wrapper *wrp)
 {
-	u32 arb_en_backup = 0;
-	u32 rdata = 0;
+	u32 arb_en_backup;
+	u32 rdata;
 	u32 ind = 0;
-	u32 result = 0;
+	u32 result;
 	bool failed = false;
-	/* PWRAPFUC(); */
-	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x8);	/* only WACS2 */
+	void __iomem *pwrap_base = wrp->pwrap_base;
+
+	arb_en_backup = readl(pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(WACS2, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
 
 	/* Scan all SIDLY by Read Test */
 	result = 0;
 	for (ind = 0; ind < 4; ind++) {
-		WRAP_WR32(PMIC_WRAP_SIDLY, ind);
-		pwrap_read_locked(DEW_READ_TEST, &rdata);
+		writel(ind, wrp->pwrap_base + PMIC_WRAP_SIDLY);
+		pwrap_read(wrp, DEW_READ_TEST, &rdata);
 		if (rdata == DEFAULT_VALUE_READ_TEST) {
-			pr_info("[Read Test] pass,SIDLY=%x rdata=%x\n",
+			dev_err(&wrp->pdev->dev, "[Read Test] pass,SIDLY=%x rdata=%x\n",
 				ind, rdata);
 			result |= (0x1 << ind);
 		} else
-			pr_err("[Read Test] fail,SIDLY=%x,rdata=%x\n",
+			dev_err(&wrp->pdev->dev, "[Read Test] fail,SIDLY=%x,rdata=%x\n",
 				ind, rdata);
 	}
 
@@ -586,714 +353,427 @@ static int pwrap_init_sidly(struct pmic_wrapper *wrp)
 	switch (result) {
 		/* Only 1 pass, choose it */
 	case 0x1:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 0);
+		writel(0, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0x2:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 1);
+		writel(1, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0x4:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 2);
+		writel(2, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0x8:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 3);
+		writel(3, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 
 		/* two pass, choose the one on SIDLY boundary */
 	case 0x3:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 0);
+		writel(0, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0x6:
 		/* no boundary, choose smaller one */
-		WRAP_WR32(PMIC_WRAP_SIDLY, 1);
+		writel(1, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0xc:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 3);
+		writel(3, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 
 		/* three pass, choose the middle one */
 	case 0x7:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 1);
+		writel(1, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 	case 0xe:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 2);
+		writel(2, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 		/* four pass, choose the smaller middle one */
 	case 0xf:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 1);
+		writel(1, pwrap_base + PMIC_WRAP_SIDLY);
 		break;
 
 		/* pass range not continuous, should not happen */
 	default:
-		WRAP_WR32(PMIC_WRAP_SIDLY, 0);
+		writel(0, pwrap_base + PMIC_WRAP_SIDLY);
 		failed = true;
 		break;
 	}
 
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
+	writel(arb_en_backup, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
 	if (!failed)
 		return 0;
-	else {
-		pr_err("error,pwrap_init_sidly fail,result=%x\n", result);
-		return -EIO;
-	}
+
+	dev_err(&wrp->pdev->dev,
+		"error,pwrap_init_sidly fail, result=%x\n", result);
+	return -EIO;
 }
 
-int pwrap_reset_spislv(struct pmic_wrapper *wrp)
+static int pwrap_reset_spislv(struct pmic_wrapper *wrp)
 {
 	int ret;
-	/* PWRAPFUC(); */
-	/* This driver does not using _pwrap_switch_mux */
-	/* because the remaining requests are expected to fail anyway */
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0);
-	WRAP_WR32(PMIC_WRAP_WRAP_EN, 0);
-	WRAP_WR32(PMIC_WRAP_MUX_SEL, 1);
-	WRAP_WR32(PMIC_WRAP_MAN_EN, 1);
-	WRAP_WR32(PMIC_WRAP_DIO_EN, 0);
+	writel(0, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(0, pwrap_base + PMIC_WRAP_WRAP_EN);
+	writel(1, pwrap_base + PMIC_WRAP_MUX_SEL);
+	writel(1, pwrap_base + PMIC_WRAP_MAN_EN);
+	writel(0, pwrap_base + PMIC_WRAP_DIO_EN);
 
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_CSL << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_CSH << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
-	WRAP_WR32(PMIC_WRAP_MAN_CMD, (OP_WR << 13) | (OP_OUTS << 8));
+	writel((OP_WR << 13) | (OP_CSL << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_OUTS << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_CSH << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_OUTS << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_OUTS << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_OUTS << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
+	writel((OP_WR << 13) | (OP_OUTS << 8),
+		pwrap_base + PMIC_WRAP_MAN_CMD);
 
-	ret = wait_for_state_ready_init(wait_for_sync, TIMEOUT_WAIT_IDLE,
-		PMIC_WRAP_WACS2_RDATA, 0);
+	ret = wait_for_state_ready(wrp, is_sync_idle,
+		TIMEOUT_WAIT_IDLE,
+		pwrap_base + PMIC_WRAP_WACS2_RDATA, NULL, 0);
 	if (ret)
-		pr_err("pwrap_reset_spislv fail; ret=%d\n", ret);
+		dev_err(&wrp->pdev->dev,
+			"pwrap_reset_spislv fail, ret=%d\n", ret);
 
-	WRAP_WR32(PMIC_WRAP_MAN_EN, 0);
-	WRAP_WR32(PMIC_WRAP_MUX_SEL, 0);
+	writel(0, pwrap_base + PMIC_WRAP_MAN_EN);
+	writel(0, pwrap_base + PMIC_WRAP_MUX_SEL);
 
 	return ret;
 }
 
 static int pwrap_init_reg_clock(struct pmic_wrapper *wrp, u32 regck_sel)
 {
-	u32 wdata = 0;
-	u32 rdata = 0;
+	u32 wdata;
+	u32 rdata;
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	/* Set reg clk freq */
-	pwrap_read_locked(PMIC_TOP_CKCON2, &rdata);
+	pwrap_read(wrp, PMIC_TOP_CKCON2, &rdata);
 
 	if (regck_sel == 1)
 		wdata = (rdata & (~(0x3 << 10))) | (0x1 << 10);
 	else
 		wdata = rdata & (~(0x3 << 10));
 
-	pwrap_write_locked(PMIC_TOP_CKCON2, wdata);
-	pwrap_read_locked(PMIC_TOP_CKCON2, &rdata);
+	pwrap_write(wrp, PMIC_TOP_CKCON2, wdata);
+	pwrap_read(wrp, PMIC_TOP_CKCON2, &rdata);
 	if (rdata != wdata) {
-		pr_err("PMIC_TOP_CKCON2 Write [15]=1 Fail, rdata=%x\n",
-				rdata);
+		dev_err(&wrp->pdev->dev,
+			"PMIC_TOP_CKCON2 Write [15]=1 Fail, rdata=%x\n",
+			rdata);
 		return -EFAULT;
 	}
-	/* Config SPI Waveform according to reg clk */
-	if (regck_sel == 1) {	/* 18MHz */
-		WRAP_WR32(PMIC_WRAP_CSHEXT, 0xc);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x4);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0xc);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_START, 0x0);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_END, 0x0);
-	} else if (regck_sel == 2) {	/* 36MHz */
-		WRAP_WR32(PMIC_WRAP_CSHEXT, 0x4);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0x0);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0x4);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_START, 0x0);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_END, 0x0);
-	} else {		/* Safe mode */
-		WRAP_WR32(PMIC_WRAP_CSHEXT, 0xf);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_WRITE, 0xf);
-		WRAP_WR32(PMIC_WRAP_CSHEXT_READ, 0xf);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_START, 0xf);
-		WRAP_WR32(PMIC_WRAP_CSLEXT_END, 0xf);
+
+	if (regck_sel == 1) {
+		writel(0xc, pwrap_base + PMIC_WRAP_CSHEXT);
+		writel(0x4, pwrap_base + PMIC_WRAP_CSHEXT_WRITE);
+		writel(0xc, pwrap_base + PMIC_WRAP_CSHEXT_READ);
+		writel(0x0, pwrap_base + PMIC_WRAP_CSLEXT_START);
+		writel(0x0, pwrap_base + PMIC_WRAP_CSLEXT_END);
+	} else if (regck_sel == 2) {
+		writel(0x4, pwrap_base + PMIC_WRAP_CSHEXT);
+		writel(0x0, pwrap_base + PMIC_WRAP_CSHEXT_WRITE);
+		writel(0x4, pwrap_base + PMIC_WRAP_CSHEXT_READ);
+		writel(0x0, pwrap_base + PMIC_WRAP_CSLEXT_START);
+		writel(0x0, pwrap_base + PMIC_WRAP_CSLEXT_END);
+	} else {
+		writel(0xf, pwrap_base + PMIC_WRAP_CSHEXT);
+		writel(0xf, pwrap_base + PMIC_WRAP_CSHEXT_WRITE);
+		writel(0xf, pwrap_base + PMIC_WRAP_CSHEXT_READ);
+		writel(0xf, pwrap_base + PMIC_WRAP_CSLEXT_START);
+		writel(0xf, pwrap_base + PMIC_WRAP_CSLEXT_END);
 	}
 
 	return 0;
 }
 
-/*Interrupt handler function*/
 static irqreturn_t mt_pmic_wrap_interrupt(int irqno, void *dev_id)
 {
-	unsigned long flags;
 	struct pmic_wrapper *wrp = dev_id;
-	u32 reg_int_flg = 0;
-	u32 reg_value = 0;
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	reg_int_flg = WRAP_RD32(PMIC_WRAP_INT_FLG);
-	pr_err("device failed; dump INT_FALG = 0x%x\n", reg_int_flg);
-	pwrap_read(DEW_EVENT_FLAG, &reg_value);
-	pr_info("DEW_EVENT_FLAG = 0x%04X\n", reg_value);
-
-	pwrap_dump_all_register(wrp);
-	pwrap_trace_wacs2(wrp);
-
-	spin_lock_irqsave(&wrp->lock, flags);
-
-	/* raise the priority of WACS2 for AP */
-	WRAP_WR32(PMIC_WRAP_HARB_HPRIO, 1 << 3);
-	/* clear interrupt flag */
-	WRAP_WR32(PMIC_WRAP_INT_CLR, 0xffffffff);
-
-	/* disable interrupt: empty event and force BUG_ON */
-	if ((reg_int_flg & PWRAP_INT_EVENT_EMPTY) != 0) {
-		WRAP_WR32(PMIC_WRAP_INT_EN,
-		~(PWRAP_INT_DEBUG | PWRAP_INT_SIG_ERR | PWRAP_INT_EVENT_EMPTY));
-		pr_err("SET PMIC_WRAP_INT_EN: 0x%x\n",
-			WRAP_RD32(PMIC_WRAP_INT_EN));
-		BUG_ON(1);
-	}
-	spin_unlock_irqrestore(&wrp->lock, flags);
-
+	mutex_lock(&wrp->lock);
+	writel(WACS2, pwrap_base + PMIC_WRAP_HARB_HPRIO);
+	writel(0xffffffff, pwrap_base + PMIC_WRAP_INT_CLR);
+	mutex_unlock(&wrp->lock);
 	WARN_ON(1);
 
 	return IRQ_HANDLED;
 }
 
-int pwrap_init(struct pmic_wrapper *wrp)
+static int pwrap_reset(struct pmic_wrapper *wrp)
 {
-	int ret = -EFAULT;
-	u32 rdata = 0x0;
-	unsigned long flags;
-	/* u32 timeout=0; */
+	struct reset_control *rstc_infracfg, *rstc_pericfg;
 
-	/* Reset related modules */
-	/* PMIC_WRAP, PERI_PWRAP_BRIDGE, PWRAP_SPICTL */
-	/* Subject to project */
-	spin_lock_irqsave(&wrp->lock, flags);
-	WRAP_SET_BIT(0x80, INFRA_GLOBALCON_RST0);
-	WRAP_SET_BIT(0x04, PERI_GLOBALCON_RST1);
-	rdata = WRAP_RD32(WDT_SWSYSRST);
-	WRAP_WR32(WDT_SWSYSRST, (0x88000000 |
-		((rdata | (0x1 << 11)) & 0x00ffffff)));
+	rstc_infracfg = devm_reset_control_get(&wrp->pdev->dev, "infracfg");
+	if (IS_ERR(rstc_infracfg)) {
+		dev_err(&wrp->pdev->dev, "get infracfg reset failed\n");
+		return PTR_ERR(rstc_infracfg);
+	}
+	rstc_pericfg = devm_reset_control_get(&wrp->pdev->dev, "pericfg");
+	if (IS_ERR(rstc_pericfg)) {
+		dev_err(&wrp->pdev->dev, "get pericfg reset failed\n");
+		return PTR_ERR(rstc_pericfg);
+	}
 
-	WRAP_CLR_BIT(0x80, INFRA_GLOBALCON_RST0);
-	WRAP_CLR_BIT(0x04, PERI_GLOBALCON_RST1);
-	rdata = WRAP_RD32(WDT_SWSYSRST);
-	WRAP_WR32(WDT_SWSYSRST, (0x88000000 |
-		((rdata & (~(0x1 << 11))) & 0x00ffffff)));
+	reset_control_assert(rstc_infracfg);
+	reset_control_assert(rstc_pericfg);
+	reset_control_deassert(rstc_infracfg);
+	reset_control_deassert(rstc_pericfg);
 
-	/* TBD: Set SPI_CK freq = 26MHz */
-	rdata = WRAP_RD32(CLK_CFG_8);
-	WRAP_WR32(CLK_CFG_8, (rdata & ~0x7) | 0x0);
+	return 0;
+}
+
+static int pwrap_init(struct pmic_wrapper *wrp)
+{
+	u32 rdata;
+	void __iomem *pwrap_base = wrp->pwrap_base;
+	void __iomem *pwrap_bridge_base = wrp->pwrap_bridge_base;
+
+	if (pwrap_reset(wrp))
+		return -EFAULT;
+
+	/* Set SPI_CK freq = 26MHz */
+	if (clk_set_parent(wrp->pmicspi, wrp->pmicspi_parent))
+		return -EFAULT;
 
 	/* Enable DCM */
-	WRAP_WR32(PMIC_WRAP_DCM_EN, 1);
-	WRAP_WR32(PMIC_WRAP_DCM_DBC_PRD, 0);
+	writel(1, pwrap_base + PMIC_WRAP_DCM_EN);
+	writel(0, pwrap_base + PMIC_WRAP_DCM_DBC_PRD);
 
 	/* Reset SPISLV */
 	if (pwrap_reset_spislv(wrp) < 0)
-		goto done_unlock;
+		return -EFAULT;
 
 	/* Enable WACS2 */
-	WRAP_WR32(PMIC_WRAP_WRAP_EN, 1);	/* enable wrap */
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 8);	/* Only WACS2 */
-	WRAP_WR32(PMIC_WRAP_WACS2_EN, 1);
-
-	/*  Set SPI_CK freq = use 26MHz by default */
-	rdata = WRAP_RD32(CLK_CFG_8);
-	WRAP_WR32(CLK_CFG_8, (rdata & ~0x7) | 0x0);
+	writel(1, pwrap_base + PMIC_WRAP_WRAP_EN);
+	writel(WACS2, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(1, pwrap_base + PMIC_WRAP_WACS2_EN);
 
 	/* SIDLY setting */
 	if (pwrap_init_sidly(wrp))
-		goto done_unlock;
-	/* SPI Waveform Configuration */
-	/* 0:safe mode, 1:18MHz, 2:36MHz //2 */
-	if (pwrap_init_reg_clock(wrp, 2))
-		goto done_unlock;
+		return -EFAULT;
 
-	/* Enable PMIC */
-	/* (May not be necessary, depending on S/W partition) */
-	/* set dewrap clock bit  and clear dewrap reset bit */
-	if (pwrap_write_locked(PMIC_WRP_CKPDN, 0) ||
-		pwrap_write_locked(PMIC_WRP_RST_CON, 0)) {
-		pr_err("Enable PMIC fail\n");
-		goto done_unlock;
+	/* SPI Waveform Configuration 0:safe mode, 1:18MHz, 2:26MHz */
+	if (pwrap_init_reg_clock(wrp, 2))
+		return -EFAULT;
+	/*
+	 * Enable PMIC
+	 * (May not be necessary, depending on S/W partition)
+	 * set dewrap clock bit  and clear dewrap reset bit
+	 */
+	if (pwrap_write(wrp, PMIC_WRP_CKPDN, 0) ||
+		pwrap_write(wrp, PMIC_WRP_RST_CON, 0)) {
+		dev_err(&wrp->pdev->dev, "Enable PMIC fail\n");
+		return -EFAULT;
 	}
 
 	/* Enable DIO mode */
 	if (pwrap_init_dio(wrp, 1))
-		goto done_unlock;
+		return -EFAULT;
 
 	/* Enable Encryption */
 	if (pwrap_init_cipher(wrp))
-		goto done_unlock;
+		return -EFAULT;
 
 	/* Write test using WACS2 */
-	if (pwrap_write_locked(DEW_WRITE_TEST, WRITE_TEST_VALUE) ||
-	    pwrap_read_locked(DEW_WRITE_TEST, &rdata) ||
+	if (pwrap_write(wrp, DEW_WRITE_TEST, WRITE_TEST_VALUE) ||
+	    pwrap_read(wrp, DEW_WRITE_TEST, &rdata) ||
 			(rdata != WRITE_TEST_VALUE)) {
-		pr_err("write test error,rdata=0x%04X,exp=0x%04X\n",
+		dev_err(&wrp->pdev->dev, "write test error,rdata=0x%04X,exp=0x%04X\n",
 			rdata, WRITE_TEST_VALUE);
-		goto done_unlock;
+		return -EFAULT;
 	}
-	/* Signature Checking - Using CRC */
-	/* should be the last to modify WRITE_TEST */
-	if (pwrap_write_locked(DEW_CRC_EN, 0x1))
-		goto done_unlock;
 
-	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x0);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, DEW_CRC_VAL);
+	/* Signature Checking - Using CRC */
+	if (pwrap_write(wrp, DEW_CRC_EN, 0x1))
+		return -EFAULT;
+	writel(0x1, pwrap_base + PMIC_WRAP_CRC_EN);
+	writel(0x0, pwrap_base + PMIC_WRAP_SIG_MODE);
+	writel(DEW_CRC_VAL, pwrap_base + PMIC_WRAP_SIG_ADR);
 
 	/* PMIC_WRAP enables */
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x1ff);
-	WRAP_WR32(PMIC_WRAP_RRARB_EN, 0x7);
-	WRAP_WR32(PMIC_WRAP_WACS0_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_WACS1_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);	/* already enabled */
-	/* 0x1:20us,for concurrence test; MP:0x5: 100us */
-	WRAP_WR32(PMIC_WRAP_STAUPD_PRD, 0x5);
-	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xff);
-	WRAP_WR32(PMIC_WRAP_WDT_UNIT, 0xf);
-	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN, 0xffffffff);
-	WRAP_WR32(PMIC_WRAP_TIMER_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_INT_EN, ~(PWRAP_INT_DEBUG | PWRAP_INT_SIG_ERR));
+	writel(0x1ff, pwrap_base + PMIC_WRAP_HIPRIO_ARB_EN);
+	writel(0x7, pwrap_base + PMIC_WRAP_RRARB_EN);
+	writel(0x1, pwrap_base + PMIC_WRAP_WACS0_EN);
+	writel(0x1, pwrap_base + PMIC_WRAP_WACS1_EN);
+	writel(0x1, pwrap_base + PMIC_WRAP_WACS2_EN);
+	writel(0x5, pwrap_base + PMIC_WRAP_STAUPD_PRD);
+	writel(0xff, pwrap_base + PMIC_WRAP_STAUPD_GRPEN);
+	writel(0xf, pwrap_base + PMIC_WRAP_WDT_UNIT);
+	writel(0xffffffff, pwrap_base + PMIC_WRAP_WDT_SRC_EN);
+	writel(0x1, pwrap_base + PMIC_WRAP_TIMER_EN);
+	writel(~(PWRAP_INT_DEBUG | PWRAP_INT_SIG_ERR),
+		pwrap_base + PMIC_WRAP_INT_EN);
 
-	/* switch event pin from usbdl mode to normal mode for
-	   pmic interrupt, NEW@MT6397 */
-	if (pwrap_read_locked(PMIC_TOP_CKCON3, &rdata) ||
-	    pwrap_write_locked(PMIC_TOP_CKCON3, (rdata & 0x0007))) {
-		pr_err("%s: switch event pin fail\n", __func__);
-		goto done_unlock;
+	/*
+	 * switch event pin from usbdl mode to normal mode for
+	 * pmic interrupt, NEW@MT6397
+	 */
+	if (pwrap_read(wrp, PMIC_TOP_CKCON3, &rdata) ||
+	    pwrap_write(wrp, PMIC_TOP_CKCON3, (rdata & 0x0007))) {
+		dev_err(&wrp->pdev->dev, "switch event pin fail\n");
+		return -EFAULT;
 	}
 
 	/* PMIC_WRAP enables for event  */
-	WRAP_WR32(PMIC_WRAP_EVENT_IN_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_EVENT_DST_EN, 0xffff);
+	writel(0x1, pwrap_base + PMIC_WRAP_EVENT_IN_EN);
+	writel(0xffff, pwrap_base + PMIC_WRAP_EVENT_DST_EN);
 
 	/* PERI_PWRAP_BRIDGE enables */
-	WRAP_WR32(PERI_PWRAP_BRIDGE_IORD_ARB_EN, 0x7f);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WACS3_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WACS4_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WDT_UNIT, 0xf);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WDT_SRC_EN, 0xffff);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_TIMER_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_INT_EN, 0x7ff);
+	writel(0x7f, pwrap_bridge_base + PERI_PWRAP_BRIDGE_IORD_ARB_EN);
+	writel(0x1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_WACS3_EN);
+	writel(0x1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_WACS4_EN);
+	writel(0x1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_WDT_UNIT);
+	writel(0xffff, pwrap_bridge_base + PERI_PWRAP_BRIDGE_WDT_SRC_EN);
+	writel(0x1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_TIMER_EN);
+	writel(0x7ff, pwrap_bridge_base + PERI_PWRAP_BRIDGE_INT_EN);
 
 	/* PMIC_DEWRAP enables */
-	if (pwrap_write_locked(DEW_EVENT_OUT_EN, 0x1) ||
-	    pwrap_write_locked(DEW_EVENT_SRC_EN, 0xffff)) {
-		pr_err("enable dewrap fail\n");
-		goto done_unlock;
-	}
-
-	/* Initialization Done */
-	WRAP_WR32(PMIC_WRAP_INIT_DONE2, 0x1);
-
-	/* TBD: Should be configured by MD MCU */
-	/* def CONFIG_MTK_LDVT_PMIC_WRAP */
-	WRAP_WR32(PMIC_WRAP_INIT_DONE0, 1);
-	WRAP_WR32(PMIC_WRAP_INIT_DONE1, 1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_INIT_DONE3, 1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_INIT_DONE4, 1);
-
-	ret = 0;
-done_unlock:
-	spin_unlock_irqrestore(&wrp->lock, flags);
-	return ret;
-}
-
-static void pwrap_print_trace_data(struct pmic_wrapper *wrp, int idx)
-{
-	struct pwrap_debug_data data;
-	unsigned long flags;
-
-	if (idx < 0 || idx >= PWRAP_DEBUG_COUNT)
-		return;
-	spin_lock_irqsave(&wrp->trace_lock, flags);
-	data = wrp->pwrap_debug_data[idx];
-	spin_unlock_irqrestore(&wrp->trace_lock, flags);
-	pr_info("idx=%d,time=(%lld),op=%d,result=%d,addr=%x,data=%x\n",
-			idx, data.wacs_time, data.operation,
-			data.result, data.addr, data.data);
-}
-
-static void pwrap_trace_wacs2(struct pmic_wrapper *wrp)
-{
-	unsigned long flags;
-	int idx, i;
-	/* print the latest access of pmic */
-	pr_info("the latest %d access of pmic is following.\n",
-		PWRAP_DEBUG_COUNT);
-	spin_lock_irqsave(&wrp->trace_lock, flags);
-	idx = wrp->pwrap_debug_index;
-	spin_unlock_irqrestore(&wrp->trace_lock, flags);
-	for (i = 0; i < PWRAP_DEBUG_COUNT; ++i) {
-		pwrap_print_trace_data(wrp, idx);
-		idx++;
-		if (idx == PWRAP_DEBUG_COUNT)
-			idx = 0;
-	}
-}
-
-static void pwrap_read_reg_on_ap(u32 reg_addr)
-{
-	u32 reg_value = 0;
-
-	reg_value = WRAP_RD32(reg_addr);
-	pr_info("0x%04X: 0x%04X\n", reg_addr, reg_value);
-}
-
-static void pwrap_write_reg_on_ap(u32 reg_addr, u32 reg_value)
-{
-	pr_info("write 0x%x to register 0x%x\n", reg_value, reg_addr);
-	WRAP_WR32(reg_addr, reg_value);
-	reg_value = WRAP_RD32(reg_addr);
-	pr_info("result: 0x%04X: 0x%04X\n", reg_addr, reg_value);
-}
-
-static void pwrap_read_reg_on_pmic(u32 reg_addr)
-{
-	u32 reg_value = 0;
-	u32 ret = 0;
-	/* PWRAPFUC(); */
-	ret = pwrap_read(reg_addr, &reg_value);
-	pr_info("0x%04X: 0x%04X,ret=%d\n", reg_addr, reg_value, ret);
-}
-
-static void pwrap_write_reg_on_pmic(u32 reg_addr, u32 reg_value)
-{
-	u32 ret = 0;
-
-	pr_info("write 0x%x to register 0x%x\n", reg_value, reg_addr);
-	ret = pwrap_write(reg_addr, reg_value);
-	ret = pwrap_read(reg_addr, &reg_value);
-	/* PWRAPFUC(); */
-	pr_info("the result:0x%04X: 0x%04X,ret=%d\n",
-		reg_addr, reg_value, ret);
-}
-
-
-static int pwrap_read_test(void)
-{
-	u32 rdata = 0;
-	/* Read Test */
-	pwrap_read(DEW_READ_TEST, &rdata);
-	if (rdata != DEFAULT_VALUE_READ_TEST) {
-		pr_err("Read Test fail,rdata=0x%04X, exp=0x%04X\n",
-			 rdata, DEFAULT_VALUE_READ_TEST);
+	if (pwrap_write(wrp, DEW_EVENT_OUT_EN, 0x1) ||
+	    pwrap_write(wrp, DEW_EVENT_SRC_EN, 0xffff)) {
+		dev_err(&wrp->pdev->dev, "enable dewrap fail\n");
 		return -EFAULT;
 	}
-	pr_info("Read Test pass\n");
+
+	writel(1, pwrap_base + PMIC_WRAP_INIT_DONE2);
+	writel(1, pwrap_base + PMIC_WRAP_INIT_DONE0);
+	writel(1, pwrap_base + PMIC_WRAP_INIT_DONE1);
+	writel(1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_INIT_DONE3);
+	writel(1, pwrap_bridge_base + PERI_PWRAP_BRIDGE_INIT_DONE4);
+
 	return 0;
-}
-
-static int pwrap_write_test(void)
-{
-	u32 rdata;
-	/* Write test using WACS2 */
-	if (pwrap_write(DEW_WRITE_TEST, WRITE_TEST_VALUE) ||
-	    pwrap_read(DEW_WRITE_TEST, &rdata) || rdata != WRITE_TEST_VALUE) {
-		pr_err("write test error,rdata=0x%04X, exp=0x%04X\n",
-			rdata, WRITE_TEST_VALUE);
-		return -EFAULT;
-	}
-	pr_info("write Test pass\n");
-	return 0;
-}
-
-#define WRAP_ACCESS_TEST_REG DEW_CIPHER_IV1
-static void pwrap_wacs2_para_test(void)
-{
-	int ret;
-	u32 result = 0;
-	u32 rdata;
-	/* test 2nd parameter-------------------------------------------- */
-	ret = pwrap_wacs2(0, 0xffff + 0x10, 0x1234, &rdata);
-	if (ret < 0) {
-		pr_info("pwrap_wacs2_para_test 2nd para,ret=%d\n", ret);
-		result += 1;
-	}
-	if (result == 1)
-		pr_info("pwrap_wacs2_para_test pass\n");
-	else
-		pr_err("pwrap_wacs2_para_test fail\n");
-}
-
-static void pwrap_ut(u32 ut_test)
-{
-	switch (ut_test) {
-	case 1:
-		pwrap_wacs2_para_test();
-		break;
-	case 2:
-		/* pwrap_wacs2_para_test(); */
-		break;
-
-	default:
-		pr_info("default test.\n");
-		break;
-	}
-}
-
-static int pwrap_suspend_internal(struct pmic_wrapper *wrp)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&wrp->lock, flags);
-	wrp->suspended = true;
-	spin_unlock_irqrestore(&wrp->lock, flags);
-	return 0;
-}
-
-static void pwrap_resume_internal(struct pmic_wrapper *wrp)
-{
-	unsigned long flags;
-	/* pr_info("pwrap_resume\n"); */
-	/* Reset related modules */
-	/* PERI_PWRAP_BRIDGE */
-	/* Subject to project */
-	spin_lock_irqsave(&wrp->lock, flags);
-	WRAP_SET_BIT(0x04, PERI_GLOBALCON_RST1);
-	WRAP_CLR_BIT(0x04, PERI_GLOBALCON_RST1);
-
-	/* PERI_PWRAP_BRIDGE enables */
-	WRAP_WR32(PERI_PWRAP_BRIDGE_IORD_ARB_EN, 0x7f);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WACS3_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WACS4_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WDT_UNIT, 0xf);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_WDT_SRC_EN, 0xffff);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_TIMER_EN, 0x1);
-	WRAP_WR32(PERI_PWRAP_BRIDGE_INT_EN, 0x7ff);
-	wrp->suspended = false;
-	spin_unlock_irqrestore(&wrp->lock, flags);
 }
 
 static int mt_pwrap_check_and_init(struct pmic_wrapper *wrp)
 {
 	int ret;
 	u32 rdata;
-	unsigned long flags;
+	void __iomem *pwrap_base = wrp->pwrap_base;
 
-	/* Set SPI_CK freq = 26MHz */
-	spin_lock_irqsave(&wrp->lock, flags);
-	rdata = WRAP_RD32(CLK_CFG_8);
-	WRAP_WR32(CLK_CFG_8, (rdata & ~0x7) | 0x0);
-
-	rdata = WRAP_RD32(PMIC_WRAP_INIT_DONE2);
-	spin_unlock_irqrestore(&wrp->lock, flags);
-
+	rdata = readl(pwrap_base + PMIC_WRAP_INIT_DONE2);
 	if (rdata)
-		return 0;
+		goto done;
 
-	pr_notice("PMIC wrapper HW init start\n");
 	ret = pwrap_init(wrp);
-
-	if (ret < 0) {
-		pr_err("PMIC wrapper init error (%d)\n", ret);
-		pwrap_dump_all_register(wrp);
+	if (ret) {
+		dev_err(&wrp->pdev->dev,
+			"PMIC wrapper init error, ret=%d\n", ret);
 		return ret;
 	}
-	pr_notice("PMIC wrapper HW init done\n");
+
+done:
+	rdata = readl(pwrap_base + PMIC_WRAP_WACS2_RDATA);
+	if (GET_INIT_DONE0(rdata) != WACS_INIT_DONE) {
+		dev_err(&wrp->pdev->dev, "initialization isn't finished\n");
+		return -ENODEV;
+	}
+	wrp->is_done = true;
 	return 0;
 }
 
-int pwrap_wacs2(bool write, u32 adr, u32 wdata, u32 *rdata)
+static int mt_pmic_iomap_init(struct platform_device *pdev)
 {
-	int ret = 0;
-	struct pmic_wrapper *wrp = g_wrp;
-	u32 data = wdata;
+	struct resource *res;
+	struct pmic_wrapper *wrp = platform_get_drvdata(pdev);
 
-	if (!wrp) {
-		pr_err("PMIC WRAPPER device does not exist\n");
-		ret = -EIO;
-	} else
-		ret = pwrap_wacs2_internal(wrp, write, adr, &data);
-
-	if (!ret && !write && rdata)
-		*rdata = data;
-
-	return ret;
-}
-
-int pwrap_read(u32 adr, u32 *rdata)
-{
-	return pwrap_wacs2(PWRAP_READ, adr, 0, rdata);
-}
-
-int pwrap_write(u32 adr, u32 wdata)
-{
-	return pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
-}
-
-static ssize_t mt_pwrap_store(struct device *dev,
-			      struct device_attribute *attr,
-					const char *buf, size_t count)
-{
-	struct pmic_wrapper *wrp = dev_get_drvdata(dev);
-	u32 reg_value = 0;
-	u32 reg_addr = 0;
-	u32 ret = 0;
-	u32 ut_test = 0;
-
-	if (!strncmp(buf, "-h", 2)) {
-		pr_info("PWRAP debug:\n"
-			 "\t[-dump_reg][-trace_wacs2][-init][-rdap]\n"
-			 "\t[-wrap][-rdpmic][-wrpmic][-readtest][-writetest]\n");
-		pr_info("PWRAP UT: [1][2]\n");
-	} else if (!strncmp(buf, "-dump_reg", 9))
-		pwrap_dump_all_register(wrp);
-	else if (!strncmp(buf, "-trace_wacs2", 12))
-		pwrap_trace_wacs2(wrp);
-	else if (!strncmp(buf, "-init", 5)) {
-		ret = pwrap_init(wrp);
-		if (ret == 0)
-			pr_info("pwrap_init pass,ret=%d\n", ret);
-		else
-			pr_err("pwrap_init fail,ret=%d\n", ret);
-	} else if (!strncmp(buf, "-rdap", 5) &&
-	(1 == sscanf(buf + 5, "%x", &reg_addr)))
-		pwrap_read_reg_on_ap(reg_addr);
-	else if (!strncmp(buf, "-wrap", 5)
-		 && (2 == sscanf(buf + 5, "%x %x", &reg_addr, &reg_value)))
-		pwrap_write_reg_on_ap(reg_addr, reg_value);
-	else if (!strncmp(buf, "-rdpmic", 7)
-		 && (1 == sscanf(buf + 7, "%x", &reg_addr)))
-		pwrap_read_reg_on_pmic(reg_addr);
-	else if (!strncmp(buf, "-wrpmic", 7)
-		 && (2 == sscanf(buf + 7, "%x %x", &reg_addr, &reg_value)))
-		pwrap_write_reg_on_pmic(reg_addr, reg_value);
-	else if (!strncmp(buf, "-readtest", 9))
-		pwrap_read_test();
-	else if (!strncmp(buf, "-writetest", 10))
-		pwrap_write_test();
-	else if (!strncmp(buf, "-ut", 3)
-		 && (1 == sscanf(buf + 3, "%d", &ut_test))) {
-		pwrap_ut(ut_test);
-	} else
-		pr_err("wrong parameter\n");
-	return count;
-}
-
-DEVICE_ATTR(pwrap, S_IWUSR | S_IWGRP, NULL, mt_pwrap_store);
-
-static int pwrap_suspend(void)
-{
-	return g_wrp ? pwrap_suspend_internal(g_wrp) : 0;
-}
-
-static void pwrap_resume(void)
-{
-	if (g_wrp)
-		pwrap_resume_internal(g_wrp);
-}
-
-static struct syscore_ops pwrap_syscore_ops = {
-	.resume = pwrap_resume,
-	.suspend = pwrap_suspend,
-};
-
-static int mt_pmic_iomap_init(void)
-{
-	struct device_node *pwrap_node;
-	int ret = 0;
-
-	pwrap_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,mt8135-pwrap");
-	if (!pwrap_node) {
-		pr_info("PWRAP get node failed\n");
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pwrap-base");
+	if (!res) {
+		dev_err(&pdev->dev, "could not get resource\n");
 		return -ENODEV;
 	}
-	pwrap_base = of_iomap(pwrap_node, 0);
-	if (!pwrap_base) {
-		pr_info("PWRAP iomap failed\n");
+	wrp->pwrap_base = devm_ioremap(&pdev->dev, res->start,
+		resource_size(res));
+	if (!wrp->pwrap_base) {
+		dev_err(&pdev->dev, "could not get pwrap_base\n");
 		return -ENOMEM;
 	}
-	toprgu_base = of_iomap(pwrap_node, 1);
-	if (!toprgu_base) {
-		pr_info("TOPCKGEN iomap failed\n");
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+		"pwrap-bridge-base");
+	if (!res) {
+		dev_err(&pdev->dev, "could not get resource\n");
+		return -ENODEV;
+	}
+	wrp->pwrap_bridge_base = devm_ioremap(&pdev->dev, res->start,
+		resource_size(res));
+	if (!wrp->pwrap_bridge_base) {
+		dev_err(&pdev->dev, "could not get pwrap_bridge_base\n");
 		return -ENOMEM;
 	}
-	infracfg_base = of_iomap(pwrap_node, 2);
-	if (!infracfg_base) {
-		pr_info("INFRACFG_AO iomap failed\n");
-		return -ENOMEM;
-	}
-	pericfg_base = of_iomap(pwrap_node, 3);
-	if (!pericfg_base) {
-		pr_info("PERICFG iomap failed\n");
-		return -ENOMEM;
-	}
-	pwrap_bridge_base = of_iomap(pwrap_node, 4);
-	if (!pwrap_bridge_base) {
-		pr_info("PERI_PWRAP_BRIDGE_BASE iomap failed\n");
-		return -ENOMEM;
-	}
-	return ret;
+
+	return 0;
 }
+
+const struct regmap_config pwrap_regmap_config = {
+	.reg_bits = 16,
+	.val_bits = 16,
+	.reg_read = pwrap_regmap_read,
+	.reg_write = pwrap_regmap_write,
+};
 
 static int mt_pmic_wrap_probe(struct platform_device *pdev)
 {
 	int ret;
-	u32 rdata;
-	unsigned long flags;
 	struct pmic_wrapper *wrp;
 	int irq;
 
-	ret = mt_pmic_iomap_init();
+	wrp = devm_kzalloc(&pdev->dev, sizeof(struct pmic_wrapper), GFP_KERNEL);
+	if (!wrp) {
+		dev_err(&pdev->dev, "Error: No memory\n");
+		return -ENOMEM;
+	}
+	platform_set_drvdata(pdev, wrp);
+
+	ret = mt_pmic_iomap_init(pdev);
 	if (ret) {
-		pr_err("mt_pmic_iomap_init, err=%d\n", ret);
-		goto err_out;
+		dev_err(&pdev->dev, "mt_pmic_iomap_init, ret=%d\n", ret);
+		return ret;
 	}
 
-	if (g_wrp) {
-		pr_err("%s: PMIC wrapper already exists; ignored\n", __func__);
-		return -EEXIST;
-	}
-
-	wrp = &mt_wrp;
-
-	spin_lock_init(&wrp->lock);
-	spin_lock_init(&wrp->trace_lock);
+	mutex_init(&wrp->lock);
 	wrp->pdev = pdev;
-	dev_set_drvdata(&pdev->dev, wrp);
+	wrp->pmicspi = devm_clk_get(&pdev->dev, "pmicspi-sel");
+	if (IS_ERR(wrp->pmicspi)) {
+		dev_err(&pdev->dev, "pmicspi-sel fail\n");
+		return PTR_ERR(wrp->pmicspi);
+	}
+	wrp->pmicspi_parent = devm_clk_get(&pdev->dev, "pmicspi-parent");
+	wrp->pmicspi = devm_clk_get(&pdev->dev, "pmicspi-sel");
+	if (IS_ERR(wrp->pmicspi_parent)) {
+		dev_err(&pdev->dev, "pmicspi-parent parient\n");
+		return PTR_ERR(wrp->pmicspi_parent);
+	}
+	ret = clk_prepare_enable(wrp->pmicspi);
+	if (ret) {
+		dev_err(&pdev->dev, "pmicspi clock fail, ret=%d\n", ret);
+		return ret;
+	}
 
 	if (mt_pwrap_check_and_init(wrp)) {
-		pr_err("PMIC wrapper HW init failed\n");
+		dev_err(&pdev->dev, "PMIC wrapper HW init failed\n");
 		ret = -EIO;
-		/* gating eint/i2c/pwm/kpd clock@PMIC */
-		/* disable clock,except kpd(bit[4] kpd and bit[6] 32k); */
-		spin_lock_irqsave(&wrp->lock, flags);
-		pwrap_read_locked(PMIC_WRP_CKPDN, &rdata);
-		/* set dewrap clock bit */
-		pwrap_write_locked(PMIC_WRP_CKPDN, (rdata | 0x2F));
-		spin_unlock_irqrestore(&wrp->lock, flags);
-		goto err_out;
-	}
-
-	/* Clear Event Flag  */
-	ret = pwrap_read_locked(DEW_EVENT_FLAG, &rdata);
-	pr_notice("DEW_EVENT_FLAG = 0x%04X\n", rdata);
-	ret = pwrap_read_locked(0x100, &rdata);
-	pr_notice("test chipID = 0x%04X\n", rdata);
-
-	if (ret) {
-		pr_err("!!clear event flag fail, err=%d\n", ret);
-		goto err_out;
+		return ret;
 	}
 
 	irq = platform_get_irq(pdev, 0);
-	pr_info("pwrap get irq #%d", irq);
 	ret = request_threaded_irq(irq,
 			mt_pmic_wrap_interrupt, NULL,
 			IRQF_TRIGGER_HIGH, PMIC_WRAP_DEVICE, wrp);
 	if (ret) {
-		pr_err("register IRQ failed (%d)\n", ret);
-		goto err_out;
+		dev_err(&pdev->dev, "register IRQ failed, ret=%d\n", ret);
+		return ret;
 	}
 
-	ret = device_create_file(&pdev->dev, &dev_attr_pwrap);
-	if (ret)
-		pr_err("Create PMIC wrapper sysfs files fail; ret=%d\n", ret);
-
-	/* pr_info("pwrap_init_ops\n"); */
-	register_syscore_ops(&pwrap_syscore_ops);
-
-	if (!ret)
-		g_wrp = wrp;
+	wrp->regmap = devm_regmap_init(&pdev->dev, NULL,
+			wrp, &pwrap_regmap_config);
+	if (IS_ERR(wrp->regmap)) {
+		ret = PTR_ERR(wrp->regmap);
+		dev_err(&pdev->dev, "Failed to allocate register map, ret=%d\n",
+			ret);
+		return ret;
+	}
 
 	ret = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
 	if (ret) {
@@ -1302,34 +782,31 @@ static int mt_pmic_wrap_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-err_out:
-	return ret;
+	return 0;
 }
 
 static struct of_device_id of_pmic_wrap_match_tbl[] = {
 	{.compatible = "mediatek,mt8135-pwrap",},
 	{}
 };
+MODULE_DEVICE_TABLE(of, of_pmic_wrap_match_tbl);
 
 static struct platform_driver mt_pmic_wrap_drv = {
 	.driver = {
 		   .name = PMIC_WRAP_DEVICE,
 		   .owner = THIS_MODULE,
 		   .of_match_table = of_match_ptr(of_pmic_wrap_match_tbl),
-
 		   },
 	.probe = mt_pmic_wrap_probe,
 };
 
 static int __init mt_pwrap_drv_init(void)
 {
-	pr_info("mt_pwrap_drv_init\n");
-
 	return platform_driver_register(&mt_pmic_wrap_drv);
 }
 
 postcore_initcall(mt_pwrap_drv_init);
 
 MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
-MODULE_DESCRIPTION("pmic_wrapper Driver");
+MODULE_DESCRIPTION("PMIC WRAPPER Driver");
 MODULE_LICENSE("GPL");

@@ -1,16 +1,16 @@
 /*
-* Copyright (c) 2014 MediaTek Inc.
-* Author: Flora.Fu <flora.fu@mediatek.com>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*/
+ * Copyright (c) 2014 MediaTek Inc.
+ * Author: Flora.Fu <flora.fu@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef __LINUX_REGULATOR_MT6397_H
 #define __LINUX_REGULATOR_MT6397_H
@@ -44,5 +44,7 @@ enum {
 	MT6397_ID_RG_MAX,
 };
 #define MT6397_MAX_REGULATOR	MT6397_ID_RG_MAX
+#define MT6397_REGULATOR_ID97		0x97
+#define MT6397_REGULATOR_ID91		0x91
 
 #endif /* __LINUX_REGULATOR_MT6397_H */

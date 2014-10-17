@@ -147,19 +147,19 @@
 				regulator-boot-on;
 			};
 
-			mt6397_vcamd_reg: ldo_vcamd {
+			mt6397_vgp1_reg: ldo_vcamd {
 				regulator-name = "vcamd";
 				regulator-min-microvolt = <1220000>;
 				regulator-max-microvolt = <3300000>;
 			};
 
-			mt6397_vcamio_reg: ldo_vcamio {
+			mt6397_vgp2_reg: ldo_vcamio {
 				regulator-name = "vcamio";
 				regulator-min-microvolt = <1200000>;
 				regulator-max-microvolt = <3300000>;
 			};
 
-			mt6397_vcamaf_reg: ldo_vcamaf {
+			mt6397_vgp3_reg: ldo_vcamaf {
 				regulator-name = "vcamaf";
 				regulator-min-microvolt = <1200000>;
 				regulator-max-microvolt = <3300000>;

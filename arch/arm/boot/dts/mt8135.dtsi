@@ -105,15 +105,32 @@
 			clock-names = "system-clk", "rtc-clk";
 		};
 
-                pwrap: pwrap@0x1000F000 {
-                        compatible = "mediatek,mt8135-pwrap";
-                        reg = <0 0x1000F000 0 0x1000>,
-                              <0 0x10000000 0 0x1000>,
-                              <0 0x10001000 0 0x1000>,
-                              <0 0x10003000 0 0x1000>,
-                              <0 0x11017000 0 0x1000>;
-                        interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-                };
+		infracfg: infracfg@10001000 {
+			#reset-cells = <1>;
+			compatible = "mediatek,mt8135-infracfg";
+			reg = <0 0x10001000 0 0x1000>;
+			reg-names = "reset-infracfg";
+		};
+
+		pericfg: pericfg@10003000 {
+			#reset-cells = <1>;
+			compatible = "mediatek,mt8135-pericfg";
+			reg = <0 0x10003000 0 0x1000>;
+			reg-names = "reset-pericfg";
+		};
+
+		pwrap: pwrap@1000F000 {
+ 			compatible = "mediatek,mt8135-pwrap";
+			reg = <0 0x1000F000 0 0x1000>,
+				<0 0x11017000 0 0x1000>;
+			reg-names = "pwrap-base",
+				"pwrap-bridge-base";
+			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
+			resets = <&infracfg 7>, <&pericfg 34>;
+			reset-names = "infracfg", "pericfg";
+			clocks = <&pmicspi_sel>, <&clk26m> ;
+			clock-names = "pmicspi-sel", "pmicspi-parent";
+		};
 
                 intpol: intpol@10200030 {
                         compatible = "mediatek,mt6577-intpol";

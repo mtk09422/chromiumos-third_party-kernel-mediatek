@@ -12,15 +12,18 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MFD_MT6397_CORE_H__
-#define __MFD_MT6397_CORE_H__
+#ifndef __MT_PMIC_WRAP_H__
+#define __MT_PMIC_WRAP_H__
 
-struct mt6397_chip {
-	/* Device */
-	struct device	*dev;
-
-	/* Control interface */
-	struct regmap	*regmap;
+struct pmic_wrapper {
+	struct platform_device *pdev;
+	struct mutex lock;
+	struct clk *pmicspi;
+	struct clk *pmicspi_parent;
+	void __iomem *pwrap_base;
+	void __iomem *pwrap_bridge_base;
+	struct regmap *regmap;
+	bool is_done;
 };
-#endif /* __MFD_MT6397_CORE_H__ */
 
+#endif	/* __MT_PMIC_WRAP_H__ */

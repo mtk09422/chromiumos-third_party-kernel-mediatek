@@ -64,8 +64,8 @@
 
 /* analog pmic  register*/
 #include <linux/mfd/mt6397/registers.h>
-#define PMIC_TRIM_ADDRESS1          (EFUSE_DOUT_192_207)	/* [3:15] */
-#define PMIC_TRIM_ADDRESS2          (EFUSE_DOUT_208_223)	/* [0:11] */
+#define PMIC_TRIM_ADDRESS1          (MT6397_EFUSE_DOUT_192_207)	/* [3:15] */
+#define PMIC_TRIM_ADDRESS2          (MT6397_EFUSE_DOUT_208_223)	/* [0:11] */
 
 
 /*****************************************************************************

@@ -53,10 +53,10 @@ static void ana_enable_clk(uint32_t mask, bool enable)
 {
 	/* set pmic register or analog CONTROL_IFACE_PATH */
 	uint32_t val;
-	uint32_t reg = enable ? TOP_CKPDN_CLR : TOP_CKPDN_SET;
+	uint32_t reg = enable ? MT6397_TOP_CKPDN_CLR : MT6397_TOP_CKPDN_SET;
 
 	snd_soc_update_bits(codec_control, reg, mask, mask);
-	val = snd_soc_read(codec_control, TOP_CKPDN);
+	val = snd_soc_read(codec_control, MT6397_TOP_CKPDN);
 	if (val < 0)
 		pr_err("error ana_enable_clk\n");
 
@@ -89,7 +89,8 @@ static void aud_drv_ana_clk_on(void)
 	if (aud_ana_clk_cntr == 0) {
 		pr_debug("+%s aud_ana_clk_cntr:%d\n", __func__,
 			 aud_ana_clk_cntr);
-		ana_set_reg(TOP_CKCON1, 0x0010, 0x0010); /*bit4: RG_CLKSQ_EN*/
+		ana_set_reg(MT6397_TOP_CKCON1,
+			0x0010, 0x0010); /*bit4: RG_CLKSQ_EN*/
 		ana_enable_clk(0x0003, true);
 	}
 	aud_ana_clk_cntr++;
@@ -104,7 +105,8 @@ static void aud_drv_ana_clk_off(void)
 	if (aud_ana_clk_cntr == 0) {
 		pr_debug("+%s Ana clk(%x)\n", __func__, aud_ana_clk_cntr);
 		/* Disable ADC clock */
-		ana_set_reg(TOP_CKCON1, 0x0000, 0x0010); /*bit4: RG_CLKSQ_EN*/
+		/*bit4: RG_CLKSQ_EN*/
+		ana_set_reg(MT6397_TOP_CKCON1, 0x0000, 0x0010);
 		ana_enable_clk(0x0003, false);
 
 
@@ -300,7 +302,8 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDBUF_CFG0, reg_value, 0x000000018); /* bits 3,4 */
+		/* bits 3,4 */
+		ana_set_reg(MT6397_AUDBUF_CFG0, reg_value, 0x000000018);
 		break;
 	case MTCODEC_DEVICE_OUT_HSL:
 		if (mux_type == MTCODEC_MUX_OPEN) {
@@ -322,7 +325,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDBUF_CFG0, reg_value, 0x000001e0);
+		ana_set_reg(MT6397_AUDBUF_CFG0, reg_value, 0x000001e0);
 		break;
 	case MTCODEC_DEVICE_OUT_HSR:
 		if (mux_type == MTCODEC_MUX_OPEN) {
@@ -344,7 +347,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDBUF_CFG0, reg_value, 0x00001e00);
+		ana_set_reg(MT6397_AUDBUF_CFG0, reg_value, 0x00001e00);
 		break;
 	case MTCODEC_DEVICE_OUT_SPKR:
 	case MTCODEC_DEVICE_OUT_SPKL:
@@ -370,7 +373,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUD_IV_CFG0, reg_value | (reg_value << 8),
+		ana_set_reg(MT6397_AUD_IV_CFG0, reg_value | (reg_value << 8),
 			    0x00001c1c);
 		break;
 	case MTCODEC_DEVICE_IN_PREAMP_L:
@@ -385,7 +388,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDPREAMP_CON0, reg_value, 0x0000001c);
+		ana_set_reg(MT6397_AUDPREAMP_CON0, reg_value, 0x0000001c);
 		break;
 	case MTCODEC_DEVICE_IN_PREAMP_R:
 		if (mux_type == MTCODEC_MUX_IN_MIC1) {
@@ -399,7 +402,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDPREAMP_CON0, reg_value, 0x000000e0);
+		ana_set_reg(MT6397_AUDPREAMP_CON0, reg_value, 0x000000e0);
 		break;
 	case MTCODEC_DEVICE_IN_ADC1:
 		if (mux_type == MTCODEC_MUX_IN_MIC1) {
@@ -413,7 +416,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDADC_CON0, reg_value, 0x0000001c);
+		ana_set_reg(MT6397_AUDADC_CON0, reg_value, 0x0000001c);
 		break;
 	case MTCODEC_DEVICE_IN_ADC2:
 		if (mux_type == MTCODEC_MUX_IN_MIC1) {
@@ -427,7 +430,7 @@ static void set_mux(enum MTCODEC_DEVICE_TYPE device_type,
 			pr_warn("AudCodec set_mux: %d %d\n",
 				device_type, mux_type);
 		}
-		ana_set_reg(AUDADC_CON0, reg_value, 0x000000e0);
+		ana_set_reg(MT6397_AUDADC_CON0, reg_value, 0x000000e0);
 		break;
 	default:
 		break;
@@ -467,56 +470,60 @@ static void spk_auto_trim_offset(void)
 
 	ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
 	/* enable VA28 , VA 33 VBAT ref , set dc */
-	ana_set_reg(AUDLDO_CFG0, 0x0D92, 0xffff);
+	ana_set_reg(MT6397_AUDLDO_CFG0, 0x0D92, 0xffff);
 	/* set ACC mode  enable NVREF */
-	ana_set_reg(AUDNVREGGLB_CFG0, 0x000C, 0xffff);
+	ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x000C, 0xffff);
 	/* enable LDO ; fix me , seperate for UL  DL LDO */
-	ana_set_reg(AUD_NCP0, 0xE000, 0xE000);
-	ana_set_reg(NCP_CLKDIV_CON0, 0x102B, 0xffff);	/* RG DEV ck on */
-	ana_set_reg(NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
+	ana_set_reg(MT6397_AUD_NCP0, 0xE000, 0xE000);
+	/* RG DEV ck on */
+	ana_set_reg(MT6397_NCP_CLKDIV_CON0, 0x102B, 0xffff);
+	ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
 	usleep_range(200, 210);
 	/* ZCD setting gain step gain and enable */
-	ana_set_reg(ZCD_CON0, 0x0301, 0xffff);
+	ana_set_reg(MT6397_ZCD_CON0, 0x0301, 0xffff);
 	/* audio bias adjustment */
-	ana_set_reg(IBIASDIST_CFG0, 0x0552, 0xffff);
+	ana_set_reg(MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
 	/* set DUDIV gain ,iv buffer gain */
-	ana_set_reg(ZCD_CON4, 0x0505, 0xffff);
-	ana_set_reg(AUD_IV_CFG0, 0x1111, 0xffff);	/* set IV buffer on */
+	ana_set_reg(MT6397_ZCD_CON4, 0x0505, 0xffff);
+	/* set IV buffer on */
+	ana_set_reg(MT6397_AUD_IV_CFG0, 0x1111, 0xffff);
 	usleep_range(100, 110);
-	ana_set_reg(AUDCLKGEN_CFG0, 0x0001, 0x0001);	/* reset docoder */
-	ana_set_reg(AUDDAC_CON0, 0x000f, 0xffff);	/* power on DAC */
+	/* reset docoder */
+	ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
+	/* power on DAC */
+	ana_set_reg(MT6397_AUDDAC_CON0, 0x000f, 0xffff);
 	usleep_range(100, 110);
 	set_mux(MTCODEC_DEVICE_OUT_SPKR, MTCODEC_MUX_AUDIO);
 	set_mux(MTCODEC_DEVICE_OUT_SPKL, MTCODEC_MUX_AUDIO);
-	ana_set_reg(AUDBUF_CFG0, 0x0000, 0x0007);	/* set Mux */
+	ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x0007);	/* set Mux */
 	ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 
 	/* disable the software register mode */
-	ana_set_reg(SPK_CON1, 0, 0x7f00);
+	ana_set_reg(MT6397_SPK_CON1, 0, 0x7f00);
 	/* disable the software register mode */
-	ana_set_reg(SPK_CON4, 0, 0x7f00);
+	ana_set_reg(MT6397_SPK_CON4, 0, 0x7f00);
 	/* Choose new mode for trim (E2 Trim) */
-	ana_set_reg(SPK_CON9, 0x0018, 0xffff);
-	ana_set_reg(SPK_CON0, 0x0008, 0xffff);	/* Enable auto trim */
-	ana_set_reg(SPK_CON3, 0x0008, 0xffff);	/* Enable auto trim R */
-	ana_set_reg(SPK_CON0, 0x3000, 0xf000);	/* set gain */
-	ana_set_reg(SPK_CON3, 0x3000, 0xf000);	/* set gain R */
-	ana_set_reg(SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
-	ana_set_reg(SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
+	ana_set_reg(MT6397_SPK_CON9, 0x0018, 0xffff);
+	ana_set_reg(MT6397_SPK_CON0, 0x0008, 0xffff);	/* Enable auto trim */
+	ana_set_reg(MT6397_SPK_CON3, 0x0008, 0xffff);	/* Enable auto trim R */
+	ana_set_reg(MT6397_SPK_CON0, 0x3000, 0xf000);	/* set gain */
+	ana_set_reg(MT6397_SPK_CON3, 0x3000, 0xf000);	/* set gain R */
+	ana_set_reg(MT6397_SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
+	ana_set_reg(MT6397_SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
 	/* Enable amplifier & auto trim */
-	ana_set_reg(SPK_CON0, 0x0001, 0x0001);
+	ana_set_reg(MT6397_SPK_CON0, 0x0001, 0x0001);
 	/* Enable amplifier & auto trim R */
-	ana_set_reg(SPK_CON3, 0x0001, 0x0001);
+	ana_set_reg(MT6397_SPK_CON3, 0x0001, 0x0001);
 
 	/* empirical data shows it usually takes 13ms to be ready */
 	usleep_range(14000, 15000);
 
 	do {
-		wait_for_ready = ana_get_reg(SPK_CON1);
+		wait_for_ready = ana_get_reg(MT6397_SPK_CON1);
 		wait_for_ready = ((wait_for_ready & 0x8000) >> 15);
 
 		if (wait_for_ready) {
-			wait_for_ready = ana_get_reg(SPK_CON4);
+			wait_for_ready = ana_get_reg(MT6397_SPK_CON4);
 			wait_for_ready = ((wait_for_ready & 0x8000) >> 15);
 			if (wait_for_ready)
 				break;
@@ -531,29 +538,29 @@ static void spk_auto_trim_offset(void)
 	else
 		pr_warn("spk_auto_trim_offset fail\n");
 
-	ana_set_reg(SPK_CON9, 0x0, 0xffff);
-	ana_set_reg(SPK_CON5, 0, 0x7800);	/* set gain R */
-	ana_set_reg(SPK_CON0, 0x0000, 0x0001);
-	ana_set_reg(SPK_CON3, 0x0000, 0x0001);
+	ana_set_reg(MT6397_SPK_CON9, 0x0, 0xffff);
+	ana_set_reg(MT6397_SPK_CON5, 0, 0x7800);	/* set gain R */
+	ana_set_reg(MT6397_SPK_CON0, 0x0000, 0x0001);
+	ana_set_reg(MT6397_SPK_CON3, 0x0000, 0x0001);
 
 	/* get trim offset result */
 	pr_debug("GetSPKAutoTrimOffset ");
-	ana_set_reg(TEST_CON0, 0x0805, 0xffff);
-	reg1 = ana_get_reg(TEST_OUT_L);
+	ana_set_reg(MT6397_TEST_CON0, 0x0805, 0xffff);
+	reg1 = ana_get_reg(MT6397_TEST_OUT_L);
 	codec_data->spk_l_trim = ((reg1 >> 0) & 0xf);
-	ana_set_reg(TEST_CON0, 0x0806, 0xffff);
-	reg1 = ana_get_reg(TEST_OUT_L);
+	ana_set_reg(MT6397_TEST_CON0, 0x0806, 0xffff);
+	reg1 = ana_get_reg(MT6397_TEST_OUT_L);
 	codec_data->spk_l_trim |= 0xF;
 	codec_data->spk_l_polarity = ((reg1 >> 1) & 0x1);
-	ana_set_reg(TEST_CON0, 0x080E, 0xffff);
-	reg1 = ana_get_reg(TEST_OUT_L);
+	ana_set_reg(MT6397_TEST_CON0, 0x080E, 0xffff);
+	reg1 = ana_get_reg(MT6397_TEST_OUT_L);
 	codec_data->spk_r_trim = ((reg1 >> 0) & 0xf);
-	ana_set_reg(TEST_CON0, 0x080F, 0xffff);
-	reg1 = ana_get_reg(TEST_OUT_L);
+	ana_set_reg(MT6397_TEST_CON0, 0x080F, 0xffff);
+	reg1 = ana_get_reg(MT6397_TEST_OUT_L);
 	codec_data->spk_r_trim |= (((reg1 >> 0) & 0x1) << 4);
 	codec_data->spk_r_polarity = ((reg1 >> 1) & 0x1);
 
-	chip_version = ana_get_reg(CID);
+	chip_version = ana_get_reg(MT6397_CID);
 	if (chip_version == 0x1097 /*upstream todo remove hard code*/) {
 		pr_info("PMIC is MT6397 E1, set speaker R trim code to 0\n");
 		codec_data->spk_r_trim = 0;
@@ -567,21 +574,22 @@ static void spk_auto_trim_offset(void)
 
 	/* turn off speaker after trim */
 	ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
-	ana_set_reg(SPK_CON0, 0x0000, 0xffff);
-	ana_set_reg(SPK_CON3, 0x0000, 0xffff);
-	ana_set_reg(SPK_CON11, 0x0000, 0xffff);
+	ana_set_reg(MT6397_SPK_CON0, 0x0000, 0xffff);
+	ana_set_reg(MT6397_SPK_CON3, 0x0000, 0xffff);
+	ana_set_reg(MT6397_SPK_CON11, 0x0000, 0xffff);
 
 	/* enable LDO ; fix me , seperate for UL  DL LDO */
-	ana_set_reg(AUDCLKGEN_CFG0, 0x0000, 0x0001);
-	ana_set_reg(AUDDAC_CON0, 0x0000, 0xffff);	/* RG DEV ck on */
-	ana_set_reg(AUD_IV_CFG0, 0x0000, 0xffff);	/* NCP on */
+	ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
+	/* RG DEV ck on */
+	ana_set_reg(MT6397_AUDDAC_CON0, 0x0000, 0xffff);
+	ana_set_reg(MT6397_AUD_IV_CFG0, 0x0000, 0xffff);	/* NCP on */
 	/* Audio headset power on */
-	ana_set_reg(IBIASDIST_CFG0, 0x1552, 0xffff);
+	ana_set_reg(MT6397_IBIASDIST_CFG0, 0x1552, 0xffff);
 
-	ana_set_reg(AUDNVREGGLB_CFG0, 0x0006, 0xffff);
-	ana_set_reg(NCP_CLKDIV_CON1, 0x0001, 0xffff);	/* fix me */
-	ana_set_reg(AUD_NCP0, 0x0000, 0x6000);
-	ana_set_reg(AUDLDO_CFG0, 0x0192, 0xffff);
+	ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x0006, 0xffff);
+	ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0001, 0xffff);	/* fix me */
+	ana_set_reg(MT6397_AUD_NCP0, 0x0000, 0x6000);
+	ana_set_reg(MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 	ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 }
 
@@ -637,7 +645,7 @@ static void set_hp_trim_offset(void)
 	AUDBUG_reg |= codec_data->hp_l_fine_trim << 9;
 	AUDBUG_reg |= codec_data->hp_r_trim << 4;
 	AUDBUG_reg |= codec_data->hp_l_trim;
-	ana_set_reg(AUDBUF_CFG3, AUDBUG_reg, 0x1fff);
+	ana_set_reg(MT6397_AUDBUF_CFG3, AUDBUG_reg, 0x1fff);
 }
 
 static void set_spk_trim_offset(void)
@@ -648,13 +656,13 @@ static void set_spk_trim_offset(void)
 	AUDBUG_reg |= codec_data->spk_l_polarity << 13;	/* polarity */
 	AUDBUG_reg |= codec_data->spk_l_trim << 8;	/* polarity */
 	pr_debug("SetSPKlTrimOffset AUDBUG_reg = 0x%x\n", AUDBUG_reg);
-	ana_set_reg(SPK_CON1, AUDBUG_reg, 0x7f00);
+	ana_set_reg(MT6397_SPK_CON1, AUDBUG_reg, 0x7f00);
 	AUDBUG_reg = 0;
 	AUDBUG_reg |= 1 << 14;	/* enable trim function */
 	AUDBUG_reg |= codec_data->spk_r_polarity << 13;	/* polarity */
 	AUDBUG_reg |= codec_data->spk_r_trim << 8;	/* polarity */
 	pr_debug("SetSPKrTrimOffset AUDBUG_reg = 0x%x\n", AUDBUG_reg);
-	ana_set_reg(SPK_CON4, AUDBUG_reg, 0x7f00);
+	ana_set_reg(MT6397_SPK_CON4, AUDBUG_reg, 0x7f00);
 }
 
 static void set_iv_hp_trim_offset(void)
@@ -681,7 +689,7 @@ static void set_iv_hp_trim_offset(void)
 
 	AUDBUG_reg |= codec_data->iv_hp_r_trim << 4;
 	AUDBUG_reg |= codec_data->iv_hp_l_trim;
-	ana_set_reg(AUDBUF_CFG3, AUDBUG_reg, 0x1fff);
+	ana_set_reg(MT6397_AUDBUF_CFG3, AUDBUG_reg, 0x1fff);
 }
 
 static void audio_amp_change(int channels, bool enable)
@@ -696,48 +704,48 @@ static void audio_amp_change(int channels, bool enable)
 			ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
 			set_hp_trim_offset();
 			/* enable VA28 , VA 33 VBAT ref , set dc */
-			ana_set_reg(AUDLDO_CFG0, 0x0D92, 0xffff);
+			ana_set_reg(MT6397_AUDLDO_CFG0, 0x0D92, 0xffff);
 			/* set ACC mode      enable NVREF */
-			ana_set_reg(AUDNVREGGLB_CFG0, 0x000C, 0xffff);
+			ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x000C, 0xffff);
 			/* enable LDO ; fix me , seperate for UL  DL LDO */
-			ana_set_reg(AUD_NCP0, 0xE000, 0xE000);
+			ana_set_reg(MT6397_AUD_NCP0, 0xE000, 0xE000);
 			/* RG DEV ck on */
-			ana_set_reg(NCP_CLKDIV_CON0, 0x102b, 0xffff);
+			ana_set_reg(MT6397_NCP_CLKDIV_CON0, 0x102b, 0xffff);
 			/* NCP on */
-			ana_set_reg(NCP_CLKDIV_CON1, 0x0000, 0xffff);
+			ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);
 			/* msleep(1);// temp remove */
 			usleep_range(200, 210);
 
-			ana_set_reg(ZCD_CON0, 0x0101, 0xffff);
-			ana_set_reg(AUDACCDEPOP_CFG0, 0x0030, 0xffff);
-			ana_set_reg(AUDBUF_CFG0, 0x0008, 0xffff);
-			ana_set_reg(IBIASDIST_CFG0, 0x0552, 0xffff);
-			ana_set_reg(ZCD_CON2, 0x0c0c, 0xffff);
-			ana_set_reg(ZCD_CON3, 0x000F, 0xffff);
-			ana_set_reg(AUDBUF_CFG1, 0x0900, 0xffff);
-			ana_set_reg(AUDBUF_CFG2, 0x0082, 0xffff);
+			ana_set_reg(MT6397_ZCD_CON0, 0x0101, 0xffff);
+			ana_set_reg(MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG0, 0x0008, 0xffff);
+			ana_set_reg(MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
+			ana_set_reg(MT6397_ZCD_CON2, 0x0c0c, 0xffff);
+			ana_set_reg(MT6397_ZCD_CON3, 0x000F, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG1, 0x0900, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG2, 0x0082, 0xffff);
 			/* msleep(1);// temp remove */
 
-			ana_set_reg(AUDBUF_CFG0, 0x0009, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG0, 0x0009, 0xffff);
 			/* msleep(30); //temp */
 
-			ana_set_reg(AUDBUF_CFG1, 0x0940, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG1, 0x0940, 0xffff);
 			usleep_range(200, 210);
-			ana_set_reg(AUDBUF_CFG0, 0x000F, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG0, 0x000F, 0xffff);
 			/* msleep(1);// temp remove */
 
-			ana_set_reg(AUDBUF_CFG1, 0x0100, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG1, 0x0100, 0xffff);
 			usleep_range(100, 110);
-			ana_set_reg(AUDBUF_CFG2, 0x0022, 0xffff);
-			ana_set_reg(ZCD_CON2, 0x00c0c, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG2, 0x0022, 0xffff);
+			ana_set_reg(MT6397_ZCD_CON2, 0x00c0c, 0xffff);
 			usleep_range(100, 110);
 			/* msleep(1);// temp remove */
 
-			ana_set_reg(AUDCLKGEN_CFG0, 0x0001, 0x0001);
-			ana_set_reg(AUDDAC_CON0, 0x000F, 0xffff);
+			ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
+			ana_set_reg(MT6397_AUDDAC_CON0, 0x000F, 0xffff);
 			usleep_range(100, 110);
 			/* msleep(1);// temp remove */
-			ana_set_reg(AUDBUF_CFG0, 0x0006, 0x0007);
+			ana_set_reg(MT6397_AUDBUF_CFG0, 0x0006, 0x0007);
 			set_mux(MTCODEC_DEVICE_OUT_HSR, MTCODEC_MUX_AUDIO);
 			set_mux(MTCODEC_DEVICE_OUT_HSL, MTCODEC_MUX_AUDIO);
 
@@ -750,24 +758,25 @@ static void audio_amp_change(int channels, bool enable)
 		if (!codec_data->device_power[MTCODEC_VOL_HPOUTL] &&
 		    !codec_data->device_power[MTCODEC_VOL_HPOUTR]) {
 			ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
-			ana_set_reg(ZCD_CON2, 0x0c0c, 0xffff);
-			ana_set_reg(AUDBUF_CFG0, 0x0000, 0x1fe7);
+			ana_set_reg(MT6397_ZCD_CON2, 0x0c0c, 0xffff);
+			ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x1fe7);
 			/* RG DEV ck off; */
-			ana_set_reg(IBIASDIST_CFG0, 0x1552, 0xffff);
+			ana_set_reg(MT6397_IBIASDIST_CFG0, 0x1552, 0xffff);
 			/* NCP off */
-			ana_set_reg(AUDDAC_CON0, 0x0000, 0xffff);
-			ana_set_reg(AUDCLKGEN_CFG0, 0x0000, 0x0001);
+			ana_set_reg(MT6397_AUDDAC_CON0, 0x0000, 0xffff);
+			ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
 
 			if (get_uplink_status() == false)
 				/* need check */
-				ana_set_reg(AUDNVREGGLB_CFG0, 0x0006, 0xffff);
+				ana_set_reg(MT6397_AUDNVREGGLB_CFG0,
+					0x0006, 0xffff);
 
 			 /* fix me */
-			ana_set_reg(NCP_CLKDIV_CON1, 0x0001, 0xffff);
-			ana_set_reg(AUD_NCP0, 0x0000, 0x6000);
+			ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0001, 0xffff);
+			ana_set_reg(MT6397_AUD_NCP0, 0x0000, 0x6000);
 
 			if (get_uplink_status() == false)
-				ana_set_reg(AUDLDO_CFG0, 0x0192, 0xffff);
+				ana_set_reg(MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 
 			ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 			if (get_dl_status() == false)
@@ -822,95 +831,100 @@ static void speaker_amp_change(bool enable)
 		ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
 		set_spk_trim_offset();
 		/* enable VA28 , VA 33 VBAT ref , set dc */
-		ana_set_reg(AUDLDO_CFG0, 0x0D92, 0xffff);
+		ana_set_reg(MT6397_AUDLDO_CFG0, 0x0D92, 0xffff);
 		/* set ACC mode  enable NVREF */
-		ana_set_reg(AUDNVREGGLB_CFG0, 0x000C, 0xffff);
+		ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x000C, 0xffff);
 		/* enable LDO ; fix me , seperate for UL  DL LDO */
-		ana_set_reg(AUD_NCP0, 0xE000, 0xE000);
+		ana_set_reg(MT6397_AUD_NCP0, 0xE000, 0xE000);
 		/* RG DEV ck on */
-		ana_set_reg(NCP_CLKDIV_CON0, 0x102B, 0xffff);
-		ana_set_reg(NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
+		ana_set_reg(MT6397_NCP_CLKDIV_CON0, 0x102B, 0xffff);
+		/* NCP on */
+		ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);
 		usleep_range(200, 210);
 		/* ZCD setting gain step gain and enable */
-		ana_set_reg(ZCD_CON0, 0x0301, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON0, 0x0301, 0xffff);
 		/* audio bias adjustment */
-		ana_set_reg(IBIASDIST_CFG0, 0x0552, 0xffff);
+		ana_set_reg(MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
 		/* set DUDIV gain ,iv buffer gain */
-		ana_set_reg(ZCD_CON4, 0x0505, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON4, 0x0505, 0xffff);
 		/* set IV buffer on */
-		ana_set_reg(AUD_IV_CFG0, 0x1111, 0xffff);
+		ana_set_reg(MT6397_AUD_IV_CFG0, 0x1111, 0xffff);
 		usleep_range(100, 110);
 		/* reset docoder */
-		ana_set_reg(AUDCLKGEN_CFG0, 0x0001, 0x0001);
+		ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
 		/* power on DAC */
-		ana_set_reg(AUDDAC_CON0, 0x000f, 0xffff);
+		ana_set_reg(MT6397_AUDDAC_CON0, 0x000f, 0xffff);
 		usleep_range(100, 110);
 		set_mux(MTCODEC_DEVICE_OUT_SPKR, MTCODEC_MUX_AUDIO);
 		set_mux(MTCODEC_DEVICE_OUT_SPKL, MTCODEC_MUX_AUDIO);
-		ana_set_reg(AUDBUF_CFG0, 0x0000, 0x0007);	/* set Mux */
+		/* set Mux */
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x0007);
 		ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
-
-		ana_set_reg(SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
-		ana_set_reg(SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
+		/* set gain L */
+		ana_set_reg(MT6397_SPK_CON9, 0x0100, 0x0f00);
+		/* set gain R */
+		ana_set_reg(MT6397_SPK_CON5, (0x1 << 11), 0x7800);
 
 		/*Class D amp*/
 		if (codec_data->spk_channel_sel == 0) {
 			/* Stereo */
-			ana_set_reg(SPK_CON0, 0x3009, 0xffff);
-			ana_set_reg(SPK_CON3, 0x3009, 0xffff);
-			ana_set_reg(SPK_CON2, 0x0014, 0xffff);
-			ana_set_reg(SPK_CON5, 0x0014, 0x07ff);
+			ana_set_reg(MT6397_SPK_CON0, 0x3009, 0xffff);
+			ana_set_reg(MT6397_SPK_CON3, 0x3009, 0xffff);
+			ana_set_reg(MT6397_SPK_CON2, 0x0014, 0xffff);
+			ana_set_reg(MT6397_SPK_CON5, 0x0014, 0x07ff);
 		} else if (codec_data->spk_channel_sel == 1) {
 			/* MonoLeft */
-			ana_set_reg(SPK_CON0, 0x3009, 0xffff);
-			ana_set_reg(SPK_CON2, 0x0014, 0xffff);
+			ana_set_reg(MT6397_SPK_CON0, 0x3009, 0xffff);
+			ana_set_reg(MT6397_SPK_CON2, 0x0014, 0xffff);
 		} else if (codec_data->spk_channel_sel == 2) {
 			/* MonoRight */
-			ana_set_reg(SPK_CON3, 0x3009, 0xffff);
-			ana_set_reg(SPK_CON5, 0x0014, 0x07ff);
+			ana_set_reg(MT6397_SPK_CON3, 0x3009, 0xffff);
+			ana_set_reg(MT6397_SPK_CON5, 0x0014, 0x07ff);
 		} else {
 			/*AUDIO_ASSERT(true);*/
 		}
 
 		if (codec_data->spk_channel_sel == 0) {
 			/* Stereo SPK gain setting*/
-			ana_set_reg(SPK_CON9, 0x0800, 0xffff);
-			ana_set_reg(SPK_CON5, (0x8 << 11), 0x7800);
+			ana_set_reg(MT6397_SPK_CON9, 0x0800, 0xffff);
+			ana_set_reg(MT6397_SPK_CON5, (0x8 << 11), 0x7800);
 		} else if (codec_data->spk_channel_sel == 1) {
 			/* MonoLeft SPK gain setting*/
-			ana_set_reg(SPK_CON9, 0x0800, 0xffff);
+			ana_set_reg(MT6397_SPK_CON9, 0x0800, 0xffff);
 		} else if (codec_data->spk_channel_sel == 2) {
 			/* MonoRight SPK gain setting*/
-			ana_set_reg(SPK_CON5, (0x8 << 11), 0x7800);
+			ana_set_reg(MT6397_SPK_CON5, (0x8 << 11), 0x7800);
 		} else {
 			/*AUDIO_ASSERT(true);*/
 		}
 		/* spk output stage enabke and enable */
-		ana_set_reg(SPK_CON11, 0x0f00, 0xffff);
+		ana_set_reg(MT6397_SPK_CON11, 0x0f00, 0xffff);
 		usleep_range(4000, 5000);
 		pr_debug("AudCodec turn on speaker_amp_change done\n");
 
 	} else {
 		pr_debug("AudCodec turn off speaker_amp_change\n");
 		ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
-		ana_set_reg(SPK_CON0, 0x0000, 0xffff);
-		ana_set_reg(SPK_CON3, 0x0000, 0xffff);
-		ana_set_reg(SPK_CON11, 0x0000, 0xffff);
+		ana_set_reg(MT6397_SPK_CON0, 0x0000, 0xffff);
+		ana_set_reg(MT6397_SPK_CON3, 0x0000, 0xffff);
+		ana_set_reg(MT6397_SPK_CON11, 0x0000, 0xffff);
 		/* enable LDO ; fix me , seperate for UL  DL LDO */
-		ana_set_reg(AUDCLKGEN_CFG0, 0x0000, 0x0001);
+		ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
 		/* RG DEV ck on */
-		ana_set_reg(AUDDAC_CON0, 0x0000, 0xffff);
-		ana_set_reg(AUD_IV_CFG0, 0x0000, 0xffff);	/* NCP on */
+		ana_set_reg(MT6397_AUDDAC_CON0, 0x0000, 0xffff);
+		/* NCP on */
+		ana_set_reg(MT6397_AUD_IV_CFG0, 0x0000, 0xffff);
 		/* Audio headset power on */
-		ana_set_reg(IBIASDIST_CFG0, 0x1552, 0xffff);
+		ana_set_reg(MT6397_IBIASDIST_CFG0, 0x1552, 0xffff);
 		/* ana_set_reg(AUDBUF_CFG1, 0x0000, 0x0100); */
 		if (get_uplink_status() == false)
-			ana_set_reg(AUDNVREGGLB_CFG0, 0x0006, 0xffff);
+			ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x0006, 0xffff);
 
-		ana_set_reg(NCP_CLKDIV_CON1, 0x0001, 0xffff);	/* fix me */
-		ana_set_reg(AUD_NCP0, 0x0000, 0x6000);
+		/* fix me */
+		ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0001, 0xffff);
+		ana_set_reg(MT6397_AUD_NCP0, 0x0000, 0x6000);
 		if (get_uplink_status() == false)
-			ana_set_reg(AUDLDO_CFG0, 0x0192, 0xffff);
+			ana_set_reg(MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 
 		ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 		/* disable SPK related CLK        //Luke */
@@ -919,7 +933,7 @@ static void speaker_amp_change(bool enable)
 			turn_off_dac_power();
 
 		/* temp solution, set ZCD_CON0 to 0x101 for pop noise */
-		ana_set_reg(ZCD_CON0, 0x0101, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON0, 0x0101, 0xffff);
 		pr_debug("AudCodec turn off speaker_amp_change done\n");
 	}
 }
@@ -968,63 +982,80 @@ static void headset_speaker_amp_change(bool enable)
 		set_spk_trim_offset();
 
 		/* enable VA28 , VA 33 VBAT ref , set dc */
-		ana_set_reg(AUDLDO_CFG0, 0x0D92, 0xffff);
+		ana_set_reg(MT6397_AUDLDO_CFG0, 0x0D92, 0xffff);
 		/* set ACC mode  enable NVREF */
-		ana_set_reg(AUDNVREGGLB_CFG0, 0x000C, 0xffff);
+		ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x000C, 0xffff);
 		/* enable LDO ; fix me , seperate for UL  DL LDO */
-		ana_set_reg(AUD_NCP0, 0xE000, 0xE000);
-		ana_set_reg(NCP_CLKDIV_CON0, 0x102B, 0xffff); /* RG DEV ck on */
-		ana_set_reg(NCP_CLKDIV_CON1, 0x0000, 0xffff); /* NCP on */
+		ana_set_reg(MT6397_AUD_NCP0, 0xE000, 0xE000);
+		/* RG DEV ck on */
+		ana_set_reg(MT6397_NCP_CLKDIV_CON0, 0x102B, 0xffff);
+		/* NCP on */
+		ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);
 		usleep_range(200, 210);
 
 		/* ZCD setting gain step gain and enable */
-		ana_set_reg(ZCD_CON0, 0x0301, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON0, 0x0301, 0xffff);
 		/* select charge current ; fix me */
-		ana_set_reg(AUDACCDEPOP_CFG0, 0x0030, 0xffff);
+		ana_set_reg(MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
 		/* set voice playback with headset */
-		ana_set_reg(AUDBUF_CFG0, 0x0008, 0xffff);
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x0008, 0xffff);
 		/* audio bias adjustment */
-		ana_set_reg(IBIASDIST_CFG0, 0x0552, 0xffff);
-		ana_set_reg(ZCD_CON2, 0x0C0C, 0xffff);	/* HP PGA gain */
-		ana_set_reg(ZCD_CON3, 0x000F, 0xffff);	/* HP PGA gain */
-		ana_set_reg(AUDBUF_CFG1, 0x0900, 0xffff); /* HP enhance */
-		ana_set_reg(AUDBUF_CFG2, 0x0082, 0xffff); /* HS enahnce */
-		ana_set_reg(AUDBUF_CFG0, 0x0009, 0xffff);
-		ana_set_reg(AUDBUF_CFG1, 0x0940, 0xffff); /* HP vcm short */
+		ana_set_reg(MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
+		/* HP PGA gain */
+		ana_set_reg(MT6397_ZCD_CON2, 0x0C0C, 0xffff);
+		/* HP PGA gain */
+		ana_set_reg(MT6397_ZCD_CON3, 0x000F, 0xffff);
+		/* HP enhance */
+		ana_set_reg(MT6397_AUDBUF_CFG1, 0x0900, 0xffff);
+		/* HS enahnce */
+		ana_set_reg(MT6397_AUDBUF_CFG2, 0x0082, 0xffff);
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x0009, 0xffff);
+		/* HP vcm short */
+		ana_set_reg(MT6397_AUDBUF_CFG1, 0x0940, 0xffff);
 		usleep_range(200, 210);
-		ana_set_reg(AUDBUF_CFG0, 0x000F, 0xffff); /* HP power on */
-		ana_set_reg(AUDBUF_CFG1, 0x0100, 0xffff); /* HP vcm not short */
+		/* HP power on */
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x000F, 0xffff);
+		/* HP vcm not short */
+		ana_set_reg(MT6397_AUDBUF_CFG1, 0x0100, 0xffff);
 		usleep_range(100, 110);
-		ana_set_reg(AUDBUF_CFG2, 0x0022, 0xffff); /* HS VCM not short */
+		/* HS VCM not short */
+		ana_set_reg(MT6397_AUDBUF_CFG2, 0x0022, 0xffff);
 
-		ana_set_reg(ZCD_CON2, 0x0808, 0xffff);	/* HP PGA gain */
+		/* HP PGA gain */
+		ana_set_reg(MT6397_ZCD_CON2, 0x0808, 0xffff);
 		usleep_range(100, 110);
-		ana_set_reg(ZCD_CON4, 0x0505, 0xffff);	/* HP PGA gain */
+		/* HP PGA gain */
+		ana_set_reg(MT6397_ZCD_CON4, 0x0505, 0xffff);
 
-		ana_set_reg(AUD_IV_CFG0, 0x1111, 0xffff); /* set IV buffer on */
+		/* set IV buffer on */
+		ana_set_reg(MT6397_AUD_IV_CFG0, 0x1111, 0xffff);
 		usleep_range(100, 110);
-		ana_set_reg(AUDCLKGEN_CFG0, 0x0001, 0x0001); /* reset docoder */
-		ana_set_reg(AUDDAC_CON0, 0x000F, 0xffff); /* power on DAC */
+		/* reset docoder */
+		ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
+		/* power on DAC */
+		ana_set_reg(MT6397_AUDDAC_CON0, 0x000F, 0xffff);
 		usleep_range(100, 110);
 		set_mux(MTCODEC_DEVICE_OUT_SPKR, MTCODEC_MUX_AUDIO);
 		set_mux(MTCODEC_DEVICE_OUT_SPKL, MTCODEC_MUX_AUDIO);
 		/* set headhpone mux */
-		ana_set_reg(AUDBUF_CFG0, 0x1106, 0x1106);
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x1106, 0x1106);
 
-		ana_set_reg(SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
-		ana_set_reg(SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
+		ana_set_reg(MT6397_SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
+		/* set gain R */
+		ana_set_reg(MT6397_SPK_CON5, (0x1 << 11), 0x7800);
 
 		/*speaker gain setting, trim enable, spk enable, class D*/
-		ana_set_reg(SPK_CON0, 0x3009, 0xffff);
-		ana_set_reg(SPK_CON3, 0x3009, 0xffff);
-		ana_set_reg(SPK_CON2, 0x0014, 0xffff);
-		ana_set_reg(SPK_CON5, 0x0014, 0x07ff);
+		ana_set_reg(MT6397_SPK_CON0, 0x3009, 0xffff);
+		ana_set_reg(MT6397_SPK_CON3, 0x3009, 0xffff);
+		ana_set_reg(MT6397_SPK_CON2, 0x0014, 0xffff);
+		ana_set_reg(MT6397_SPK_CON5, 0x0014, 0x07ff);
 
-		ana_set_reg(SPK_CON9, 0x0400, 0xffff);	/* SPK gain setting */
+		/* SPK gain setting */
+		ana_set_reg(MT6397_SPK_CON9, 0x0400, 0xffff);
 		/* SPK-R gain setting */
-		ana_set_reg(SPK_CON5, (0x4 << 11), 0x7800);
+		ana_set_reg(MT6397_SPK_CON5, (0x4 << 11), 0x7800);
 		/* spk output stage enabke and enableAudioClockPortDST */
-		ana_set_reg(SPK_CON11, 0x0f00, 0xffff);
+		ana_set_reg(MT6397_SPK_CON11, 0x0f00, 0xffff);
 		ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 		usleep_range(4000, 5000);
 
@@ -1033,27 +1064,27 @@ static void headset_speaker_amp_change(bool enable)
 	} else {
 		pr_debug("AudCodec turn off headset_speaker_amp_change\n");
 		ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
-		ana_set_reg(SPK_CON0, 0x0000, 0xffff);
-		ana_set_reg(SPK_CON3, 0x0000, 0xffff);
-		ana_set_reg(SPK_CON11, 0x0000, 0xffff);
-		ana_set_reg(ZCD_CON2, 0x0C0C, 0x0f0f);
+		ana_set_reg(MT6397_SPK_CON0, 0x0000, 0xffff);
+		ana_set_reg(MT6397_SPK_CON3, 0x0000, 0xffff);
+		ana_set_reg(MT6397_SPK_CON11, 0x0000, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON2, 0x0C0C, 0x0f0f);
 
-		ana_set_reg(AUDBUF_CFG0, 0x0000, 0x0007);
-		ana_set_reg(AUDBUF_CFG0, 0x0000, 0x1fe0);
-		ana_set_reg(IBIASDIST_CFG0, 0x1552, 0xffff);
-		ana_set_reg(AUDDAC_CON0, 0x0000, 0xffff);
-		ana_set_reg(AUDCLKGEN_CFG0, 0x0000, 0x0001);
-		ana_set_reg(AUD_IV_CFG0, 0x0010, 0xffff);
-		ana_set_reg(AUDBUF_CFG1, 0x0000, 0x0100);
-		ana_set_reg(AUDBUF_CFG2, 0x0000, 0x0080);
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x0007);
+		ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x1fe0);
+		ana_set_reg(MT6397_IBIASDIST_CFG0, 0x1552, 0xffff);
+		ana_set_reg(MT6397_AUDDAC_CON0, 0x0000, 0xffff);
+		ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
+		ana_set_reg(MT6397_AUD_IV_CFG0, 0x0010, 0xffff);
+		ana_set_reg(MT6397_AUDBUF_CFG1, 0x0000, 0x0100);
+		ana_set_reg(MT6397_AUDBUF_CFG2, 0x0000, 0x0080);
 
 		if (!get_uplink_status())
-			ana_set_reg(AUDNVREGGLB_CFG0, 0x0006, 0xffff);
+			ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x0006, 0xffff);
 
-		ana_set_reg(NCP_CLKDIV_CON1, 0x0001, 0xffff);
-		ana_set_reg(AUD_NCP0, 0x0000, 0x6000);
+		ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0001, 0xffff);
+		ana_set_reg(MT6397_AUD_NCP0, 0x0000, 0x6000);
 		if (!get_uplink_status())
-			ana_set_reg(AUDLDO_CFG0, 0x0192, 0xffff);
+			ana_set_reg(MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 
 		ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
 		/* disable SPK related CLK   //Luke */
@@ -1062,7 +1093,7 @@ static void headset_speaker_amp_change(bool enable)
 			turn_off_dac_power();
 		pr_debug("AudCodec turn off headset_speaker_amp_change done\n");
 		/* ZCD setting gain step gain and enable */
-		ana_set_reg(ZCD_CON0, 0x0101, 0xffff);
+		ana_set_reg(MT6397_ZCD_CON0, 0x0101, 0xffff);
 	}
 }
 
@@ -1140,7 +1171,7 @@ static int speaker_pga_l_set(struct snd_kcontrol *kcontrol,
 	}
 
 	index = ucontrol->value.integer.value[0];
-	ana_set_reg(SPK_CON9, index << 8, 0x00000f00);
+	ana_set_reg(MT6397_SPK_CON9, index << 8, 0x00000f00);
 	codec_data->volume[MTCODEC_VOL_SPKL] =
 		ucontrol->value.integer.value[0];
 	return 0;
@@ -1170,7 +1201,7 @@ static int speaker_pga_r_set(struct snd_kcontrol *kcontrol,
 	}
 
 	index = ucontrol->value.integer.value[0];
-	ana_set_reg(SPK_CON5, index << 11, 0x00007800);
+	ana_set_reg(MT6397_SPK_CON5, index << 11, 0x00007800);
 	codec_data->volume[MTCODEC_VOL_SPKR] =
 		ucontrol->value.integer.value[0];
 	return 0;
@@ -1217,7 +1248,7 @@ static int headset_pga_l_set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	index = ucontrol->value.integer.value[0];
-	ana_set_reg(ZCD_CON2, index, 0x0000000F);
+	ana_set_reg(MT6397_ZCD_CON2, index, 0x0000000F);
 	codec_data->volume[MTCODEC_VOL_HPOUTL] =
 		ucontrol->value.integer.value[0];
 	return 0;
@@ -1246,7 +1277,7 @@ static int headset_pga_r_set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	index = ucontrol->value.integer.value[0];
-	ana_set_reg(ZCD_CON2, index << 8, 0x000000F00);
+	ana_set_reg(MT6397_ZCD_CON2, index << 8, 0x000000F00);
 	codec_data->volume[MTCODEC_VOL_HPOUTR] =
 		ucontrol->value.integer.value[0];
 	return 0;
@@ -1305,19 +1336,21 @@ static void mt6397_codec_init_reg(struct snd_soc_codec *codec)
 	pr_debug("AudCodec mt6397_codec_init_reg\n");
 
 	/* power_init */
-	ana_set_reg(TOP_CKCON1, 0x0000, 0x0010); /*bit4: RG_CLKSQ_EN*/
+	ana_set_reg(MT6397_TOP_CKCON1, 0x0000, 0x0010); /*bit4: RG_CLKSQ_EN*/
 	ana_set_reg(AFUNC_AUD_CON2, 0x0080, 0x0080);
-	ana_set_reg(ZCD_CON2, 0x0c0c, 0xffff);
-	ana_set_reg(AUDBUF_CFG0, 0x0000, 0x1fe7);
-	ana_set_reg(IBIASDIST_CFG0, 0x1552, 0xffff);	/* RG DEV ck off; */
-	ana_set_reg(AUDDAC_CON0, 0x0000, 0xffff);	/* NCP off */
-	ana_set_reg(AUDCLKGEN_CFG0, 0x0000, 0x0001);
-	ana_set_reg(AUDNVREGGLB_CFG0, 0x0006, 0xffff);	/* need check */
-	ana_set_reg(NCP_CLKDIV_CON1, 0x0001, 0xffff);	/* fix me */
-	ana_set_reg(AUD_NCP0, 0x0000, 0x6000);
-	ana_set_reg(AUDLDO_CFG0, 0x0192, 0xffff);
+	ana_set_reg(MT6397_ZCD_CON2, 0x0c0c, 0xffff);
+	ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x1fe7);
+	/* RG DEV ck off; */
+	ana_set_reg(MT6397_IBIASDIST_CFG0, 0x1552, 0xffff);
+	ana_set_reg(MT6397_AUDDAC_CON0, 0x0000, 0xffff);	/* NCP off */
+	ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
+	ana_set_reg(MT6397_AUDNVREGGLB_CFG0, 0x0006, 0xffff);	/* need check */
+	ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0001, 0xffff);	/* fix me */
+	ana_set_reg(MT6397_AUD_NCP0, 0x0000, 0x6000);
+	ana_set_reg(MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 	ana_set_reg(AFUNC_AUD_CON2, 0x0000, 0x0080);
-	ana_set_reg(ZCD_CON0, 0x0101, 0xffff); /* gain step gain and enable */
+	/* gain step gain and enable */
+	ana_set_reg(MT6397_ZCD_CON0, 0x0101, 0xffff);
 }
 
 static int mt6397_codec_probe(struct snd_soc_codec *codec)
@@ -1443,107 +1476,107 @@ static ssize_t mt_codec_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n,
 		       "======PMIC analog registers====\n");
 	n += scnprintf(buffer + n, size - n, "TOP_CKPDN = 0x%x\n",
-		       ana_get_reg(TOP_CKPDN));
+		       ana_get_reg(MT6397_TOP_CKPDN));
 	n += scnprintf(buffer + n, size - n, "TOP_CKPDN2 = 0x%x\n",
-		       ana_get_reg(TOP_CKPDN2));
+		       ana_get_reg(MT6397_TOP_CKPDN2));
 	n += scnprintf(buffer + n, size - n, "TOP_CKCON1 = 0x%x\n",
-		       ana_get_reg(TOP_CKCON1));
+		       ana_get_reg(MT6397_TOP_CKCON1));
 	n += scnprintf(buffer + n, size - n, "SPK_CON0 = 0x%x\n",
-		       ana_get_reg(SPK_CON0));
+		       ana_get_reg(MT6397_SPK_CON0));
 	n += scnprintf(buffer + n, size - n, "SPK_CON1 = 0x%x\n",
-		       ana_get_reg(SPK_CON1));
+		       ana_get_reg(MT6397_SPK_CON1));
 	n += scnprintf(buffer + n, size - n, "SPK_CON2 = 0x%x\n",
-		       ana_get_reg(SPK_CON2));
+		       ana_get_reg(MT6397_SPK_CON2));
 	n += scnprintf(buffer + n, size - n, "SPK_CON3 = 0x%x\n",
-		       ana_get_reg(SPK_CON3));
+		       ana_get_reg(MT6397_SPK_CON3));
 	n += scnprintf(buffer + n, size - n, "SPK_CON4 = 0x%x\n",
-		       ana_get_reg(SPK_CON4));
+		       ana_get_reg(MT6397_SPK_CON4));
 	n += scnprintf(buffer + n, size - n, "SPK_CON5 = 0x%x\n",
-		       ana_get_reg(SPK_CON5));
+		       ana_get_reg(MT6397_SPK_CON5));
 	n += scnprintf(buffer + n, size - n, "SPK_CON6 = 0x%x\n",
-		       ana_get_reg(SPK_CON6));
+		       ana_get_reg(MT6397_SPK_CON6));
 	n += scnprintf(buffer + n, size - n, "SPK_CON7 = 0x%x\n",
-		       ana_get_reg(SPK_CON7));
+		       ana_get_reg(MT6397_SPK_CON7));
 	n += scnprintf(buffer + n, size - n, "SPK_CON8 = 0x%x\n",
-		       ana_get_reg(SPK_CON8));
+		       ana_get_reg(MT6397_SPK_CON8));
 	n += scnprintf(buffer + n, size - n, "SPK_CON9 = 0x%x\n",
-		       ana_get_reg(SPK_CON9));
+		       ana_get_reg(MT6397_SPK_CON9));
 	n += scnprintf(buffer + n, size - n, "SPK_CON10 = 0x%x\n",
-		       ana_get_reg(SPK_CON10));
+		       ana_get_reg(MT6397_SPK_CON10));
 	n += scnprintf(buffer + n, size - n, "SPK_CON11 = 0x%x\n",
-		       ana_get_reg(SPK_CON11));
+		       ana_get_reg(MT6397_SPK_CON11));
 	n += scnprintf(buffer + n, size - n, "AUDDAC_CON0 = 0x%x\n",
-		       ana_get_reg(AUDDAC_CON0));
+		       ana_get_reg(MT6397_AUDDAC_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDBUF_CFG0 = 0x%x\n",
-		       ana_get_reg(AUDBUF_CFG0));
+		       ana_get_reg(MT6397_AUDBUF_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUDBUF_CFG1 = 0x%x\n",
-		       ana_get_reg(AUDBUF_CFG1));
+		       ana_get_reg(MT6397_AUDBUF_CFG1));
 	n += scnprintf(buffer + n, size - n, "AUDBUF_CFG2 = 0x%x\n",
-		       ana_get_reg(AUDBUF_CFG2));
+		       ana_get_reg(MT6397_AUDBUF_CFG2));
 	n += scnprintf(buffer + n, size - n, "AUDBUF_CFG3 = 0x%x\n",
-		       ana_get_reg(AUDBUF_CFG3));
+		       ana_get_reg(MT6397_AUDBUF_CFG3));
 	n += scnprintf(buffer + n, size - n, "AUDBUF_CFG4 = 0x%x\n",
-		       ana_get_reg(AUDBUF_CFG4));
+		       ana_get_reg(MT6397_AUDBUF_CFG4));
 	n += scnprintf(buffer + n, size - n, "IBIASDIST_CFG0 = 0x%x\n",
-		       ana_get_reg(IBIASDIST_CFG0));
+		       ana_get_reg(MT6397_IBIASDIST_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUDACCDEPOP_CFG0 = 0x%x\n",
-		       ana_get_reg(AUDACCDEPOP_CFG0));
+		       ana_get_reg(MT6397_AUDACCDEPOP_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUD_IV_CFG0 = 0x%x\n",
-		       ana_get_reg(AUD_IV_CFG0));
+		       ana_get_reg(MT6397_AUD_IV_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUDCLKGEN_CFG0 = 0x%x\n",
-		       ana_get_reg(AUDCLKGEN_CFG0));
+		       ana_get_reg(MT6397_AUDCLKGEN_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUDLDO_CFG0 = 0x%x\n",
-		       ana_get_reg(AUDLDO_CFG0));
+		       ana_get_reg(MT6397_AUDLDO_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUDLDO_CFG1 = 0x%x\n",
-		       ana_get_reg(AUDLDO_CFG1));
+		       ana_get_reg(MT6397_AUDLDO_CFG1));
 	n += scnprintf(buffer + n, size - n, "AUDNVREGGLB_CFG0 = 0x%x\n",
-		       ana_get_reg(AUDNVREGGLB_CFG0));
+		       ana_get_reg(MT6397_AUDNVREGGLB_CFG0));
 	n += scnprintf(buffer + n, size - n, "AUD_NCP0 = 0x%x\n",
-		       ana_get_reg(AUD_NCP0));
+		       ana_get_reg(MT6397_AUD_NCP0));
 	n += scnprintf(buffer + n, size - n, "AUDPREAMP_CON0 = 0x%x\n",
-		       ana_get_reg(AUDPREAMP_CON0));
+		       ana_get_reg(MT6397_AUDPREAMP_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON0 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON0));
+		       ana_get_reg(MT6397_AUDADC_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON1 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON1));
+		       ana_get_reg(MT6397_AUDADC_CON1));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON2 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON2));
+		       ana_get_reg(MT6397_AUDADC_CON2));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON3 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON3));
+		       ana_get_reg(MT6397_AUDADC_CON3));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON4 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON4));
+		       ana_get_reg(MT6397_AUDADC_CON4));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON5 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON5));
+		       ana_get_reg(MT6397_AUDADC_CON5));
 	n += scnprintf(buffer + n, size - n, "AUDADC_CON6 = 0x%x\n",
-		       ana_get_reg(AUDADC_CON6));
+		       ana_get_reg(MT6397_AUDADC_CON6));
 	n += scnprintf(buffer + n, size - n, "AUDDIGMI_CON0 = 0x%x\n",
-		       ana_get_reg(AUDDIGMI_CON0));
+		       ana_get_reg(MT6397_AUDDIGMI_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDLSBUF_CON0 = 0x%x\n",
-		       ana_get_reg(AUDLSBUF_CON0));
+		       ana_get_reg(MT6397_AUDLSBUF_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDLSBUF_CON1 = 0x%x\n",
-		       ana_get_reg(AUDLSBUF_CON1));
+		       ana_get_reg(MT6397_AUDLSBUF_CON1));
 	n += scnprintf(buffer + n, size - n, "AUDENCSPARE_CON0 = 0x%x\n",
-		       ana_get_reg(AUDENCSPARE_CON0));
+		       ana_get_reg(MT6397_AUDENCSPARE_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDENCCLKSQ_CON0 = 0x%x\n",
-		       ana_get_reg(AUDENCCLKSQ_CON0));
+		       ana_get_reg(MT6397_AUDENCCLKSQ_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDPREAMPGAIN_CON0 = 0x%x\n",
-		       ana_get_reg(AUDPREAMPGAIN_CON0));
+		       ana_get_reg(MT6397_AUDPREAMPGAIN_CON0));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON0 = 0x%x\n",
-		       ana_get_reg(ZCD_CON0));
+		       ana_get_reg(MT6397_ZCD_CON0));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON1 = 0x%x\n",
-		       ana_get_reg(ZCD_CON1));
+		       ana_get_reg(MT6397_ZCD_CON1));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON2 = 0x%x\n",
-		       ana_get_reg(ZCD_CON2));
+		       ana_get_reg(MT6397_ZCD_CON2));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON3 = 0x%x\n",
-		       ana_get_reg(ZCD_CON3));
+		       ana_get_reg(MT6397_ZCD_CON3));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON4 = 0x%x\n",
-		       ana_get_reg(ZCD_CON4));
+		       ana_get_reg(MT6397_ZCD_CON4));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON5 = 0x%x\n",
-		       ana_get_reg(ZCD_CON5));
+		       ana_get_reg(MT6397_ZCD_CON5));
 	n += scnprintf(buffer + n, size - n, "NCP_CLKDIV_CON0 = 0x%x\n",
-		       ana_get_reg(NCP_CLKDIV_CON0));
+		       ana_get_reg(MT6397_NCP_CLKDIV_CON0));
 	n += scnprintf(buffer + n, size - n, "NCP_CLKDIV_CON1 = 0x%x\n",
-		       ana_get_reg(NCP_CLKDIV_CON1));
+		       ana_get_reg(MT6397_NCP_CLKDIV_CON1));
 	pr_notice("mt_soc_debug_read len = %d\n", n);
 
 	return simple_read_from_buffer(buf, count, pos, buffer, n);
