@@ -1295,6 +1295,13 @@ static int mt_pmic_wrap_probe(struct platform_device *pdev)
 	if (!ret)
 		g_wrp = wrp;
 
+	ret = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+	if (ret) {
+		dev_err(&pdev->dev, "%s fail to create devices.\n",
+			pdev->dev.of_node->full_name);
+		return ret;
+	}
+
 err_out:
 	return ret;
 }
