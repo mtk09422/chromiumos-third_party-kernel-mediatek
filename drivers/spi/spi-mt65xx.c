@@ -45,8 +45,6 @@
 #define SPI_CMD_REG                       (0x0018)
 #define SPI_STATUS0_REG                   (0x001c)
 #define SPI_STATUS1_REG                   (0x0020)
-#define SPI_GMC_SLOW_REG                  (0x0024)
-#define SPI_ULTRA_HIGH_REG                (0x0028)
 
 #define SPI_CFG0_SCK_HIGH_OFFSET          0
 #define SPI_CFG0_SCK_LOW_OFFSET           8
@@ -100,20 +98,16 @@
 #define SPI_CMD_FINISH_IE_MASK            0x10000
 #define SPI_CMD_PAUSE_IE_MASK             0x20000
 
+/* Register access macros */
 #define spi_readl(port, offset) \
-__raw_readl((port)->regs+(offset))
+	__raw_readl((port)->regs+(offset))
 
 #define spi_writel(port, offset, value) \
-__raw_writel((value), (port)->regs+(offset))
-
-#if (defined(CONFIG_MTK_FPGA))
-#define  CONFIG_MT_SPI_FPGA_ENABLE
-#endif
+	__raw_writel((value), (port)->regs+(offset))
 
 /*open base log out*/
 /* #define SPI_DEBUG */
 
-/*open verbose log out*/
 /* #define SPI_VERBOSE */
 
 #define IDLE 0
@@ -121,9 +115,8 @@ __raw_writel((value), (port)->regs+(offset))
 #define PAUSED 2
 
 #define PACKET_SIZE 0x400
-
 #define SPI_FIFO_SIZE 32
-
+#define SPI_4B_ALIGN 0x4
 #define INVALID_DMA_ADDRESS 0xffffffff
 
 struct mt_spi_t {
@@ -140,131 +133,40 @@ struct mt_spi_t {
 	struct list_head	queue;
 
 };
-/* #define SPI_REC_DEBUG */
 
 #ifdef SPI_VERBOSE
-	#define SPI_INFO(dev, fmt, args...) dev_alert(dev,\
-"spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
+
 static void spi_dump_reg(struct mt_spi_t *ms)
 {
-	pr_debug("||*****************************************||\n");
-	pr_debug("cfg0:0x%.8x\n", spi_readl(ms, SPI_CFG0_REG));
-	pr_debug("cfg1:0x%.8x\n", spi_readl(ms, SPI_CFG1_REG));
-	pr_debug("cmd :0x%.8x\n", spi_readl(ms, SPI_CMD_REG));
-	pr_debug("tx_s:0x%.8x\n", spi_readl(ms, SPI_TX_SRC_REG));
-	pr_debug("rx_d:0x%.8x\n", spi_readl(ms, SPI_RX_DST_REG));
-	pr_debug("sta1:0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
-	pr_debug("||*****************************************||\n");
+	dev_dbg(&ms->pdev->dev, "||*****************************************||\n");
+	dev_dbg(&ms->pdev->dev, "cfg0:0x%.8x\n", spi_readl(ms, SPI_CFG0_REG));
+	dev_dbg(&ms->pdev->dev, "cfg1:0x%.8x\n", spi_readl(ms, SPI_CFG1_REG));
+	dev_dbg(&ms->pdev->dev, "cmd:0x%.8x\n", spi_readl(ms, SPI_CMD_REG));
+	dev_dbg(&ms->pdev->dev, "tx_s:0x%.8x\n", spi_readl(ms, SPI_TX_SRC_REG));
+	dev_dbg(&ms->pdev->dev, "rx_d:0x%.8x\n", spi_readl(ms, SPI_RX_DST_REG));
+	dev_dbg(&ms->pdev->dev, "st1:0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
+	dev_dbg(&ms->pdev->dev, "||*****************************************||\n");
 }
 
 #else
-#define SPI_INFO(dev, fmt, args...)
 static void spi_dump_reg(struct mt_spi_t *ms) {}
 #endif
 
-#ifdef SPI_REC_DEBUG
-
-#define SPI_CLOCK_PERIED 100000
-
-#include <linux/syscalls.h>
-#define SPI_REC_MSG_MAX 500
-#define SPI_REC_NUM 20
-#define SPI_REC_STR_LEN 256
-static u32 spi_speed;
-static char msg_rec[SPI_REC_MSG_MAX][SPI_REC_STR_LEN];
-static int rec_count;
-static int rec_count_tmp = 1;
-static int rec_msg_count;
-
-static atomic_t rec_log_count = ATOMIC_INIT(0);
-
-static unsigned long long rec_msg_time[SPI_REC_MSG_MAX];
-static unsigned long long rec_time;
-
-unsigned long long spi_rec_t0; /* record interrupt act */
-
-
-DEFINE_SPINLOCK(msg_rec_lock);
-
-static inline void spi_rec_time(const char *str)
-{
-	unsigned long flags;
-	char tmp[64];
-
-	spin_lock_irqsave(&msg_rec_lock, flags);
-
-	if (strncmp(str, "msgs", 4) == 0) {
-		rec_msg_count++;
-		if (rec_msg_count >= SPI_REC_MSG_MAX)
-			rec_msg_count = 0;
-		rec_msg_time[rec_msg_count] = sched_clock();
-		msg_rec[rec_msg_count][0] = '\0';
-		sprintf(tmp, "%s,pid:%4d;", str, sys_getpid());
-		strcat(msg_rec[rec_msg_count], tmp);
-	} else if (strncmp(str, "msgn", 4) == 0) {
-		rec_count++;
-		if (rec_count >= SPI_REC_MSG_MAX)
-			rec_count = 0;
-		rec_time = sched_clock();
-		sprintf(tmp, "%s:%8lld;", str,
-			rec_time - rec_msg_time[rec_count]);
-		strcat(msg_rec[rec_count], tmp);
-
-/*if want to spi interrupt action, cancle the comment*/
-	} else {
-		sprintf(tmp, "%s:%8lld;", str, sched_clock() - rec_time);
-
-		if ((strlen(tmp) + strlen(msg_rec[rec_count]))
-			< (SPI_REC_STR_LEN - 64))
-			strcat(msg_rec[rec_count], tmp);
-		else
-			strcat(msg_rec[rec_count], "@");
-	}
-	spin_unlock_irqrestore(&msg_rec_lock, flags);
-	return;
-}
-
-void mt_spi_workqueue_handler(void *data)
-{
-	int i = 0;
-	for (i = 0; i < SPI_REC_NUM; i++) {
-		pr_debug("spi-rec%3d-%3d:%s\n",
-			rec_count, rec_count_tmp,
-			msg_rec[rec_count_tmp]);
-		msg_rec[rec_count_tmp][0] = '\0';
-		rec_count_tmp++;
-		if (rec_count_tmp >= SPI_REC_MSG_MAX)
-			rec_count_tmp = 0;
-	}
-	atomic_dec(&rec_log_count);
-	return;
-}
-
-DECLARE_WORK(mt_spi_workqueue, mt_spi_workqueue_handler);
-
-#else
-static inline void spi_rec_time(const char *str)
-{
-	return;
-}
-
-#endif
-
-static int is_pause_mode(struct spi_message	*msg)
+static inline int is_pause_mode(struct spi_message *msg)
 {
 	struct mt_chip_conf *conf;
 	conf = (struct mt_chip_conf *)msg->state;
 	return conf->pause;
 }
 
-static int is_fifo_read(struct spi_message *msg)
+static inline int is_fifo_read(struct spi_message *msg)
 {
 	struct mt_chip_conf *conf;
 	conf = (struct mt_chip_conf *)msg->state;
 	return (conf->com_mod == FIFO_TRANSFER) || (conf->com_mod == OTHER1);
 }
 
-static int is_interrupt_enable(struct mt_spi_t *ms)
+static inline int is_interrupt_enable(struct mt_spi_t *ms)
 {
 	u32 cmd;
 	cmd = spi_readl(ms, SPI_CMD_REG);
@@ -307,9 +209,7 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 {
 	u32  cmd;
-
 	cmd = spi_readl(ms, SPI_CMD_REG);
-	#define SPI_4B_ALIGN 0x4
 	/*set up the DMA bus address*/
 	if ((mode == DMA_TRANSFER) || (mode == OTHER1)) {
 		if ((ms->cur_transfer->tx_buf != NULL) ||
@@ -342,7 +242,6 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 			cmd |= 1 << SPI_CMD_RX_DMA_OFFSET;
 		}
 	}
-	/*mb();*/
 	spi_writel(ms, SPI_CMD_REG, cmd);
 }
 
@@ -367,7 +266,7 @@ static inline int spi_setup_packet(struct mt_spi_t *ms)
 	} else
 		packet_loop = (ms->cur_transfer->len)/packet_size;
 
-	pr_debug("The packet_size:0x%x packet_loop:0x%x\n",
+	dev_dbg(&ms->pdev->dev, "The packet_size:0x%x packet_loop:0x%x\n",
 		packet_size, packet_loop);
 
 	cfg1 = spi_readl(ms, SPI_CFG1_REG);
@@ -384,25 +283,19 @@ static inline void spi_start_transfer(struct mt_spi_t *ms)
 	u32 reg_val;
 	reg_val = spi_readl(ms, SPI_CMD_REG);
 	reg_val |= 1 << SPI_CMD_ACT_OFFSET;
-
-	/*All register must be prepared before setting the start bit [SMP]*/
-	mb();
 	spi_writel(ms, SPI_CMD_REG, reg_val);
 }
 
 static inline void spi_resume_transfer(struct mt_spi_t *ms)
 {
 	u32 reg_val;
-
 	reg_val = spi_readl(ms, SPI_CMD_REG);
 	reg_val &= ~SPI_CMD_RESUME_MASK;
 	reg_val |= 1 << SPI_CMD_RESUME_OFFSET;
-	/*All register must be prepared before setting the start bit [SMP]*/
-	mb();
 	spi_writel(ms,  SPI_CMD_REG, reg_val);
 }
 
-static void reset_spi(struct mt_spi_t *ms)
+static inline void reset_spi(struct mt_spi_t *ms)
 {
 	u32 reg_val;
 	/*set the software reset bit in SPI_CMD_REG.*/
@@ -421,7 +314,7 @@ static inline int is_last_xfer(struct spi_message *msg,
 	return msg->transfers.prev == &xfer->transfer_list;
 }
 
-static int transfer_dma_mapping(struct mt_spi_t *ms, u8 mode,
+static inline int transfer_dma_mapping(struct mt_spi_t *ms, u8 mode,
 	struct spi_transfer *xfer)
 {
 	struct device *dev = &ms->pdev->dev;
@@ -431,7 +324,6 @@ static int transfer_dma_mapping(struct mt_spi_t *ms, u8 mode,
 		if (xfer->tx_buf) {
 			xfer->tx_dma = dma_map_single(dev, (void *)xfer->tx_buf,
 				xfer->len,  DMA_TO_DEVICE);
-
 			if (dma_mapping_error(dev, xfer->tx_dma)) {
 				dev_err(&ms->pdev->dev, "dma mapping tx_buf error.\n");
 				return -ENOMEM;
@@ -443,7 +335,6 @@ static int transfer_dma_mapping(struct mt_spi_t *ms, u8 mode,
 		if (xfer->rx_buf) {
 			xfer->rx_dma = dma_map_single(dev, xfer->rx_buf,
 				xfer->len, DMA_FROM_DEVICE);
-
 			if (dma_mapping_error(dev, xfer->rx_dma)) {
 				if (xfer->tx_buf)
 					dma_unmap_single(dev, xfer->tx_dma,
@@ -457,19 +348,20 @@ static int transfer_dma_mapping(struct mt_spi_t *ms, u8 mode,
 	return 0;
 }
 
-static void transfer_dma_unmapping(struct mt_spi_t *ms,
+static inline void transfer_dma_unmapping(struct mt_spi_t *ms,
 	struct spi_transfer *xfer)
 {
 	struct device *dev =  &ms->pdev->dev;
 
 	if ((xfer->tx_dma != INVALID_DMA_ADDRESS) && (xfer->tx_dma != 0)) {
 		dma_unmap_single(dev, xfer->tx_dma, xfer->len, DMA_TO_DEVICE);
-		SPI_INFO(dev, "tx_dma:0x%x,unmapping\n", xfer->tx_dma);
+		dev_alert(dev, "tx_dma:0x%x,unmapping\n", xfer->tx_dma);
 		xfer->tx_dma = INVALID_DMA_ADDRESS;
 	}
+
 	if ((xfer->rx_dma != INVALID_DMA_ADDRESS) && (xfer->rx_dma != 0)) {
 		dma_unmap_single(dev, xfer->rx_dma, xfer->len, DMA_FROM_DEVICE);
-		SPI_INFO(dev, "rx_dma:0x%x,unmapping\n", xfer->rx_dma);
+		dev_alert(dev, "rx_dma:0x%x,unmapping\n", xfer->rx_dma);
 		xfer->rx_dma = INVALID_DMA_ADDRESS;
 	}
 }
@@ -480,14 +372,13 @@ static void mt_spi_next_message(struct mt_spi_t *ms);
 static int	mt_do_spi_setup(struct mt_spi_t *ms,
 	struct mt_chip_conf *chip_config);
 
-static int mt_spi_next_xfer(struct mt_spi_t *ms,
+static inline int mt_spi_next_xfer(struct mt_spi_t *ms,
 	struct spi_message *msg)
 {
 	struct spi_transfer	*xfer;
 	struct mt_chip_conf *chip_config = (struct mt_chip_conf *)msg->state;
 	u8 mode, cnt, i;
 	int ret = 0;
-	char xfer_rec[16];
 
 	if (unlikely(!ms)) {
 		dev_err(&msg->spi->dev, "master wrapper is invalid\n");
@@ -504,7 +395,6 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 		ret = -EINVAL;
 		goto fail;
 	}
-
 	if (unlikely(!is_interrupt_enable(ms))) {
 		dev_err(&msg->spi->dev, "interrupt is disable\n");
 		ret = -EINVAL;
@@ -513,7 +403,8 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 
 	mode = chip_config->com_mod;
 	xfer = ms->cur_transfer;
-	pr_debug("start xfer 0x%p, mode %d, len %u\n", xfer, mode, xfer->len);
+	dev_dbg(&ms->pdev->dev,
+		"start xfer 0x%p, mode %d, len %u\n", xfer, mode, xfer->len);
 	if ((mode == FIFO_TRANSFER) || (mode == OTHER1) || (mode == OTHER2)) {
 		if (xfer->len > SPI_FIFO_SIZE) {
 			ret = -EINVAL;
@@ -522,15 +413,15 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 		}
 	}
 	if (is_last_xfer(msg, xfer)) {
-		pr_debug("The last xfer.\n");
+		dev_dbg(&ms->pdev->dev, "The last xfer.\n");
 		ms->next_transfer = NULL;
 		clear_pause_bit(ms);
 	} else{
-		pr_debug("Not the last xfer.\n");
+		dev_dbg(&ms->pdev->dev, "Not the last xfer.\n");
 		ms->next_transfer = list_entry(xfer->transfer_list.next,
 				struct spi_transfer, transfer_list);
 	}
-	/*disable DMA*/
+	/*Disable DMA*/
 	spi_disable_dma(ms);
 	ret = spi_setup_packet(ms);
 	if (ret < 0)
@@ -541,9 +432,9 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 		for (i = 0; i < cnt; i++) {
 			spi_writel(ms, SPI_TX_DATA_REG,
 				*((u32 *)xfer->tx_buf + i));
-			SPI_INFO(&msg->spi->dev, "tx_buf data is:%x\n",
+			dev_alert(&msg->spi->dev, "tx_buf data is:%x\n",
 				*((u32 *)xfer->tx_buf + i));
-			SPI_INFO(&msg->spi->dev, "tx_buf addr is:%p\n",
+			dev_alert(&msg->spi->dev, "tx_buf addr is:%p\n",
 				(u32 *)xfer->tx_buf + i);
 		}
 	}
@@ -551,19 +442,15 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 	if ((mode == DMA_TRANSFER) || (mode == OTHER1) || (mode == OTHER2))
 		spi_enable_dma(ms, mode);
 
-#ifdef SPI_VERBOSE
-	spi_dump_reg(ms); /*Dump register before transfer*/
-#endif
-
 	if (ms->running == PAUSED) {
-		pr_debug("pause status to resume.\n");
+		dev_dbg(&ms->pdev->dev, "pause status to resume.\n");
 		spi_resume_transfer(ms);
 	} else if (ms->running == IDLE) {
-		pr_debug("The xfer start\n");
+		dev_dbg(&ms->pdev->dev, "The xfer start\n");
 		/*if there is only one transfer,
 		pause bit should not be set.*/
 		if (is_pause_mode(msg) && !is_last_xfer(msg, xfer)) {
-			pr_debug("set pause mode.\n");
+			dev_dbg(&ms->pdev->dev, "set pause mode.\n");
 			set_pause_bit(ms);
 		}
 		spi_start_transfer(ms);
@@ -572,10 +459,8 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms,
 		ret = -1;
 		goto fail;
 	}
-	sprintf(xfer_rec, "xfer,%3d", xfer->len);
-	spi_rec_time(xfer_rec);
 	ms->running = INPROGRESS;
-	/*exit pause mode*/
+	/*Exit pause mode*/
 	if (is_pause_mode(msg) && is_last_xfer(msg, xfer))
 		clear_resume_bit(ms);
 
@@ -599,26 +484,17 @@ static void mt_spi_msg_done(struct mt_spi_t *ms,
 	list_del(&msg->queue);
 	msg->status = status;
 
-	pr_debug("msg:%p complete(%d): %u bytes transferred\n",
+	dev_dbg(&ms->pdev->dev, "msg:%p complete(%d): %u bytes transferred\n",
 		msg, status, msg->actual_length);
 
 	spi_disable_dma(ms);
 	msg->complete(msg->context);
-
 	ms->running			= IDLE;
 	ms->cur_transfer	= NULL;
 	ms->next_transfer	= NULL;
-	spi_rec_time("msge");
-#ifdef SPI_REC_DEBUG
-	if (!(rec_count%SPI_REC_NUM)) {
-		atomic_inc(&rec_log_count);
-		schedule_work(&mt_spi_workqueue);
-	}
-#endif
 	/* continue if needed */
 	if (list_empty(&ms->queue)) {
-		pr_debug("All msg is completion.\n\n");
-		/*clock and gpio reset*/
+		dev_dbg(&ms->pdev->dev, "All msg is completion.\n\n");
 		clk_disable(ms->clk);
 	} else
 		mt_spi_next_message(ms);
@@ -628,15 +504,13 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 {
 	struct spi_message	*msg;
 	struct mt_chip_conf *chip_config;
-	char msg_addr[16];
 
 	msg = list_entry(ms->queue.next, struct spi_message, queue);
 	chip_config = (struct mt_chip_conf *)msg->state;
-	spi_rec_time(msg_addr);
-	pr_debug("start transfer message:0x%p\n", msg);
+	dev_dbg(&ms->pdev->dev, "start transfer message:0x%p\n", msg);
 	ms->cur_transfer = list_entry(msg->transfers.next,
 		struct spi_transfer, transfer_list);
-	/*clock and gpio set*/
+	/*spi and transfer reset*/
 	reset_spi(ms);
 	mt_do_spi_setup(ms, chip_config);
 	mt_spi_next_xfer(ms, msg);
@@ -650,12 +524,11 @@ static int mt_spi_transfer(struct spi_device *spidev,
 	struct mt_spi_t *ms;
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
-	unsigned long		flags;
-	char msg_addr[16];
+	unsigned long flags;
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
 
-	pr_debug("enter,start add msg:0x%p\n", msg);
+	dev_dbg(&ms->pdev->dev, "enter,start add msg:0x%p\n", msg);
 
 	if (unlikely(!msg)) {
 		dev_err(&spidev->dev, "msg is NULL pointer.\n");
@@ -676,8 +549,6 @@ static int mt_spi_transfer(struct spi_device *spidev,
 		msg->actual_length = 0;
 		goto out;
 	}
-	sprintf(msg_addr, "msgs:%p", msg);
-	spi_rec_time(msg_addr);
 
 	chip_config	= (struct mt_chip_conf *)spidev->controller_data;
 	msg->state	= chip_config;
@@ -690,7 +561,6 @@ static int mt_spi_transfer(struct spi_device *spidev,
 			msg->status = -EINVAL;
 			goto out;
 		}
-
 		/*
 		 * DMA map early, for performance (empties dcache ASAP) and
 		 * better fault reporting.
@@ -707,7 +577,7 @@ static int mt_spi_transfer(struct spi_device *spidev,
 	}
 #ifdef SPI_VERBOSE
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-		SPI_INFO(&spidev->dev,
+		dev_alert(&spidev->dev,
 			"xfer %p: len %04u tx %p/%08x rx %p/%08x\n",
 			xfer, xfer->len,
 			xfer->tx_buf, xfer->tx_dma,
@@ -719,7 +589,7 @@ static int mt_spi_transfer(struct spi_device *spidev,
 
 	spin_lock_irqsave(&ms->lock, flags);
 	list_add_tail(&msg->queue, &ms->queue);
-	pr_debug("add msg %p to queue\n", msg);
+	dev_dbg(&ms->pdev->dev, "add msg %p to queue\n", msg);
 	if (!ms->cur_transfer) {
 		clk_enable(ms->clk);
 		mt_spi_next_message(ms);
@@ -742,7 +612,6 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	unsigned long flags;
 	u32 reg_val, cnt;
 	u8 mode, i;
-	spi_rec_time("irqs");
 
 	spin_lock_irqsave(&ms->lock, flags);
 	xfer = ms->cur_transfer;
@@ -750,15 +619,16 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 
 	/*Clear interrupt status first by reading the register*/
 	reg_val = spi_readl(ms, SPI_STATUS0_REG);
-	pr_debug("xfer:0x%p interrupt status:%x\n", xfer, reg_val & 0x3);
+	dev_dbg(&ms->pdev->dev,
+		"xfer:0x%p interrupt status:%x\n", xfer, reg_val & 0x3);
 
 	if (unlikely(!msg)) {
-		pr_debug("msg in interrupt %d is NULL pointer.\n",
+		dev_dbg(&ms->pdev->dev, "msg in interrupt %d is NULL pointer.\n",
 			reg_val & 0x3);
 		goto out;
 	}
 	if (unlikely(!xfer)) {
-		pr_debug("xfer in interrupt %d is NULL pointer.\n",
+		dev_dbg(&ms->pdev->dev, "xfer in interrupt %d is NULL pointer.\n",
 			reg_val & 0x3);
 		goto out;
 	}
@@ -784,7 +654,7 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 		cnt = (xfer->len%4)?(xfer->len/4 + 1):(xfer->len/4);
 		for (i = 0; i < cnt; i++) {
 			reg_val = spi_readl(ms, SPI_RX_DATA_REG);
-			SPI_INFO(&msg->spi->dev,
+			dev_alert(&msg->spi->dev,
 				"SPI_RX_DATA_REG:0x%x", reg_val);
 			*((u32 *)xfer->rx_buf + i) = reg_val;
 		}
@@ -804,7 +674,7 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 out:
 	spin_unlock_irqrestore(&ms->lock, flags);
-	pr_debug("return IRQ_NONE.\n");
+	dev_dbg(&ms->pdev->dev, "return IRQ_NONE.\n");
 	return IRQ_NONE;
 }
 
@@ -903,7 +773,7 @@ static int mt_spi_setup(struct spi_device *spidev)
 				dev_name(&spidev->dev));
 			return -ENOMEM;
 		}
-		pr_debug("device %s: set default at chip's runtime state\n",
+		dev_dbg(&ms->pdev->dev, "device %s: set default at chip's runtime state\n",
 			dev_name(&spidev->dev));
 
 		chip_config->setuptime = 3;
@@ -911,7 +781,6 @@ static int mt_spi_setup(struct spi_device *spidev)
 		chip_config->high_time = 10;
 		chip_config->low_time = 10;
 		chip_config->cs_idletime = 2;
-		chip_config->ulthgh_thrsh = 0;
 		chip_config->cpol = 0;
 		chip_config->cpha = 1;
 		chip_config->rx_mlsb = 1;
@@ -927,7 +796,7 @@ static int mt_spi_setup(struct spi_device *spidev)
 		spidev->controller_data = chip_config;
 	}
 
-	SPI_INFO(&spidev->dev, "set up chip config,mode:%d\n",
+	dev_alert(&spidev->dev, "set up chip config,mode:%d\n",
 		chip_config->com_mod);
 
 	/*check chip configuration valid*/
@@ -958,7 +827,7 @@ static void mt_spi_cleanup(struct spi_device *spidev)
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
 
-	pr_debug("Calling mt_spi_cleanup.\n");
+	dev_dbg(&ms->pdev->dev, "Calling mt_spi_cleanup.\n");
 
 	spidev->controller_data = NULL;
 	spidev->master = NULL;
@@ -972,11 +841,17 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	int	irq;
 	struct clk *clk;
 	struct spi_master *master;
+	struct resource *res;
 	struct mt_spi_t *ms;
 	void __iomem *spi_base;
 
-	spi_base = of_io_request_and_map(pdev->dev.of_node, 0,
-							(char *)pdev->name);
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		dev_err(&pdev->dev, "get resource res NULL.\n");
+		return -ENXIO;
+	}
+
+	spi_base = devm_ioremap_resource(&pdev->dev, res);
 	if (!spi_base) {
 		dev_err(&pdev->dev, "could not get the io memory.\n");
 		return -ENODEV;
@@ -1019,6 +894,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	master->setup = mt_spi_setup;
 	master->transfer = mt_spi_transfer;
 	master->cleanup = mt_spi_cleanup;
+	master->dev.of_node = pdev->dev.of_node;
 	platform_set_drvdata(pdev, master);
 
 	ms = spi_master_get_devdata(master);
@@ -1033,7 +909,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	spin_lock_init(&ms->lock);
 	INIT_LIST_HEAD(&ms->queue);
 
-	SPI_INFO(&pdev->dev, "Controller at 0x%p (irq %d)\n", ms->regs, irq);
+	dev_alert(&pdev->dev, "Controller at 0x%p (irq %d)\n", ms->regs, irq);
 
 	ret = request_irq(irq, mt_spi_interrupt, IRQF_TRIGGER_NONE,
 			  dev_name(&pdev->dev), ms);
@@ -1052,7 +928,8 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "spi_register_master fails.\n");
 		goto out_free;
 	} else {
-		pr_debug("spi register master success.\n");
+		dev_dbg(&ms->pdev->dev, "spi register master success.\n");
+		spi_dump_reg(ms);
 		return 0;
 	}
 out_free:
@@ -1108,6 +985,7 @@ struct platform_driver mt_spi_driver = {
 static int __init mt_spi_init(void)
 {
 	int ret;
+
 	ret = platform_driver_register(&mt_spi_driver);
 	return ret;
 }

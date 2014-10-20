@@ -69,7 +69,6 @@ struct mt_chip_conf {
 	u32 high_time;
 	u32 low_time;
 	u32 cs_idletime;
-	u32 ulthgh_thrsh;
 	enum spi_cpol cpol;
 	enum spi_cpha cpha;
 	enum spi_mlsb tx_mlsb;
