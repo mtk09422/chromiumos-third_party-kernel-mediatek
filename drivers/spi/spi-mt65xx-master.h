@@ -51,11 +51,6 @@ enum spi_deassert_mode {
 	DEASSERT_ENABLE
 };
 
-enum spi_ulthigh {
-	ULTRA_HIGH_DISABLE,
-	ULTRA_HIGH_ENABLE
-};
-
 enum spi_tckdly {
 	TICK_DLY0,
 	TICK_DLY1,

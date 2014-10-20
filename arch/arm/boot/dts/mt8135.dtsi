@@ -610,7 +610,7 @@
 			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
 			cell-index = <0>;
 			clocks = <&spi1_ck>;
-                };
+		};
 
 		mmc0: mmc@11230000 {
 			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
