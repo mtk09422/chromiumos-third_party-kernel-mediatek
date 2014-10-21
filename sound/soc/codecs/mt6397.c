@@ -478,7 +478,7 @@ static void spk_auto_trim_offset(void)
 	/* RG DEV ck on */
 	ana_set_reg(MT6397_NCP_CLKDIV_CON0, 0x102B, 0xffff);
 	ana_set_reg(MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
-	usleep_range(200, 210);
+	udelay(200); /*usleep_range(200, 210);*/
 	/* ZCD setting gain step gain and enable */
 	ana_set_reg(MT6397_ZCD_CON0, 0x0301, 0xffff);
 	/* audio bias adjustment */
@@ -487,12 +487,12 @@ static void spk_auto_trim_offset(void)
 	ana_set_reg(MT6397_ZCD_CON4, 0x0505, 0xffff);
 	/* set IV buffer on */
 	ana_set_reg(MT6397_AUD_IV_CFG0, 0x1111, 0xffff);
-	usleep_range(100, 110);
+	udelay(100); /*usleep_range(100, 110);*/
 	/* reset docoder */
 	ana_set_reg(MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
 	/* power on DAC */
 	ana_set_reg(MT6397_AUDDAC_CON0, 0x000f, 0xffff);
-	usleep_range(100, 110);
+	udelay(100); /*usleep_range(100, 110);*/
 	set_mux(MTCODEC_DEVICE_OUT_SPKR, MTCODEC_MUX_AUDIO);
 	set_mux(MTCODEC_DEVICE_OUT_SPKL, MTCODEC_MUX_AUDIO);
 	ana_set_reg(MT6397_AUDBUF_CFG0, 0x0000, 0x0007);	/* set Mux */
@@ -516,7 +516,7 @@ static void spk_auto_trim_offset(void)
 	ana_set_reg(MT6397_SPK_CON3, 0x0001, 0x0001);
 
 	/* empirical data shows it usually takes 13ms to be ready */
-	usleep_range(14000, 15000);
+	msleep(15); /*usleep_range(14000, 15000);*/
 
 	do {
 		wait_for_ready = ana_get_reg(MT6397_SPK_CON1);
@@ -530,7 +530,7 @@ static void spk_auto_trim_offset(void)
 		}
 
 		pr_debug("spk_auto_trim_offset sleep\n");
-		usleep_range(100, 110);
+		udelay(100); /*usleep_range(100, 110);*/
 	} while (retyrcount--);
 
 	if (likely(wait_for_ready))
