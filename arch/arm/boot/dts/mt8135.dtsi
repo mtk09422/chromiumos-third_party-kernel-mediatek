@@ -244,11 +244,6 @@
 				mediatek,function = <1>;
 				meidatek,pull = <1>;
 			};
-                        usb0_pins_a: usb0@0 {
-                                mediatek,pins = "N19";
-                                mediatek,function = <1>;
-                                mediatek,pull = <1>;
-                        };
 
 			aud_mtkif: aud_mtkif {
 				mediatek,pins = "L21", "L23", "L22";
@@ -260,6 +255,12 @@
 				mediatek,pins = "AA8", "AC4", "AC6", "AA7";
 				mediatek,function = <7>;
 				mediatek,pull = <0>;
+			};
+
+			usb0_pins_a: usb0@0 {
+				mediatek,pins = "AB7", "AB8";
+				mediatek,function = <0>;
+				mediatek,pull = <2>;
 			};
 
 		};
@@ -351,7 +352,7 @@
 			};
 		};
 
-		usb0@11200000 {
+		usb0: usb@11200000 {
 			compatible = "mediatek,mt6577-usb0";
 			reg = <0 0x11200000 0 0x10000>,
 				  <0 0x11220000 0 0x10000>;
@@ -365,6 +366,15 @@
 			clock-names = "usb0_clk_main", "univpll_clk";
 			usb-power-supply = <&mt6397_usb_reg>;
 		};
+
+		usb1@11210000 {
+			compatible = "mediatek,mt6577-usb1";
+			reg = <0 0x11210000 0 0x10000>;
+			clocks =<&usb1_ck>, <&univpll>;
+			clock-names = "usb1_clk_main", "univpll1_clk";
+			usb-power-supply = <&mt6397_usb_reg>;
+		};
+
 
 		mt-soc-dl1-pcm {
 			compatible = "mediatek,mt-soc-dl1-pcm";
