@@ -95,4 +95,4 @@ obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
 
 # GPIOLIB helpers for modem control lines
 obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
-obj-$(CONFIG_ARCH_MEDIATEK) += mtk_platform_uart.o mtk_uart.o
+obj-$(CONFIG_MTK_SERIAL) += mtk_platform_uart.o mtk_uart.o
