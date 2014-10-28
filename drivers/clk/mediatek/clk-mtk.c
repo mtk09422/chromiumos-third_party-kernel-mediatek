@@ -37,7 +37,7 @@
 #define BITS(bits, val)		(BITMASK(bits) & (val << (0 ? bits)))
 
 #define clk_readl(addr)		readl(addr)
-#define clk_writel(addr, val)	do { writel(val, addr); dsb(); } while (0)
+#define clk_writel(addr, val)	do { writel(val, addr); dsb(sy); } while (0)
 #define clk_setl(addr, mask)	clk_writel(addr, clk_readl(addr) | (mask))
 #define clk_clrl(addr, mask)	clk_writel(addr, clk_readl(addr) & ~(mask))
 
