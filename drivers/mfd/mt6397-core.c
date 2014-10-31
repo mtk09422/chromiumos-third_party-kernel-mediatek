@@ -12,18 +12,11 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/export.h>
-#include <linux/slab.h>
-#include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/delay.h>
 #include <linux/mfd/core.h>
-#include <linux/err.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/regmap.h>
 #include <linux/mfd/mt6397/core.h>
-#include "mt_pmic_wrap.h"
+#include <linux/of_device.h>
+#include "mtk_pmic_wrap.h"
 
 static struct mfd_cell mt6397_devs[] = {
 	{  .name = "mt6397-pmic", -1},
@@ -32,7 +25,6 @@ static struct mfd_cell mt6397_devs[] = {
 	{  .name = "mt6397-codec", -1,
 	   .of_compatible = "mediatek,mt6397-codec"
 	},
-
 };
 
 static int mt6397_probe(struct platform_device *pdev)
@@ -82,17 +74,7 @@ static struct platform_driver mt6397_driver = {
 	},
 };
 
-static int __init mt6397_init(void)
-{
-	return platform_driver_register(&mt6397_driver);
-}
-arch_initcall(mt6397_init);
-
-static void __init mt6397_exit(void)
-{
-	platform_driver_unregister(&mt6397_driver);
-}
-module_exit(mt6397_exit);
+module_platform_driver(mt6397_driver);
 
 MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
 MODULE_DESCRIPTION("Driver for MediaTek MT6397 PMIC");

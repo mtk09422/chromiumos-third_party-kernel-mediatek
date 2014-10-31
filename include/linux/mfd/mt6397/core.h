@@ -17,10 +17,10 @@
 
 struct mt6397_chip {
 	/* Device */
-	struct device	*dev;
+	struct device *dev;
 
 	/* Control interface */
-	struct regmap	*regmap;
+	struct regmap *regmap;
 };
-#endif /* __MFD_MT6397_CORE_H__ */
+#endif	/* __MFD_MT6397_CORE_H__ */
 

@@ -126,17 +126,193 @@
 			mediatek,syscon-reset = <&pericfg 0x00 0x8>;
 		};
 
-		pwrap: pwrap@1000F000 {
- 			compatible = "mediatek,mt8135-pwrap";
-			reg = <0 0x1000F000 0 0x1000>,
+		pwrap: pwrap@1000f000 {
+			compatible = "mediatek,mt8135-pwrap";
+			reg = <0 0x1000f000 0 0x1000>,
 				<0 0x11017000 0 0x1000>;
-			reg-names = "pwrap-base",
-				"pwrap-bridge-base";
+			reg-names = "pwrap-base", "pwrap-bridge-base";
 			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
 			resets = <&infrarst 7>, <&perirst 34>;
-			reset-names = "infracfg", "pericfg";
+			reset-names = "infrarst", "perirst";
 			clocks = <&pmicspi_sel>, <&clk26m> ;
 			clock-names = "pmicspi-sel", "pmicspi-parent";
+
+			pmic {
+				compatible = "mediatek,mt6397";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				rtc:rtc@8000 {
+					reg = <0x8000 0x3e>;
+				};
+
+				mt6397codec: mt6397codec {
+					compatible = "mediatek,mt6397-codec";
+				};
+
+				regulators {
+					mt6397_vpca15_reg: buck_vpca15 {
+						regulator-name = "vpca15";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vpca7_reg: buck_vpca7 {
+						regulator-name = "vpca7";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vsramca15_reg: buck_vsramca15 {
+						regulator-name = "vsramca15";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vsramca7_reg: buck_vsramca7 {
+						regulator-name = "vsramca7";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vcore_reg: buck_vcore {
+						regulator-name = "vcore";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vgpu_reg: buck_vgpu {
+						regulator-name = "vgpu";
+						regulator-min-microvolt = < 700000>;
+						regulator-max-microvolt = <1493750>;
+					};
+
+					mt6397_vdrm_reg: buck_vdrm {
+						regulator-name = "vdrm";
+						regulator-min-microvolt = < 800000>;
+						regulator-max-microvolt = <1593750>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vio18_reg: buck_vio18 {
+						regulator-name = "vio18";
+						regulator-min-microvolt = <1800000>;
+						regulator-max-microvolt = <1800000>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vtcxo_reg: ldo_vtcxo {
+						regulator-name = "vtcxo";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_va28_reg: ldo_va28 {
+						regulator-name = "va28";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_vcama_reg: ldo_vcama {
+						regulator-name = "vcama";
+						regulator-min-microvolt = <1500000>;
+						regulator-max-microvolt = <2800000>;
+					};
+
+					mt6397_vio28_reg: ldo_vio28 {
+						regulator-name = "vio28";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+
+					mt6397_usb_reg: ldo_usb {
+						regulator-name = "usb";
+						regulator-min-microvolt = <3300000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vmc_reg: ldo_vmc {
+						regulator-name = "vmc";
+						regulator-min-microvolt = <1800000>;
+						regulator-max-microvolt = <3300000>;
+						regulator-boot-on;
+					};
+
+					mt6397_vmch_reg: ldo_vmch {
+						regulator-name = "vmch";
+						regulator-min-microvolt = <3000000>;
+						regulator-max-microvolt = <3300000>;
+						regulator-boot-on;
+					};
+
+					mt6397_vemc_3v3_reg: ldo_vemc3v3 {
+						regulator-name = "vemc_3v3";
+						regulator-min-microvolt = <3000000>;
+						regulator-max-microvolt = <3300000>;
+						regulator-boot-on;
+					};
+
+					mt6397_vgp1_reg: ldo_vcamd {
+						regulator-name = "vcamd";
+						regulator-min-microvolt = <1220000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vgp2_reg: ldo_vcamio {
+						regulator-name = "vcamio";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vgp3_reg: ldo_vcamaf {
+						regulator-name = "vcamaf";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vgp4_reg: ldo_vgp4 {
+						regulator-name = "vgp4";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vgp5_reg: ldo_vgp5 {
+						regulator-name = "vgp5";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3000000>;
+					};
+
+					mt6397_vgp6_reg: ldo_vgp6 {
+						regulator-name = "vgp6";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3300000>;
+					};
+
+					mt6397_vibr_reg: ldo_vibr {
+						regulator-name = "vibr";
+						regulator-min-microvolt = <1200000>;
+						regulator-max-microvolt = <3300000>;
+					};
+				};
+			};
 		};
 
                 intpol: intpol@10200030 {
@@ -306,6 +482,42 @@
 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
 			clocks = <&i2c3_ck>, <&ap_dma_ck>;
+			clock-names = "main", "dma";
+		};
+
+		i2c4: i2c@11011000 {
+			compatible = "mediatek,mt8135-i2c",
+				"mediatek,mt6577-i2c";
+			reg = <0 0x11011000 0 0x70>,
+				<0 0x11000500 0 0x80>;
+			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_LOW>;
+			clock-div = <1>;
+			mediatek,have-pmic;
+			clocks = <&i2c4_ck>, <&ap_dma_ck>;
+			clock-names = "main", "dma";
+		};
+
+		i2c5: i2c@11012000 {
+			compatible = "mediatek,mt8135-i2c",
+				"mediatek,mt6577-i2c";
+			reg = <0 0x11012000 0 0x70>,
+				<0 0x11000580 0 0x80>;
+			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_LOW>;
+			clock-div = <1>;
+			mediatek,have-pmic;
+			clocks = <&i2c5_ck>, <&ap_dma_ck>;
+			clock-names = "main", "dma";
+		};
+
+		i2c6: i2c@11013000 {
+			compatible = "mediatek,mt8135-i2c",
+				"mediatek,mt6577-i2c";
+			reg = <0 0x11013000 0 0x70>,
+				<0 0x11000600 0 0x80>;
+			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_LOW>;
+			clock-div = <1>;
+			mediatek,have-pmic;
+			clocks = <&i2c6_ck>, <&ap_dma_ck>;
 			clock-names = "main", "dma";
 		};
 

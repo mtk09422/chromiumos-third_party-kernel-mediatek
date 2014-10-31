@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_PMIC_WRAP_H__
-#define __MT_PMIC_WRAP_H__
+#ifndef __MTK_PMIC_WRAP_H__
+#define __MTK_PMIC_WRAP_H__
 
 struct pmic_wrapper {
 	struct platform_device *pdev;
@@ -26,4 +26,4 @@ struct pmic_wrapper {
 	bool is_done;
 };
 
-#endif	/* __MT_PMIC_WRAP_H__ */
+#endif	/* __MTK_PMIC_WRAP_H__ */
