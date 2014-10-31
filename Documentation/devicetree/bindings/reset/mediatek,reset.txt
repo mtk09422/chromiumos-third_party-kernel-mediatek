@@ -1,0 +1,36 @@
+MediaTek SoC Reset Controller
+======================================
+
+Required properties:
+- compatible : "mediatek,reset"
+- #reset-cells: 1
+- mediatek,syscon-reset: The first parameter is refer to the syscon registers base.
+  Follows are reset base address offset and byte width.
+
+example:
+	infrarst: reset-controller@10001030 {
+		#reset-cells = <1>;
+		compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
+		mediatek,syscon-reset = <&infracfg 0x30 0x8>;
+	};
+
+Specifying reset lines connected to IP modules
+==============================================
+
+The reset controller(mtk-reset) manages various reset sources. Those device nodes should
+specify the reset line on the rstc in their resets property, containing a phandle to the
+rstc device node and a RESET_INDEX specifying which module to reset, as described in reset.txt.
+
+For MediaTek SoC, RESET_INDEX is reset bit defined in INFRACFG or PERICFG registers.
+
+example:
+pwrap: pwrap@1000f000 {
+	compatible = "mediatek,mt8135-pwrap";
+	reg = <0 0x1000f000 0 0x1000>,
+		<0 0x11017000 0 0x1000>;
+	reg-names = "pwrap-base",
+		"pwrap-bridge-base";
+	resets = <&infrarst 7>, <&perirst 34>;
+	reset-names = "infrarst", "perirst";
+};
+

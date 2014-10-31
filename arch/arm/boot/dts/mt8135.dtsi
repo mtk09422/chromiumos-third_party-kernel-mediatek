@@ -104,19 +104,26 @@
 			clocks = <&system_clk>, <&rtc_clk>;
 			clock-names = "system-clk", "rtc-clk";
 		};
-
-		infracfg: infracfg@10001000 {
-			#reset-cells = <1>;
-			compatible = "mediatek,mt8135-infracfg";
+		infracfg: syscon@10001000 {
+			compatible = "mediatek,mt8135-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
-			reg-names = "reset-infracfg";
 		};
 
-		pericfg: pericfg@10003000 {
-			#reset-cells = <1>;
-			compatible = "mediatek,mt8135-pericfg";
+		pericfg: syscon@10003000 {
+			compatible = "mediatek,mt8135-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;
-			reg-names = "reset-pericfg";
+		};
+
+		infrarst: reset-controller@10001030 {
+			#reset-cells = <1>;
+			compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
+			mediatek,syscon-reset = <&infracfg 0x30 0x8>;
+		};
+
+		perirst: reset-controller@10003000 {
+			#reset-cells = <1>;
+			compatible = "mediatek,mt8135-pericfg-reset", "mediatek,reset";
+			mediatek,syscon-reset = <&pericfg 0x00 0x8>;
 		};
 
 		pwrap: pwrap@1000F000 {
@@ -126,7 +133,7 @@
 			reg-names = "pwrap-base",
 				"pwrap-bridge-base";
 			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-			resets = <&infracfg 7>, <&pericfg 34>;
+			resets = <&infrarst 7>, <&perirst 34>;
 			reset-names = "infracfg", "pericfg";
 			clocks = <&pmicspi_sel>, <&clk26m> ;
 			clock-names = "pmicspi-sel", "pmicspi-parent";
