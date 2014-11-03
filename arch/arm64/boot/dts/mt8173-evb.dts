@@ -1,0 +1,13 @@
+
+/dts-v1/;
+
+#include "mt8173.dtsi"
+
+/ {
+
+	model = "mt8137-evbp1.dtsi";
+	memory {
+		reg = <0 0x40000000 0 0x3F200000>;
+	};
+	
+};
