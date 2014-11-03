@@ -53,6 +53,9 @@
 #define GPT_CLK_EVT	1
 #define GPT_CLK_SRC	2
 
+#define CTIMER_INDEX_BASE	0x0674
+#define CTIMER_CTL_BASE		0x0670
+
 struct mtk_clock_event_device {
 	void __iomem *gpt_base;
 	u32 ticks_per_jiffy;
@@ -258,4 +261,22 @@ err_mem:
 	of_address_to_resource(node, 0, &res);
 	release_mem_region(res.start, resource_size(&res));
 }
+
+static void __init mtk_cputimer_init(struct device_node *node)
+{
+	void __iomem *ctimer_base;
+
+	ctimer_base = of_io_request_and_map(node, 0, "mtk-cputimer");
+	if (IS_ERR(ctimer_base)) {
+		pr_warn("Can't get resource\n");
+		return;
+	}
+
+	writel(0, ctimer_base + CTIMER_INDEX_BASE);
+	writel(0x1, ctimer_base + CTIMER_CTL_BASE);
+}
+
 CLOCKSOURCE_OF_DECLARE(mtk_mt6577, "mediatek,mt6577-timer", mtk_timer_init);
+CLOCKSOURCE_OF_DECLARE(mtk_mt8173, "mediatek,mt8173-cputimer",
+			mtk_cputimer_init);
+
