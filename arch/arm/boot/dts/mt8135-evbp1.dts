@@ -40,6 +40,12 @@
 				<&mmc1_cd_pin_reference_design>;
 			status = "okay";
 		};
+
+		usb0@11200000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&usb0_pins_a>;
+			status = "okay";
+		};
 	};
 
 	sound {
@@ -78,8 +84,3 @@
 	status = "okay";
 };
 
-&usb0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&usb0_pins_a>;
-	status = "okay";
-};
