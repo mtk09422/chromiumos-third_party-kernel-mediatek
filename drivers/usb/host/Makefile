@@ -25,8 +25,10 @@ endif
 endif
 
 obj-$(CONFIG_USB_WHCI_HCD)	+= whci/
+ifndef CONFIG_MACH_MT8173
 obj-y += usb20/
 obj-y += usb11/
+endif
 
 obj-$(CONFIG_PCI)		+= pci-quirks.o
 
