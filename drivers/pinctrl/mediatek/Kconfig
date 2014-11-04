@@ -10,7 +10,6 @@ config PINCTRL_MT8135
 	select PINCTRL_MTK_COMMON
 
 config PINCTRL_MT6397
-	bool "Mediatek PMIC MT6397 Pinctrl Driver"
-	depends on PINCTRL_MT8135 && PINCTRL_MTK_COMMON
+	def_bool MACH_MT8135 || MACH_MT8173
 
 endif

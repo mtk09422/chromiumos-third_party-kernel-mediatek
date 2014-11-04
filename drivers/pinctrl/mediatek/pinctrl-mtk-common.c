@@ -29,12 +29,11 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/bitops.h>
+#include <linux/regmap.h>
 #include <dt-bindings/pinctrl/mt65xx.h>
 
 #include "../pinconf.h"
 #include "pinctrl-mtk-common.h"
-
-#include "mt8135_pmic_wrap.h"
 
 #define PINMUX_MAX_VAL 8
 #define MAX_GPIO_MODE_PER_REG 5
@@ -63,7 +62,7 @@ static int mtk_pctrl_write_reg(struct mtk_pinctrl *pctl,
 		return 0;
 	}
 
-	err = pwrap_write((unsigned int)reg, wdata);
+	err = regmap_write(pctl->regmap, (unsigned int)reg, wdata);
 	return err ? -EIO : 0;
 }
 
@@ -77,7 +76,7 @@ static int mtk_pctrl_read_reg(struct mtk_pinctrl *pctl,
 		return 0;
 	}
 
-	err = pwrap_read((unsigned int)reg, rdata);
+	err = regmap_read(pctl->regmap, (unsigned int)reg, rdata);
 	return err ? -EIO : 0;
 }
 
@@ -126,7 +125,7 @@ static void mtk_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 	mtk_pctrl_write_reg(pctl, pctl->membase1 + reg_addr, bit);
 }
 
-static void mtk_pinconf_set_ies(struct mtk_pinctrl *pctl,
+static void mtk_pconf_set_ies(struct mtk_pinctrl *pctl,
 		unsigned pin, int value)
 {
 	unsigned int i;
@@ -163,7 +162,7 @@ static void mtk_pinconf_set_ies(struct mtk_pinctrl *pctl,
 	writel_relaxed(bit, mtk_get_base_addr(pctl, pin) + reg_addr);
 }
 
-static void mtk_pinconf_set_smt(struct mtk_pinctrl *pctl,
+static void mtk_pconf_set_smt(struct mtk_pinctrl *pctl,
 		unsigned pin, int value)
 {
 	unsigned int i;
@@ -215,7 +214,7 @@ static const struct mtk_pin_drv_grp *mtk_find_pin_drv_grp_by_pin(
 	return NULL;
 }
 
-static int mtk_pinfonf_set_driving(struct mtk_pinctrl *pctl,
+static int mtk_pconf_set_driving(struct mtk_pinctrl *pctl,
 		unsigned long pin, unsigned char driving)
 {
 	const struct mtk_pin_drv_grp *pin_drv;
@@ -364,7 +363,7 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 		mtk_pconf_set_pull_select(pctl, pin, true, false, arg);
 		break;
 	case PIN_CONFIG_INPUT_ENABLE:
-		mtk_pinconf_set_ies(pctl, pin, arg);
+		mtk_pconf_set_ies(pctl, pin, arg);
 		if (arg)
 			mtk_pmx_gpio_set_direction(pctldev, NULL, pin, true);
 		break;
@@ -373,10 +372,10 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 		mtk_gpio_set(pctl->chip, pin, arg);
 		break;
 	case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
-		mtk_pinconf_set_smt(pctl, pin, arg);
+		mtk_pconf_set_smt(pctl, pin, arg);
 		break;
 	case PIN_CONFIG_DRIVE_STRENGTH:
-		mtk_pinfonf_set_driving(pctl, pin, arg);
+		mtk_pconf_set_driving(pctl, pin, arg);
 		break;
 	default:
 		return -EINVAL;
@@ -881,7 +880,8 @@ static struct pinctrl_desc mtk_pctrl_desc = {
 };
 
 int mtk_pctrl_init(struct platform_device *pdev,
-		const struct mtk_pinctrl_devdata *data)
+		const struct mtk_pinctrl_devdata *data,
+		const struct regmap *regmap)
 {
 	struct pinctrl_pin_desc *pins;
 	struct mtk_pinctrl *pctl;
@@ -910,6 +910,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	}
 
 	pctl->devdata = data;
+	pctl->regmap = regmap;
 	ret = mtk_pctrl_build_state(pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "build state failed: %d\n", ret);

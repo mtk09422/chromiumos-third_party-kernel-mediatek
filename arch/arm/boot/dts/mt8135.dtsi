@@ -396,7 +396,7 @@
 		pio: pinctrl@10005000 {
 			compatible = "mediatek,mt8135-pinctrl";
 			reg = <0 0x10005000 0 0x1000>,
-			      <0 0x1020C000 0 0x1000>,
+			      <0 0x1020C020 0 0x1000>,
 			      <0 0x1000B000 0 0x1000>;
 			gpio-controller;
 			interrupt-controller;
@@ -407,45 +407,45 @@
 
 			i2c0_pins_a: i2c0@0 {
 				mediatek,pins = <MT8135_PIN_100_SDA0__FUNC_SDA0 &pcfg_pull_none>,
-								<MT8135_PIN_101_SCL0__FUNC_SCL0 &pcfg_pull_none>;
+						<MT8135_PIN_101_SCL0__FUNC_SCL0 &pcfg_pull_none>;
 			};
 
 			i2c1_pins_a: i2c1@0 {
 				mediatek,pins = <MT8135_PIN_195_SDA1__FUNC_SDA1 &pcfg_pull_none>,
-								<MT8135_PIN_196_SCL1__FUNC_SCL1 &pcfg_pull_none>;
+						<MT8135_PIN_196_SCL1__FUNC_SCL1 &pcfg_pull_none>;
 			};
 
 			i2c2_pins_a: i2c2@0 {
 				mediatek,pins = <MT8135_PIN_193_SDA2__FUNC_SDA2 &pcfg_pull_none>,
-								<MT8135_PIN_194_SCL2__FUNC_SCL2 &pcfg_pull_none>;
+						<MT8135_PIN_194_SCL2__FUNC_SCL2 &pcfg_pull_none>;
 			};
 
 			i2c3_pins_a: i2c3@0 {
 				mediatek,pins = <MT8135_PIN_35_SCL3__FUNC_SCL3 &pcfg_pull_none>,
-								<MT8135_PIN_36_SDA3__FUNC_SDA3 &pcfg_pull_none>;
+						<MT8135_PIN_36_SDA3__FUNC_SDA3 &pcfg_pull_none>;
 			};
 
 			mmc0_pins_a: mmc0@0 {
 				mediatek,pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pcfg_pull_up>,
-								<MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pcfg_pull_up>,
-								<MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pcfg_pull_up>,
-								<MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pcfg_pull_up>,
-								<MT8135_PIN_4_MSDC0_CMD__FUNC_MSDC0_CMD &pcfg_pull_up>,
-								<MT8135_PIN_5_MSDC0_CLK__FUNC_MSDC0_CLK &pcfg_pull_down>,
-								<MT8135_PIN_6_MSDC0_DAT3__FUNC_MSDC0_DAT3 &pcfg_pull_up>,
-								<MT8135_PIN_7_MSDC0_DAT2__FUNC_MSDC0_DAT2 &pcfg_pull_up>,
-								<MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pcfg_pull_up>,
-								<MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pcfg_pull_up>,
-								<MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB &pcfg_pull_up>;
+						<MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pcfg_pull_up>,
+						<MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pcfg_pull_up>,
+						<MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pcfg_pull_up>,
+						<MT8135_PIN_4_MSDC0_CMD__FUNC_MSDC0_CMD &pcfg_pull_up>,
+						<MT8135_PIN_5_MSDC0_CLK__FUNC_MSDC0_CLK &pcfg_pull_down>,
+						<MT8135_PIN_6_MSDC0_DAT3__FUNC_MSDC0_DAT3 &pcfg_pull_up>,
+						<MT8135_PIN_7_MSDC0_DAT2__FUNC_MSDC0_DAT2 &pcfg_pull_up>,
+						<MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pcfg_pull_up>,
+						<MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pcfg_pull_up>,
+						<MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB &pcfg_pull_up>;
 			};
 
 			mmc1_pins_a: mmc1@0 {
 				mediatek,pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pcfg_pull_up>,
-								<MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pcfg_pull_up>,
-								<MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD &pcfg_pull_up>,
-								<MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pcfg_pull_up>,
-								<MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK &pcfg_pull_down>,
-								<MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>;
+						<MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pcfg_pull_up>,
+						<MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD &pcfg_pull_up>,
+						<MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pcfg_pull_up>,
+						<MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK &pcfg_pull_down>,
+						<MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>;
 			};
 
 			mmc1_cd_pin_reference_design: mmc1_cd_pin@0 {
@@ -454,15 +454,15 @@
 
 			aud_mtkif: aud_mtkif {
 				mediatek,pins = <MT8135_PIN_37_AUD_CLK_MOSI__FUNC_AUD_CLK &pcfg_pull_down>,
-								<MT8135_PIN_38_AUD_DAT_MOSI__FUNC_AUD_DAT_MOSI &pcfg_pull_down>,
-								<MT8135_PIN_39_AUD_DAT_MISO__FUNC_AUD_DAT_MISO &pcfg_pull_down>;
+						<MT8135_PIN_38_AUD_DAT_MOSI__FUNC_AUD_DAT_MOSI &pcfg_pull_down>,
+						<MT8135_PIN_39_AUD_DAT_MISO__FUNC_AUD_DAT_MISO &pcfg_pull_down>;
 			};
 
 			spi1_pins_a: spi1@0 {
 				mediatek,pins = <MT8135_PIN_91_MSDC4_DAT5__FUNC_SPI1_CSN &pcfg_pull_none>,
-								<MT8135_PIN_92_MSDC4_DAT6__FUNC_SPI1_MO &pcfg_pull_none>,
-								<MT8135_PIN_93_MSDC4_DAT7__FUNC_SPI1_MI &pcfg_pull_none>,
-								<MT8135_PIN_94_MSDC4_DAT4__FUNC_SPI1_CLK &pcfg_pull_none>;
+						<MT8135_PIN_92_MSDC4_DAT6__FUNC_SPI1_MO &pcfg_pull_none>,
+						<MT8135_PIN_93_MSDC4_DAT7__FUNC_SPI1_MI &pcfg_pull_none>,
+						<MT8135_PIN_94_MSDC4_DAT4__FUNC_SPI1_CLK &pcfg_pull_none>;
 			};
 
 			usb0_pins_a: usb0@0 {

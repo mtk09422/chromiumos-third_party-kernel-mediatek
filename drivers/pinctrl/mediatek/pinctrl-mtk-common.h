@@ -12,11 +12,12 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __PINCTRL_MTK_H
-#define __PINCTRL_MTK_H
+#ifndef __PINCTRL_MTK_COMMON_H
+#define __PINCTRL_MTK_COMMON_H
 
 #include <linux/pinctrl/pinctrl.h>
 #include <linux/spinlock.h>
+#include <linux/regmap.h>
 
 #define MTK_NO_EINT_SUPPORT    255
 #define MTK_CHIP_TYPE_BASE     0
@@ -187,37 +188,38 @@ struct mtk_pin_spec_pupd_set {
  */
 struct mtk_pinctrl_devdata {
 	const struct mtk_desc_pin	*pins;
-	unsigned int base;
-	unsigned int				npins;
-	const struct mtk_drv_group_desc   *grp_desc;
+	unsigned int	base;
+	unsigned int	npins;
+	const struct mtk_drv_group_desc	*grp_desc;
 	unsigned int	n_grp_cls;
-	const struct mtk_pin_drv_grp *pin_drv_grp;
+	const struct mtk_pin_drv_grp	*pin_drv_grp;
 	unsigned int	n_pin_drv_grps;
-	const struct mtk_pin_ies_smt_set *ies_smt_pins;
+	const struct mtk_pin_ies_smt_set	*ies_smt_pins;
 	unsigned int	n_ies_smt_pins;
-	const struct mtk_pin_spec_pupd_set *pupu_spec_pins;
+	const struct mtk_pin_spec_pupd_set	*pupu_spec_pins;
 	unsigned int	n_pupu_spec_pins;
-	unsigned int dir_offset;
-	unsigned int ies_offset;
-	unsigned int smt_offset;
-	unsigned int pullen_offset;
-	unsigned int pullsel_offset;
-	unsigned int drv_offset;
-	unsigned int invser_offset;
-	unsigned int dout_offset;
-	unsigned int din_offset;
-	unsigned int pinmux_offset;
-	unsigned short type1_start;
-	unsigned short type1_end;
-	unsigned char  port_shf;
-	unsigned char  port_mask;
-	unsigned char  port_align;
-	unsigned char  chip_type;
+	unsigned int	dir_offset;
+	unsigned int	ies_offset;
+	unsigned int	smt_offset;
+	unsigned int	pullen_offset;
+	unsigned int	pullsel_offset;
+	unsigned int	drv_offset;
+	unsigned int	invser_offset;
+	unsigned int	dout_offset;
+	unsigned int	din_offset;
+	unsigned int	pinmux_offset;
+	unsigned short	type1_start;
+	unsigned short	type1_end;
+	unsigned char	port_shf;
+	unsigned char	port_mask;
+	unsigned char	port_align;
+	unsigned char	chip_type;
 };
 
 struct mtk_pinctrl {
 	void __iomem            *membase1;
 	void __iomem            *membase2;
+	struct regmap	*regmap;
 	struct device           *dev;
 	struct gpio_chip	*chip;
 	spinlock_t              lock;
@@ -229,8 +231,9 @@ struct mtk_pinctrl {
 };
 
 int mtk_pctrl_init(struct platform_device *pdev,
-		const struct mtk_pinctrl_devdata *data);
+		const struct mtk_pinctrl_devdata *data,
+		const struct regmap *regmap);
 
 int mtk_pctrl_remove(struct platform_device *pdev);
 
-#endif /* __PINCTRL_MT65XX_H */
+#endif /* __PINCTRL_MTK_COMMON_H */

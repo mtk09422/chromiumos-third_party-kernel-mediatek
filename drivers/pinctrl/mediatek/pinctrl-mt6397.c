@@ -17,6 +17,7 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/pinctrl/pinctrl.h>
+#include <linux/mfd/mt6397/core.h>
 
 #include "pinctrl-mtk-common.h"
 #include "pinctrl-mtk-mt6397.h"
@@ -47,7 +48,10 @@ static const struct mtk_pinctrl_devdata mt6397_pinctrl_data = {
 
 static int mt6397_pinctrl_probe(struct platform_device *pdev)
 {
-	return mtk_pctrl_init(pdev, &mt6397_pinctrl_data);
+	struct mt6397_chip *mt6397;
+
+	mt6397 = dev_get_drvdata(pdev->dev.parent);
+	return mtk_pctrl_init(pdev, &mt6397_pinctrl_data, mt6397->regmap);
 }
 
 static int mt6397_pinctrl_remove(struct platform_device *pdev)

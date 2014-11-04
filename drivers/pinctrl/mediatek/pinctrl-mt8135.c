@@ -22,7 +22,7 @@
 #include "pinctrl-mtk-mt8135.h"
 
 #define DRV_BASE1					  0x500
-#define DRV_BASE2					  0x510
+#define DRV_BASE2					  0x490
 
 static const struct mtk_drv_group_desc mt8135_drv_grp[] =  {
 	/* E8E4E2 2/4/6/8/10/12/14/16 */
@@ -211,7 +211,7 @@ static const struct mtk_pinctrl_devdata mt8135_pinctrl_data = {
 
 static int mt8135_pinctrl_probe(struct platform_device *pdev)
 {
-	return mtk_pctrl_init(pdev, &mt8135_pinctrl_data);
+	return mtk_pctrl_init(pdev, &mt8135_pinctrl_data, NULL);
 }
 
 static int mt8135_pinctrl_remove(struct platform_device *pdev)
