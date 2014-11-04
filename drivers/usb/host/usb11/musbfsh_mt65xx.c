@@ -510,7 +510,8 @@ static int __init mt_usb11_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
         USB11_BASE = (unsigned long) of_iomap(pdev->dev.of_node, 0);
-        INFO("[line 535] mt_usb11_probe USB11_BASE:0x%p\n", USB11_BASE);
+		INFO("[line 535] mt_usb11_probe USB11_BASE:0x%lu\n",
+				USB11_BASE);
         usb1_clk_main = devm_clk_get(&pdev->dev, "usb1_clk_main");
         if (IS_ERR(usb1_clk_main)) {
             dev_err(&pdev->dev, "cannot get usb1 main clock");
@@ -522,11 +523,14 @@ static int __init mt_usb11_probe(struct platform_device *pdev)
             dev_err(&pdev->dev, "cannot get univpll clock");
             ret = -ENOMEM;
         }
+
         usb1_power = devm_regulator_get(&pdev->dev, "usb-power");
-        if (!usb1_power) {
-            pr_err("Cannot get usb power from the device tree!\n");
-            return -EINVAL;
-        }
+		if (IS_ERR(usb1_power)) {
+			ret = PTR_ERR(usb1_power);
+			dev_err(&pdev->dev,
+				"Get usb power fail:%d!\n", ret);
+			return ret;
+		}
         pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
         if (!pdata) {
             dev_err(&pdev->dev, "failed to allocate musb platfrom data\n");

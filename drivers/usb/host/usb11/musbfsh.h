@@ -64,19 +64,19 @@ struct musbfsh_hdrc_config {
 
 	/* MUSB configuration-specific details */
 	unsigned	multipoint:1;	/* multipoint device */
-	unsigned	dyn_fifo:1 __deprecated; /* supports dynamic fifo sizing */
-	unsigned	soft_con:1 __deprecated; /* soft connect required */
+	unsigned	dyn_fifo:1; /* supports dynamic fifo sizing */
+	unsigned	soft_con:1; /* soft connect required */
 	unsigned	utm_16:1 __deprecated; /* utm data witdh is 16 bits */
 	unsigned	big_endian:1;	/* true if CPU uses big-endian */
 	unsigned	mult_bulk_tx:1;	/* Tx ep required for multbulk pkts */
 	unsigned	mult_bulk_rx:1;	/* Rx ep required for multbulk pkts */
 	unsigned	high_iso_tx:1;	/* Tx ep required for HB iso */
 	unsigned	high_iso_rx:1;	/* Rx ep required for HD iso */
-	unsigned	dma:1 __deprecated; /* supports DMA */
+	unsigned	dma:1; /* supports DMA */
 	unsigned	vendor_req:1 __deprecated; /* vendor registers required */
 
 	u8		num_eps;	/* number of endpoints _with_ ep0 */
-	u8		dma_channels __deprecated; /* number of dma channels */
+	u8		dma_channels; /* number of dma channels */
 	u8		dyn_fifo_size;	/* dynamic size in bytes */
 	u8		vendor_ctrl __deprecated; /* vendor control reg width */
 	u8		vendor_stat __deprecated; /* vendor status reg witdh */

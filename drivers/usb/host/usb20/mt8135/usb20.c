@@ -909,9 +909,11 @@ static int mt_usb_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 	}
 	usb_power = devm_regulator_get(&pdev->dev, "usb-power");
-	if (!usb_power) {
-		pr_err("Cannot get usb power from the device tree!\n");
-		return -EINVAL;
+	if (IS_ERR(usb_power)) {
+		ret = PTR_ERR(usb_power);
+		dev_err(&pdev->dev,
+			"Cannot get usb power from the device tree %d!\n", ret);
+		return ret;
 	}
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 	pr_info("USB_SIF_BASE:0x%lx\n", USB_SIF_BASE);
