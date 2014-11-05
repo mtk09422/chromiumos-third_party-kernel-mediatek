@@ -17,6 +17,8 @@
 #include <linux/mfd/mt6397/core.h>
 #include <linux/of_device.h>
 #include "mtk_pmic_wrap.h"
+#include "mt6397-irq.h"
+#include <linux/of_irq.h>
 
 static struct mfd_cell mt6397_devs[] = {
 	{  .name = "mt6397-pmic", -1},
@@ -29,18 +31,20 @@ static struct mfd_cell mt6397_devs[] = {
 
 static int mt6397_probe(struct platform_device *pdev)
 {
-	u32 ret = 0;
+	u32 ret;
 	struct mt6397_chip *mt6397;
+
 	struct pmic_wrapper *wrp = dev_get_drvdata(pdev->dev.parent);
 
 	mt6397 = devm_kzalloc(&pdev->dev,
 			sizeof(struct mt6397_chip), GFP_KERNEL);
 	if (!mt6397)
 		return -ENOMEM;
-
 	mt6397->dev = &pdev->dev;
 	mt6397->regmap = wrp->regmap;
 	platform_set_drvdata(pdev, mt6397);
+
+	mt6397_irq_init(mt6397);
 
 	ret = mfd_add_devices(mt6397->dev, -1, &mt6397_devs[0],
 			ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
