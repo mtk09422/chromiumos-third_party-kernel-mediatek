@@ -474,7 +474,7 @@
 
 		i2c0: i2c@1100d000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x1100d000 0 0x70>,
 				<0 0x11000300 0 0x80>;
 			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
@@ -485,7 +485,7 @@
 
 		i2c1: i2c@1100e000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x1100e000 0 0x70>,
 				<0 0x11000380 0 0x80>;
 			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_LOW>;
@@ -496,7 +496,7 @@
 
 		i2c2: i2c@1100f000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x1100f000 0 0x70>,
 				<0 0x11000400 0 0x80>;
 			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_LOW>;
@@ -507,7 +507,7 @@
 
 		i2c3: i2c@11010000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x11010000 0 0x70>,
 				<0 0x11000480 0 0x80>;
 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_LOW>;
@@ -518,7 +518,7 @@
 
 		i2c4: i2c@11011000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x11011000 0 0x70>,
 				<0 0x11000500 0 0x80>;
 			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_LOW>;
@@ -530,7 +530,7 @@
 
 		i2c5: i2c@11012000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x11012000 0 0x70>,
 				<0 0x11000580 0 0x80>;
 			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_LOW>;
@@ -542,7 +542,7 @@
 
 		i2c6: i2c@11013000 {
 			compatible = "mediatek,mt8135-i2c",
-				"mediatek,mt6577-i2c";
+				"mediatek,mt6589-i2c";
 			reg = <0 0x11013000 0 0x70>,
 				<0 0x11000600 0 0x80>;
 			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_LOW>;
