@@ -13,6 +13,7 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/reset-controller/mt8135-resets.h>
 #include "skeleton64.dtsi"
 #include "mt8135-clocks.dtsi"
 #include "mt8135-pinfunc.h"
@@ -106,26 +107,31 @@
 			clocks = <&system_clk>, <&rtc_clk>;
 			clock-names = "system-clk", "rtc-clk";
 		};
+
 		infracfg: syscon@10001000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
 			compatible = "mediatek,mt8135-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
+
+			infrarst: reset-controller@30 {
+				#reset-cells = <1>;
+				compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
+				reg = <0x30 0x8>;
+			};
 		};
 
 		pericfg: syscon@10003000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
 			compatible = "mediatek,mt8135-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;
-		};
 
-		infrarst: reset-controller@10001030 {
-			#reset-cells = <1>;
-			compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
-			mediatek,syscon-reset = <&infracfg 0x30 0x8>;
-		};
-
-		perirst: reset-controller@10003000 {
-			#reset-cells = <1>;
-			compatible = "mediatek,mt8135-pericfg-reset", "mediatek,reset";
-			mediatek,syscon-reset = <&pericfg 0x00 0x8>;
+			perirst: reset-controller@00 {
+				#reset-cells = <1>;
+				compatible = "mediatek,mt8135-pericfg-reset", "mediatek,reset";
+				reg = <0x00 0x8>;
+			};
 		};
 
 		pwrap: pwrap@1000f000 {

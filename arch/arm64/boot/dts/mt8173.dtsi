@@ -12,6 +12,7 @@
  */
 
 #include "skeleton.dtsi"
+#include <dt-bindings/reset-controller/mt8173-resets.h>
 
 / {
 	model = "MT8173";
@@ -154,6 +155,32 @@
 		    	  <0 0x10222000 0 0x1000>,
 		      	<0 0x10200620 0 0x1000>;
 			interrupts = <1 9 0xf04>;
+		};
+
+		infracfg: syscon@10001000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt8173-infracfg", "syscon";
+			reg = <0 0x10001000 0 0x1000>;
+
+			infrarst: reset-controller@30 {
+				#reset-cells = <1>;
+				compatible = "mediatek,mt8173-infracfg-reset", "mediatek,reset";
+				reg = <0x30 0x8>;
+			};
+		};
+
+		pericfg: syscon@10003000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mediatek,mt8173-pericfg", "syscon";
+			reg = <0 0x10003000 0 0x1000>;
+
+			perirst: reset-controller@00 {
+				#reset-cells = <1>;
+				compatible = "mediatek,mt8173-pericfg-reset", "mediatek,reset";
+				reg = <0x00 0x8>;
+			};
 		};
 
 		uart0: serial@11002000 {

@@ -9,12 +9,21 @@ using a specific compatible value), interrogate the node (or associated
 OS driver) to determine the location of the registers, and access the
 registers directly.
 
+Optionally, devices that are only controlled through single syscon
+registers or bitfields can also be added as child nodes to the syscon
+device node. These devices can implicitly assume their parent node
+as syscon provider without referencing it explicitly via phandle.
+In this case, the syscon node should have #address-cells = <1> and
+#size-cells = <0> or <1> and no ranges property.
+
 Required properties:
 - compatible: Should contain "syscon".
 - reg: the register region can be accessed from syscon
 
 Examples:
 gpr: iomuxc-gpr@020e0000 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
 	reg = <0x020e0000 0x38>;
 };

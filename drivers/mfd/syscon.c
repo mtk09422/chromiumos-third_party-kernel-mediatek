@@ -152,6 +152,8 @@ static int syscon_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, syscon);
+	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
+		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
 
 	dev_dbg(dev, "regmap %pR registered\n", res);
 
