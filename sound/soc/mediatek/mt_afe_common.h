@@ -1,5 +1,5 @@
 /*
- * mt_soc_common.h  --  Mediatek audio driver common definitions
+ * mt_afe_common.h  --  Mediatek audio driver common definitions
  *
  * Copyright (c) 2014 MediaTek Inc.
  * Author: Koro Chen <koro.chen@mediatek.com>
@@ -16,9 +16,10 @@
  * GNU General Public License for more details.
  */
 
-#ifndef AUDIO_GLOBAL_H
-#define AUDIO_GLOBAL_H
+#ifndef _MT_AFE_COMMON_H_
+#define _MT_AFE_COMMON_H_
 
+#include "mt_afe_digital_type.h"
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -34,8 +35,12 @@
 #include <linux/mutex.h>
 #include <linux/time.h>
 #include <linux/timer.h>
+#include <linux/clk.h>
+#include <sound/pcm.h>
 
-struct afe_block {
+#define MT_AFE_REG_NUM 200
+
+struct mt_afe_block {
 	unsigned int phys_buf_addr;
 	unsigned char *virt_buf_addr;
 
@@ -49,16 +54,15 @@ struct afe_block {
 	unsigned int reset_flag;
 };
 
-struct afe_mem_control {
+struct mt_afe_memif {
 	struct file *flip;
-	struct afe_block block;
+	struct mt_afe_block block;
 	bool running;
-	unsigned int mem_if_num;
+	unsigned int memif_num;
 };
 
-struct pcm_afe_info {
+struct mt_afe_info {
 	unsigned long dma_addr;
-	struct snd_pcm_substream *substream;
 	unsigned int pcm_irq_pos;	/* IRQ position */
 	uint32_t samp_rate;
 	uint32_t channel_mode;
@@ -67,23 +71,43 @@ struct pcm_afe_info {
 	uint32_t buf_phys;
 	int32_t mmap_flag;
 	bool prepared;
-	struct afe_mem_control *afe_control;
+	bool suspended;
+	uint32_t reg_backup[MT_AFE_REG_NUM];
+	/* address for ioremap audio hardware register */
+	void *base_addr;
+	void *afe_sram_address;
+	uint32_t afe_sram_phy_address;
+	uint32_t afe_sram_size;
+	struct device *dev;
+
+	struct mt_afe_irq audio_mcu_mode[MT_AFE_IRQ_MODE_NUM];
+	struct mt_afe_pin_attribute afe_pin[MT_AFE_PIN_NUM];
+	struct snd_pcm_substream *sub_stream[MT_AFE_MEMIF_NUM];
+	struct mt_afe_memif memif[MT_AFE_MEMIF_NUM];
+
+	/*clock*/
+	struct clk *mt_afe_infra_audio_clk;
+	struct clk *mt_afe_clk;
+	struct clk *mt_afe_hdmi_clk;
+	struct clk *mt_afe_top_apll_clk;
+	struct clk *mt_afe_apll_d16;
+	struct clk *mt_afe_apll_d24;
+	struct clk *mt_afe_apll_d4;
+	struct clk *mt_afe_apll_d8;
+	struct clk *mt_afe_audpll;
+	struct clk *mt_afe_apll_tuner_clk;
 };
 
-enum IRQ_MCU_TYPE {
-	INTERRUPT_IRQ1_MCU = 1,
-	INTERRUPT_IRQ2_MCU = 2,
-	INTERRUPT_IRQ_MCU_DAI_SET = 4,
-	INTERRUPT_IRQ_MCU_DAI_RST = 8,
-	INTERRUPT_HDMI_IRQ = 16,
-	INTERRUPT_SPDF_IRQ = 32
+enum MT_AFE_IRQ_MCU_TYPE {
+	MT_AFE_IRQ1_MCU = 1,
+	MT_AFE_IRQ2_MCU = 2,
+	MT_AFE_IRQ_MCU_DAI_SET = 4,
+	MT_AFE_IRQ_MCU_DAI_RST = 8,
+	MT_AFE_HDMI_IRQ = 16,
+	MT_AFE_SPDF_IRQ = 32
 };
 
 /* below for audio debugging */
-#define DEBUG_AUDDRV
-#define DEBUG_AFE_REG
-#define DEBUG_ANA_REG
-#define DEBUG_AUD_CLK
 /* #define DEEP_DEBUG_AUDDRV */
 
 #ifdef DEEP_DEBUG_AUDDRV
@@ -91,36 +115,5 @@ enum IRQ_MCU_TYPE {
 #else
 #define PRINTK_AUDDEEPDRV(format, args...)
 #endif
-
-#ifdef DEBUG_AUDDRV
-#define PRINTK_AUDDRV(format, args...) pr_info(format, ##args)
-#else
-#define PRINTK_AUDDRV(format, args...)
-#endif
-
-#ifdef DEBUG_AFE_REG
-#define PRINTK_AFE_REG(format, args...) pr_info(format, ##args)
-#else
-#define PRINTK_AFE_REG(format, args...)
-#endif
-
-#ifdef DEBUG_ANA_REG
-#define PRINTK_ANA_REG(format, args...) pr_info(format, ##args)
-#else
-#define PRINTK_ANA_REG(format, args...)
-#endif
-
-#ifdef DEBUG_AUD_CLK
-#define PRINTK_AUD_CLK(format, args...)  pr_info(format, ##args)
-#else
-#define PRINTK_AUD_CLK(format, args...)
-#endif
-
-#define PRINTK_AUD_ERROR(format, args...)  pr_err(format, ##args)
-
-/* if need assert , use AUDIO_ASSERT(true) */
-#define AUDIO_ASSERT(value) BUG_ON(false)
-
-#define ENUM_TO_STR(enum) #enum
 
 #endif

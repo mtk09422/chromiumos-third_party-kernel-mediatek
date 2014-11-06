@@ -1,5 +1,5 @@
 /*
- * mt_soc_afe_control.h  --  Mediatek AFE controller
+ * mt_afe_control.h  --  Mediatek AFE controller
  *
  * Copyright (c) 2014 MediaTek Inc.
  * Author: Koro Chen <koro.chen@mediatek.com>
@@ -16,13 +16,16 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _AUDIO_AFE_CONTROL_H
-#define _AUDIO_AFE_CONTROL_H
+#ifndef _MT_AFE_CONTROL_H
+#define _MT_AFE_CONTROL_H
 
-#include "mt_soc_digital_type.h"
+#include "mt_afe_digital_type.h"
+#include "mt_afe_common.h"
 #include <linux/device.h>
 #include <linux/io.h>
 #include <sound/pcm.h>
+#include <sound/soc.h>
+#include <linux/platform_device.h>
 
 /*****************************************************************************
  *                  R E G I S T E R       D E F I N I T I O N
@@ -515,57 +518,79 @@
 #define PDN_APLL_LEN      1
 
 /*****************************************************************************
- *                E X T E R N A L   R E F E R E N C E S
- *****************************************************************************/
-extern void *afe_base_address;
-extern void *afe_sram_address;
-extern uint32_t afe_sram_phy_address;
-extern uint32_t afe_sram_size;
-extern struct afe_mem_control afe_vul_control_context;
-extern struct afe_mem_control afe_dai_control_context;
-
-/*****************************************************************************
  *                          C O N S T A N T S
  *****************************************************************************/
-#define AUDDRV_DL1_MAX_BUFFER_LENGTH (0x4000)
-#define MASK_ALL          (0xFFFFFFFF)
+#define MT_AFE_DL1_MAX_BUFFER_LENGTH (0x4000)
 
 
-void afe_set_reg(uint32_t offset, uint32_t value, uint32_t mask);
-static inline uint32_t afe_get_reg(uint32_t offset)
+void mt_afe_set_reg(struct mt_afe_info *afe_info, uint32_t offset,
+		    uint32_t value, uint32_t mask);
+static inline uint32_t mt_afe_get_reg(struct mt_afe_info *afe_info,
+				      uint32_t offset)
 {
-	const uint32_t *address = (uint32_t *)((char *)afe_base_address
-					       + offset);
-	return readl(address);
+	const uint32_t *addr = (uint32_t *)((char *)afe_info->base_addr
+					    + offset);
+
+	return readl(addr);
 }
-int do_platform_init(struct device *dev);
-bool init_afe_control(void);
-bool reset_afe_control(void);
-bool set_sample_rate(uint32_t aud_block, uint32_t sample_rate);
-bool set_channels(uint32_t memory_interface, uint32_t channel);
+int mt_afe_platform_init(struct platform_device *pdev);
+int mt_afe_set_sample_rate(struct mt_afe_info *afe_info,
+			   uint32_t aud_block, uint32_t sample_rate);
+int mt_afe_set_ch(struct mt_afe_info *afe_info,
+		  uint32_t memory_interface, uint32_t channel);
 
-bool set_irq_mcu_counter(uint32_t irqmode, uint32_t counter);
-bool set_irq_enable(uint32_t irqmode, bool enable);
-bool set_irq_mcu_sample_rate(uint32_t irqmode, uint32_t sample_rate);
-bool get_irq_status(uint32_t irqmode, struct aud_irq_mcu_mode *mcumode);
+int mt_afe_set_irq_counter(struct mt_afe_info *afe_info,
+			   uint32_t irqmode, uint32_t counter);
+void mt_afe_set_irq_enable(struct mt_afe_info *afe_info, uint32_t irq,
+			   bool enable);
+int mt_afe_set_irq_fs(struct mt_afe_info *afe_info,
+		      uint32_t irqmode, uint32_t sample_rate);
 
-bool set_connection(uint32_t connection_state, uint32_t input, uint32_t output);
-bool set_memory_path_enable(uint32_t aud_block, bool enable);
-bool set_i2s_dac_enable(bool enable);
-bool get_i2s_dac_enable(void);
-void enable_afe(bool enable);
-bool set_i2s_adc_in(struct aud_digital_i2s *digtal_i2s);
-bool set_i2s_adc_enable(bool enable);
-bool set_i2s_dac_out(uint32_t sample_rate);
-void clean_pre_distortion(void);
+int mt_afe_set_connection(struct mt_afe_info *afe_info,
+			  uint32_t conn_state, uint32_t input,
+			  uint32_t output);
+void mt_afe_set_hdmi_path_enable(struct mt_afe_info *afe_info, bool enable);
+int mt_afe_set_memory_path_enable(struct mt_afe_info *afe_info,
+				  uint32_t aud_block, bool enable);
+void mt_afe_set_i2s_dac_enable(struct mt_afe_info *afe_info, bool enable);
+bool mt_afe_get_i2s_dac_enable(struct mt_afe_info *afe_info);
+void mt_afe_enable_afe(struct mt_afe_info *afe_info, bool enable);
+void mt_afe_set_2nd_i2s(struct mt_afe_info *afe_info, uint32_t samplerate);
+void mt_afe_set_i2s_adc(struct mt_afe_info *afe_info,
+			struct mt_afe_i2s *digtal_i2s);
+void mt_afe_set_i2s_adc_enable(struct mt_afe_info *afe_info, bool enable);
+void mt_afe_set_i2s_dac_out(struct mt_afe_info *afe_info,
+			    uint32_t sample_rate);
+void mt_afe_set_2nd_i2s_enable(struct mt_afe_info *afe_info,
+			       enum mt_afe_i2s_dir dir_in, bool enable);
+void mt_afe_clean_pre_distortion(struct mt_afe_info *afe_info);
 
-void aud_drv_dl_set_platform_info(enum MTAUD_BLOCK digital_block,
-				  struct snd_pcm_substream *substream);
-void aud_drv_dl_reset_platform_info(enum MTAUD_BLOCK digital_block);
-void aud_drv_reset_buffer(enum MTAUD_BLOCK digital_block);
-int aud_drv_allocate_dl1_buffer(uint32_t afe_buf_length);
-int aud_drv_update_hw_ptr(enum MTAUD_BLOCK digital_block,
-			  struct snd_pcm_substream *substream);
+int mt_afe_reset_buffer(struct mt_afe_info *afe_info,
+			enum mt_afe_pin digital_block);
+int mt_afe_allocate_dl1_buffer(struct mt_afe_info *afe_info,
+			       struct snd_pcm_substream *substream);
+int mt_afe_update_hw_ptr(struct mt_afe_info *afe_info,
+			 enum mt_afe_pin digital_block,
+			 struct snd_pcm_substream *substream);
 
+void mt_afe_set_hdmi_out_control(struct mt_afe_info *afe_info,
+				 unsigned int channels);
+
+void mt_afe_set_hdmi_out_control_enable(struct mt_afe_info *afe_info,
+					bool enable);
+
+void mt_afe_set_hdmi_i2s(struct mt_afe_info *afe_info);
+
+void mt_afe_set_hdmi_i2s_enable(struct mt_afe_info *afe_info,
+				bool enable);
+
+void mt_afe_set_hdmi_clock_source(struct mt_afe_info *afe_info,
+				  unsigned int sample_rate);
+
+void mt_afe_set_hdmi_bck_div(struct mt_afe_info *afe_info,
+			     unsigned int sample_rate);
+
+void mt_afe_suspend(struct mt_afe_info *afe_info);
+void mt_afe_resume(struct mt_afe_info *afe_info);
 
 #endif

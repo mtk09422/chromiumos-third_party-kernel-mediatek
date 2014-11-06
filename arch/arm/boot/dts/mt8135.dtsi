@@ -633,11 +633,31 @@
 		};
 
 
-		mt-soc-dl1-pcm {
-			compatible = "mediatek,mt-soc-dl1-pcm";
+		mt8135-afe-pcm {
+			compatible = "mediatek,mt8135-afe-pcm";
 			reg = <0 0x12008000 0 0x4000>,
 			      <0 0x12070000 0 0x10000>;
 			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&audio_ck>,
+				 <&afe_ck>,
+				 <&hdmi_ck>,
+				 <&apll_sel>,
+				 <&apll_d16>,
+				 <&apll_d24>,
+				 <&apll_d4>,
+				 <&apll_d8>,
+				 <&audpll>,
+				 <&apll_tuner_ck>;
+			clock-names = "infra_audio_clk",
+				      "afe_clk",
+				      "hdmi_clk",
+				      "top_apll_clk",
+				      "apll_d16",
+				      "apll_d24",
+				      "apll_d4",
+				      "apll_d8",
+				      "audpll",
+				      "apll_tuner_clk";
 		};
 
 		iommu: iommu@10205000 {
