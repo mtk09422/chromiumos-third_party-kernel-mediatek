@@ -436,7 +436,7 @@
 						<MT8135_PIN_36_SDA3__FUNC_SDA3 &pcfg_pull_none>;
 			};
 
-			mmc0_pins_a: mmc0@0 {
+			mmc0_pins_default: mmc0default {
 				mediatek,pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pcfg_pull_up>,
 						<MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pcfg_pull_up>,
 						<MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pcfg_pull_up>,
@@ -450,7 +450,7 @@
 						<MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB &pcfg_pull_up>;
 			};
 
-			mmc1_pins_a: mmc1@0 {
+			mmc1_pins_default: mmc1default {
 				mediatek,pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pcfg_pull_up>,
 						<MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pcfg_pull_up>,
 						<MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD &pcfg_pull_up>,
@@ -459,9 +459,50 @@
 						<MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>;
 			};
 
-			mmc1_cd_pin_reference_design: mmc1_cd_pin@0 {
-				mediatek,pins = <MT8135_PIN_63_MSDC1_INSI__FUNC_MSDC1_INSI &pcfg_pull_up>;
-			};
+		pinctrl_mmc0_uhs: mmc0uhs {
+			input-enable;
+			drive-strength = <MTK_DRIVE_6mA>;
+			bias-pull-up = <MTK_PUPD_SET_R0_10>;
+		};
+
+		pinctrl_mmc0_uhs_clk: mmc0uhs_clk {
+			drive-strength = <MTK_DRIVE_6mA>;
+			bias-pull-down = <MTK_PUPD_SET_R0_10>;
+		};
+
+		pinctrl_mmc1_uhs: mmc1uhs {
+			input-enable;
+			drive-strength = <MTK_DRIVE_8mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1_55>;
+		};
+
+		pinctrl_mmc1_uhs_clk: mmc1uhs_clk {
+			drive-strength = <MTK_DRIVE_8mA>;
+			bias-pull-down = <MTK_PUPD_SET_R1_55>;
+		};
+
+		mmc0_pins_uhs: mmc0@0 {
+		       mediatek,pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_4_MSDC0_CMD__FUNC_MSDC0_CMD &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_5_MSDC0_CLK__FUNC_MSDC0_CLK &pinctrl_mmc0_uhs_clk>,
+			       <MT8135_PIN_6_MSDC0_DAT3__FUNC_MSDC0_DAT3 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_7_MSDC0_DAT2__FUNC_MSDC0_DAT2 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pinctrl_mmc0_uhs>,
+			       <MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB &pinctrl_mmc0_uhs>;
+	       };
+
+		mmc1_pins_uhs: mmc1@0 {
+		       mediatek,pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pinctrl_mmc1_uhs>,
+			       <MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pinctrl_mmc1_uhs>,
+			       <MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD &pinctrl_mmc1_uhs>,
+			       <MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pinctrl_mmc1_uhs>,
+			       <MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK &pinctrl_mmc1_uhs_clk>,
+			       <MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pinctrl_mmc1_uhs>;
+	       };
 
 			aud_mtkif: aud_mtkif {
 				mediatek,pins = <MT8135_PIN_37_AUD_CLK_MOSI__FUNC_AUD_CLK &pcfg_pull_down>,
@@ -571,47 +612,35 @@
 			clocks = <&spi1_ck>;
                 };
 
-		mtk-msdc {
-			#address-cells = <2>;
-			#size-cells = <2>;
-			compatible = "simple-bus";
-			ranges;
+		mmc0: mmc@11230000 {
+			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
+			reg = <0 0x11230000 0 0x108>;
+			interrupts-extended = <&gic GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+			bus-width = <8>;
+			max-frequency = <50000000>;
+			cap-mmc-highspeed;
+			core-power-supply = <&mt6397_vemc_3v3_reg>;
+			io-power-supply = <&mt6397_vio18_reg>;
+			clocks = <&msdc20_1_ck>, <&msdcpll>;
+			clock-names = "src_clk", "pll_clk";
+			non-removable;
+			func = "EMMC";
+		};
 
-			gpio@10005000 {
-				compatible = "mediatek,GPIO";
-				reg = <0 0x10005000 0 0x1000>;
-			};
-			gpio1@1020c000 {
-				compatible = "mediatek,GPIO1";
-				reg = <0 0x1020c000 0 0x1000>;
-			};
-
-			mmc0@11230000 {
-				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
-				reg = <0 0x11230000 0 0x108>;
-				interrupts-extended = <&gic GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
-				bus-width = <8>;
-				max-frequency = <50000000>;
-				cap-mmc-highspeed;
-				core-power-supply = <&mt6397_vemc_3v3_reg>;
-				io-power-supply = <&mt6397_vio18_reg>;
-				clocks = <&msdc20_1_ck>, <&msdcpll>;
-				clock-names = "src_clk", "pll_clk";
-				non-removable;
-			};
-			mmc1@11240000 {
-				compatible = "mediatek,mt8135-mmc","mediatek,mmc";
-				reg = <0 0x11240000 0 0x108>;
-				interrupts-extended = <&gic GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>, <&pio 15 IRQ_TYPE_LEVEL_LOW>;
-				bus-width = <4>;
-				max-frequency = <50000000>;
-				cap-sd-highspeed;
-				sd-uhs-sdr25;
-				core-power-supply = <&mt6397_vmch_reg>;
-				io-power-supply = <&mt6397_vmc_reg>;
-				clocks = <&msdc20_2_ck>, <&msdcpll>;
-				clock-names = "src_clk", "pll_clk";
-			};
+		mmc1: mmc@11240000 {
+			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
+			reg = <0 0x11240000 0 0x108>;
+			interrupts-extended = <&gic GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>;
+			bus-width = <4>;
+			max-frequency = <50000000>;
+			cap-sd-highspeed;
+			sd-uhs-sdr25;
+			core-power-supply = <&mt6397_vmch_reg>;
+			io-power-supply = <&mt6397_vmc_reg>;
+			clocks = <&msdc20_2_ck>, <&msdcpll>;
+			clock-names = "src_clk", "pll_clk";
+			cd-gpios = <&pio 188 0>;
+			func = "SDCARD";
 		};
 
 		usb0: usb@11200000 {

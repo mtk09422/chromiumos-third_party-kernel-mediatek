@@ -127,19 +127,6 @@
 			};
 		};
 
-		mmc0@11230000 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&mmc0_pins_a>;
-			status = "okay";
-		};
-
-		mmc1@11240000 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&mmc1_pins_a>,
-			<&mmc1_cd_pin_reference_design>;
-			status = "okay";
-		};
-
 		usb0@11200000 {
 			pinctrl-names = "default";
 			pinctrl-0 = <&usb0_pins_a>;
@@ -156,6 +143,21 @@
 	};
 
 };
+
+&mmc0 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc0_pins_default>;
+	pinctrl-1 = <&mmc0_pins_uhs>;
+	status = "okay";
+};
+
+&mmc1 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc1_pins_default>;
+	pinctrl-1 = <&mmc1_pins_uhs>;
+	status = "okay";
+};
+
 &i2c0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins_a>;

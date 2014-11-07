@@ -436,271 +436,6 @@ enum {
 #define CARD_READY_FOR_DATA             (1<<8)
 #define CARD_CURRENT_STATE(x)           ((x&0x00001E00)>>9)
 
-
-#define GPIO_BASE	gpio_base
-#define GPIO1_BASE	gpio1_base
-/********************MSDC0*************************************************/
-#define MSDC0_TDSEL_BASE		(GPIO_BASE+0x0700)
-#define MSDC0_RDSEL_BASE		(GPIO_BASE+0x0700)
-#define MSDC0_TDSEL				(0xF << 0)
-#define MSDC0_RDSEL				(0x3FUL << 4)
-#define MSDC0_DAT_DRVING_BASE	(GPIO_BASE+0x0500)
-#define MSDC0_DAT_DRVING		(0x7 << 0)
-#define MSDC0_CMD_DRVING_BASE	(GPIO_BASE+0x0500)
-#define MSDC0_CMD_DRVING		(0x7 << 4)
-#define MSDC0_CLK_DRVING_BASE	(GPIO_BASE+0x0500)
-#define MSDC0_CLK_DRVING		(0x7 << 8)
-#define MSDC0_DAT_SR_BASE		(GPIO_BASE+0x0500)
-#define MSDC0_DAT_SR			(0x1 << 3)
-#define MSDC0_CMD_SR_BASE		(GPIO_BASE+0x0500)
-#define MSDC0_CMD_SR			(0x1 << 7)
-#define MSDC0_CLK_SR_BASE		(GPIO_BASE+0x0500)
-#define MSDC0_CLK_SR			(0x1 << 11)
-#define MSDC0_IES_BASE			(GPIO_BASE+0x0100)
-#define MSDC0_IES_DAT			(0x1 << 9)
-#define MSDC0_IES_CMD			(0x1 << 4)
-#define MSDC0_IES_CLK			(0x1 << 5)
-
-#define MSDC0_SMT_BASE			(GPIO_BASE+0x0300)
-#define MSDC0_SMT_DAT			(0x3CF << 0)
-/* MASK:DAT0|DAT1|DAT2|DAT3|CLK|CMD|RSTB(Please use default value)
-   |DAT4|DAT5|DAT6|DAT7 */
-#define MSDC0_SMT_CMD			(0x1 << 4)
-#define MSDC0_SMT_CLK			(0x1 << 5)
-/* 1.8v 10K resistor control */
-#define MSDC0_R0_BASE			(GPIO1_BASE+0x04D0)
-/* MASK:DAT7|DAT6|DAT5|DAT4|DAT3|DAT2|DAT1|DAT0|CMD|CLK */
-#define MSDC0_R0_DAT			(0xFF << 2)
-#define MSDC0_R0_CMD			(0x1 << 1)
-#define MSDC0_R0_CLK			(0x1 << 0)
-
-#define MSDC0_R1_BASE			(GPIO_BASE+0x0200)
-#define MSDC0_R1_DAT			(0x3CF << 0)
-/* MASK:DAT0|DAT1|DAT2|DAT3|CLK|CMD|RSTB(Please use default value)
-   |DAT4|DAT5|DAT6|DAT7 */
-#define MSDC0_R1_CMD			(0x1 << 4)
-#define MSDC0_R1_CLK			(0x1 << 5)
-
-/* '1' = pull up '0' =pull down */
-#define MSDC0_PUPD_BASE			(GPIO_BASE+0x0400)
-#define MSDC0_PUPD_DAT			(0x3CF << 0)
-/* MASK:DAT0|DAT1|DAT2|DAT3|CLK|CMD|RSTB(Please use default value)
-   |DAT4|DAT5|DAT6|DAT7 */
-#define MSDC0_PUPD_CMD			(0x1 << 4)
-#define MSDC0_PUPD_CLK			(0x1 << 5)
-
-
-/****************************MSDC1*******************************************/
-
-#define MSDC1_TDSEL_BASE        (GPIO1_BASE+0x0730)
-#define MSDC1_TDSEL				(0xFUL  << 4)
-
-#define MSDC1_RDSEL_BASE        (GPIO1_BASE+0x0730)
-#define MSDC1_RDSEL				(0x3FUL << 8)
-
-#define MSDC1_DAT_DRVING_BASE   (GPIO1_BASE+0x0550)
-#define MSDC1_DAT_DRVING		(0x7UL  << 8)
-
-#define MSDC1_CMD_DRVING_BASE   (GPIO1_BASE+0x0550)
-#define MSDC1_CMD_DRVING		(0x7UL  << 12)
-
-#define MSDC1_CLK_DRVING_BASE   (GPIO1_BASE+0x0550)
-#define MSDC1_CLK_DRVING		(0x7UL  << 16)
-
-#define MSDC1_DAT_SR_BASE       (GPIO1_BASE+0x0550)
-#define MSDC1_DAT_SR			(0x1 << 11)
-#define MSDC1_CMD_SR_BASE       (GPIO1_BASE+0x0550)
-#define MSDC1_CMD_SR			(0x1 << 15)
-#define MSDC1_CLK_SR_BASE       (GPIO1_BASE+0x0550)
-#define MSDC1_CLK_SR			(0x1 << 7)
-
-#define MSDC1_IES_BASE          (GPIO1_BASE+0x0150)
-#define MSDC1_IES_DAT			(0x1 << 3)
-#define MSDC1_IES_CMD			(0x1 << 5)
-#define MSDC1_IES_CLK			(0x1 << 6)
-
-#define MSDC1_SMT_BASE          (GPIO1_BASE+0x0350)
-/* DATA3|DATA2...DATA1|DATA0 */
-#define MSDC1_SMT_DAT			(0x33 << 3)
-#define MSDC1_SMT_CMD			(0x1 << 5)
-#define MSDC1_SMT_CLK			(0x1 << 6)
-
-#define MSDC1_DETECT_BASE       (GPIO_BASE+0x0CC0)
-#define MSDC1_DETECT_SEL        (0x1 << 9)
-
-#define MSDC1_PUPD_ENA_DET_BASE (GPIO1_BASE+0x230)
-#define MSDC1_PUPD_ENA_DET      (0x1 << 15)
-
-#define MSDC1_PUPD_DET_BASE     (GPIO1_BASE+0x430)
-#define MSDC1_PUPD_DET          (0x1 << 15)
-/* '1'= enable '0' = disable */
-#define MSDC1_PUPD_ENABLE_BASE      (GPIO1_BASE+0x0250)
-/* '1' = pull up '0' =pull down */
-#define MSDC1_PUPD_POLARITY_BASE    (GPIO1_BASE+0x0450)
-/* DATA3|DATA2...DATA1|DATA0 */
-#define MSDC1_PUPD_DAT			(0x33 << 3)
-#define MSDC1_PUPD_CMD			(0x1 << 5)
-#define MSDC1_PUPD_CLK			(0x1 << 6)
-
-/****************************MSDC2*******************************************/
-
-#define MSDC2_TDSEL_BASE		(GPIO_BASE+0x0780)
-#define MSDC2_RDSEL_BASE		(GPIO_BASE+0x0780)
-#define MSDC2_TDSEL				(0xFUL  << 0)
-#define MSDC2_RDSEL				(0x3FUL << 8)
-
-#define MSDC2_DAT_DRVING_BASE	(GPIO_BASE+0x05A0)
-#define MSDC2_DAT_DRVING		(0x7	<< 8)
-
-#define MSDC2_CMD_DRVING_BASE	(GPIO_BASE+0x05A0)
-#define MSDC2_CMD_DRVING		(0x7	<< 12)
-
-#define MSDC2_CLK_DRVING_BASE	(GPIO_BASE+0x05C0)
-#define MSDC2_CLK_DRVING		(0x7UL	<< 20)
-
-#define MSDC2_DAT_SR_BASE		(GPIO_BASE+0x05A0)
-#define MSDC2_DAT_SR			(0x1 << 11)
-#define MSDC2_CMD_SR_BASE		(GPIO_BASE+0x05A0)
-#define MSDC2_CMD_SR			(0x1 << 15)
-#define MSDC2_CLK_SR_BASE		(GPIO_BASE+0x05C0)
-#define MSDC2_CLK_SR			(0x1 << 23)
-
-#define MSDC2_IES_BASE			(GPIO_BASE+0x01B0)
-#define MSDC2_IES_DAT			(0x1 << 3)
-#define MSDC2_IES_CMD			(0x1 << 0)
-#define MSDC2_IES_CLK			(0x1 << 1)
-
-#define MSDC2_SMT_BASE1			(GPIO_BASE+0x03B0)
-#define MSDC2_SMT_DAT1_0		(0x3 << 2)	/* ...DAT1|DAT0... */
-#define MSDC2_SMT_CMD			(0x1 << 0)
-#define MSDC2_SMT_CLK			(0x1 << 1)
-#define MSDC2_SMT_BASE2			(GPIO_BASE+0x03A0)
-#define MSDC2_SMT_DAT2_3		(0x3 << 14)	/* ...DAT2|DAT3... */
-
-/* '1'= enable '0' = disable */
-#define MSDC2_PUPD_ENABLE_BASE1			(GPIO1_BASE+0x0250)
-/* '1' = pull up '0' =pull down */
-#define MSDC2_PUPD_POLARITY_BASE1		(GPIO1_BASE+0x0450)
-#define MSDC2_PUPD_DAT1_0		(0x3 << 1)	/* ...DAT1|DAT0... */
-#define MSDC2_PUPD_CLK			(0x1 << 0)
-/* '1'= enable '0' = disable */
-#define MSDC2_PUPD_ENABLE_BASE2			(GPIO_BASE+0x0240)
-/* '1' = pull up '0' =pull down */
-#define MSDC2_PUPD_POLARITY_BASE2		(GPIO_BASE+0x0440)
-#define MSDC2_PUPD_DAT2_3		(0x3 << 13)
-#define MSDC2_PUPD_CMD			(0x1 << 15)
-
-/****************************MSDC3*******************************************/
-
-#define MSDC3_TDSEL_BASE		(GPIO_BASE+0x0790)
-#define MSDC3_RDSEL_BASE		(GPIO_BASE+0x0790)
-#define MSDC3_TDSEL				(0xFUL  << 16)
-#define MSDC3_RDSEL				(0x3FUL << 24)
-
-#define MSDC3_DAT_DRVING_BASE	(GPIO_BASE+0x05C0)
-#define MSDC3_DAT_DRVING		(0x7	<< 4)
-
-#define MSDC3_CMD_DRVING_BASE	(GPIO_BASE+0x05C0)
-#define MSDC3_CMD_DRVING		(0x7    << 8)
-
-#define MSDC3_CLK_DRVING_BASE	(GPIO_BASE+0x05C0)
-#define MSDC3_CLK_DRVING		(0x7UL  << 24)
-
-#define MSDC3_DAT_SR_BASE		(GPIO_BASE+0x05C0)
-#define MSDC3_DAT_SR			(0x1 << 7)
-#define MSDC3_CMD_SR_BASE		(GPIO_BASE+0x05C0)
-#define MSDC3_CMD_SR			(0x1 << 11)
-#define MSDC3_CLK_SR_BASE		(GPIO_BASE+0x05C0)
-#define MSDC3_CLK_SR			(0x1 << 27)
-
-#define MSDC3_IES_BASE			(GPIO_BASE+0x01E0)
-#define MSDC3_IES_DAT			(0x1 << 7)
-#define MSDC3_IES_CMD			(0x1 << 4)
-#define MSDC3_IES_CLK			(0x1 << 5)
-
-#define MSDC3_SMT_BASE			(GPIO_BASE+0x03E0)
-/* ..DAT0|DAT1..DAT3|DAT2 */
-#define MSDC3_SMT_DAT			((0x3 << 6) | (0x3 << 2))
-#define MSDC3_SMT_CMD			(0x1 << 4)
-#define MSDC3_SMT_CLK			(0x1 << 5)
-/* 1.8v 10K resistor control */
-#define MSDC3_R0_BASE			(GPIO_BASE+0x04F0)
-/* MASK:DAT3|DAT2|DAT1|DAT0 */
-#define MSDC3_R0_DAT			(0xF << 12)
-#define MSDC3_R0_CMD			(0x1 << 11)
-#define MSDC3_R0_CLK			(0x1 << 10)
-
-
-#define MSDC3_R1_BASE			(GPIO_BASE+0x02C0)
-#define MSDC3_R1_DAT		    (0x33 << 5)
-#define MSDC3_R1_CMD			(0x1 << 7)
-#define MSDC3_R1_CLK			(0x1 << 8)
-
-/* '1' = pull up '0' =pull down */
-#define MSDC3_PUPD_BASE			(GPIO_BASE+0x04C0)
-#define MSDC3_PUPD_DAT		    (0x33 << 5)
-#define MSDC3_PUPD_CMD			(0x1 << 7)
-#define MSDC3_PUPD_CLK			(0x1 << 8)
-
-/********************MSDC4***************************************************/
-#define MSDC4_TDSEL_BASE		(GPIO1_BASE+0x0760)
-#define MSDC4_RDSEL_BASE		(GPIO1_BASE+0x0770)
-#define MSDC4_TDSEL				(0xFUL << 24)
-#define MSDC4_RDSEL				(0x3F  << 0)
-#define MSDC4_DAT_DRVING_BASE	(GPIO1_BASE+0x0580)
-#define MSDC4_DAT_DRVING		(0x7 << 20)
-#define MSDC4_CMD_DRVING_BASE	(GPIO1_BASE+0x0570)
-#define MSDC4_CMD_DRVING		(0x7 << 16)
-#define MSDC4_CLK_DRVING_BASE	(GPIO1_BASE+0x0580)
-#define MSDC4_CLK_DRVING		(0x7 << 0)
-#define MSDC4_DAT_SR_BASE		(GPIO1_BASE+0x0580)
-#define MSDC4_DAT_SR			(0x1 << 23)
-#define MSDC4_CMD_SR_BASE		(GPIO1_BASE+0x0570)
-#define MSDC4_CMD_SR			(0x1 << 19)
-#define MSDC4_CLK_SR_BASE		(GPIO1_BASE+0x0580)
-#define MSDC4_CLK_SR			(0x1 << 3)
-#define MSDC4_IES_BASE			(GPIO1_BASE+0x0180)
-#define MSDC4_IES_DAT			(0x1 << 2)
-#define MSDC4_IES_CMD			(0x1 << 13)
-#define MSDC4_IES_CLK			(0x1 << 11)
-
-#define MSDC4_SMT_BASE			(GPIO1_BASE+0x0380)
-#define MSDC4_SMT_DAT			((0x1 << 12) | (0x1F << 6) | (0x3 << 2))
-#define MSDC4_SMT_CMD			(0x1 << 13)
-#define MSDC4_SMT_CLK			(0x1 << 11)
-/* 1.8v 10K resistor control */
-#define MSDC4_R0_BASE			(GPIO_BASE+0x04F0)
-/* MASK:DAT7|DAT6|DAT5|DAT4|DAT3|DAT2|DAT1|DAT0|CMD|CLK */
-#define MSDC4_R0_DAT			(0xFFUL << 18)
-#define MSDC4_R0_CMD			(0x1 << 17)
-#define MSDC4_R0_CLK			(0x1 << 16)
-
-#define MSDC4_R1_BASE1			(GPIO1_BASE+0x0250)
-/* MASK:DAT2|DAT4|DAT7|DAT6|DAT5|DAT1|DAT0... */
-#define MSDC4_R1_DAT0_7			(0x7F << 9)
-
-#define MSDC4_R1_BASE2          (GPIO1_BASE+0x0260)
-#define MSDC4_R1_DAT3           (0x1 << 1)	/* MASK:DAT3 */
-#define MSDC4_R1_CMD			(0x1 << 2)
-#define MSDC4_R1_CLK			(0x1 << 1)
-/* '1' = pull up '0' =pull down */
-#define MSDC4_PUPD_BASE1        (GPIO1_BASE+0x0450)
-#define MSDC4_PUPD_DAT0_7_MASK  (0x7F)
-#define MSDC4_PUPD_DAT0_7_SFT   (9)
-#define MSDC4_PUPD_DAT0_7      (MSDC4_PUPD_DAT0_7_MASK << MSDC4_PUPD_DAT0_7_SFT)
-/* MASK:DAT2|DAT4|DAT7|DAT6|DAT5|DAT1|DAT0... */
-/* '1' = pull up '0' =pull down */
-#define MSDC4_PUPD_BASE2        (GPIO1_BASE+0x0460)
-#define MSDC4_PUPD_DAT3_MASK    (0x1)
-#define MSDC4_PUPD_DAT3_SFT     (1)
-#define MSDC4_PUPD_DAT3         (MSDC4_PUPD_DAT3_MASK << MSDC4_PUPD_DAT3_SFT)
-#define MSDC4_PUPD_CMD_MASK     (0x1)
-#define MSDC4_PUPD_CMD_SFT      (2)
-#define MSDC4_PUPD_CMD          (MSDC4_PUPD_CMD_MASK << MSDC4_PUPD_CMD_SFT)
-#define MSDC4_PUPD_CLK_MASK     (0x1)
-#define MSDC4_PUPD_CLK_SFT      (0)
-#define MSDC4_PUPD_CLK          (MSDC4_PUPD_CLK_MASK << MSDC4_PUPD_CLK_SFT)
-
 /*--------------------------------------------------------------------------*/
 /* Descriptor Structure                                                     */
 /*--------------------------------------------------------------------------*/
@@ -771,43 +506,24 @@ struct msdc_dma {
 	u32 used_bd;		/* the number of used bd elements */
 };
 
-struct tune_counter {
-	u32 time_cmd;
-	u32 time_read;
-	u32 time_write;
-};
-struct msdc_saved_para {
-	u32 pad_tune;
-	u32 ddly0;
-	u32 ddly1;
-	u8 cmd_resp_ta_cntr;
-	u8 wrdat_crc_ta_cntr;
-	u8 suspend_flag;
-	u32 msdc_cfg;
-	u32 mode;
-	u32 div;
-	u32 sdc_cfg;
-	u32 iocon;
-	int ddr;
-	u32 hz;
-	u8 int_dat_latch_ck_sel;
-	u8 ckgen_msdc_dly_sel;
-};
-
 struct last_cmd {
 	u8	cmd;
 	u8	type;
 	u32	arg;
 };
 
+enum host_function {
+	MSDC_EMMC = 0,
+	MSDC_SD = 1,
+	MSDC_SDIO = 2
+};
+
 struct msdc_host {
 	struct device *dev;
-	struct msdc_hw *hw;
-
+	enum host_function host_func;
 	struct mmc_host *mmc;	/* mmc structure */
 	int cmd_rsp;
 	struct last_cmd last_cmd;
-	u32 sdio_tune_flag;
 
 	struct regulator *core_power;
 	struct regulator *io_power;
@@ -822,11 +538,8 @@ struct msdc_host {
 	/*to solve removing bad card race condition with hot-plug enable */
 	spinlock_t remove_bad_card;
 	int clk_gate_count;
-	unsigned long sdio_flags;
 
 	void __iomem *base;		/* host base address */
-	int id;			/* host id */
-	int pwr_ref;		/* core power reference count */
 
 	struct msdc_dma dma;	/* dma channel */
 	u32 dma_addr;		/* dma transfer address */
@@ -837,13 +550,11 @@ struct msdc_host {
 	u32 timeout_clks;	/* data timeout clks */
 
 	struct msdc_pinctrl *pin_ctl;
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pins_default;
+	struct pinctrl_state *pins_uhs;
 	struct delayed_work req_timeout;
 	int irq;		/* host interrupt */
-
-	struct tasklet_struct card_tasklet;
-
-	u32 erase_start;
-	u32 erase_end;
 
 	struct clk *src_clk;	/* msdc source clock */
 	u32 mclk;		/* mmc subsystem clock */
@@ -851,36 +562,19 @@ struct msdc_host {
 	u32 sclk;		/* SD/MS clock speed */
 	/* u8 core_power; */		/* core power */
 	u8 power_mode;		/* host power mode */
-	u8 card_inserted;	/* card inserted ? */
 	u8 suspend;		/* host suspended ? */
-	u8 reserved;
 	u8 app_cmd;		/* for app command */
 	u32 app_cmd_arg;
 	u8 autocmd;
 	bool ddr;
-	struct msdc_saved_para saved_para;
-	int cd_pin;
-	int cd_irq;
-	int sd_cd_polarity;
-	/* to make sure insert mmc_rescan
-	   this work in start_host when boot up */
-	int sd_cd_insert_work;
 	/* driver will get a EINT(Level sensitive)
 	   when boot up phone with card insert */
-	bool block_bad_card;
 	struct dma_addr *latest_dma_address;
 	u32 io_power_state;
 	u32 core_power_state;
-	unsigned long request_ts;
-	u8 ext_csd[512];
-#ifdef MSDC_DMA_VIOLATION_DEBUG
-	int dma_debug;
-#endif
 
-#ifdef SDIO_ERROR_BYPASS
-	int sdio_error;		/* sdio error can't recovery */
-#endif
 	void (*power_control)(struct msdc_host *host, u32 on);
+
 	void (*power_switch)(struct msdc_host *host, u32 on);
 };
 
@@ -962,14 +656,11 @@ struct dma_addr {
 		sdr_write32(SDC_CMD, (cmd)); \
 	} while (0)
 
-#define is_card_present(h)     (((struct msdc_host *)(h))->card_inserted)
-#define is_card_sdio(h)        (((struct msdc_host *)(h))->hw->sdio.irq.valid)
-
 #define MSDC_PREPARE_FLAG BIT(0)
 #define MSDC_ASYNC_FLAG BIT(1)
 #define MSDC_MMAP_FLAG BIT(2)
 
-#define msdc_reset(id) \
+#define msdc_reset() \
 	do { \
 		sdr_set_bits(MSDC_CFG, MSDC_CFG_RST); \
 		while (sdr_read32(MSDC_CFG) & MSDC_CFG_RST) \
@@ -982,7 +673,7 @@ struct dma_addr {
 		sdr_write32(MSDC_INT, val); \
 	} while (0)
 
-#define msdc_clr_fifo(id) \
+#define msdc_clr_fifo() \
 	do { \
 		sdr_set_bits(MSDC_FIFOCS, MSDC_FIFOCS_CLR); \
 		while (sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR) \
@@ -991,8 +682,8 @@ struct dma_addr {
 
 #define msdc_reset_hw(id) \
 	do { \
-		msdc_reset(id); \
-		msdc_clr_fifo(id); \
+		msdc_reset(); \
+		msdc_clr_fifo(); \
 		msdc_clr_int(); \
 	} while (0)
 
@@ -1068,31 +759,6 @@ static ssize_t msdc_attr_##name##_store(struct device *dev,		\
 }									\
 static DEVICE_ATTR(name, S_IRUGO | S_IWUSR | S_IWGRP, \
 		msdc_attr_##name##_show, msdc_attr_##name##_store)
-struct mt_pin_info {
-	union {
-		struct {
-			s16 pin;
-			u8 flags;
-			u8 mode1:3;
-			u8 mode2:3;
-			u8 valid:1;
-			u8 custom:1;
-		};
-		u32 w;
-	};
-};
-
-/* WIFI SDIO platform data */
-struct mtk_wifi_sdio_data {
-	struct mt_pin_info irq;
-};
-
-void mtk_wifi_sdio_set_data(const struct mtk_wifi_sdio_data *pdata, int port);
-
-/* MSDC/SDIO */
-/* external irq handler */
-typedef void (*msdc_sdio_irq_handler_t) (void *);
-typedef void (*msdc_pm_callback_t) (void *data, bool power_enable);
 
 #define MSDC_CD_PIN_EN      (1 << 0)	/* card detection pin is wired   */
 #define MSDC_WP_PIN_EN      (1 << 1)	/* write protection pin is wired */
@@ -1123,87 +789,5 @@ typedef void (*msdc_pm_callback_t) (void *data, bool power_enable);
 #define MSDC_BOOT_EN (1)
 #define MSDC_CD_HIGH (1)
 #define MSDC_CD_LOW  (0)
-enum {
-	MSDC_EMMC = 0,
-	MSDC_SD = 1,
-	MSDC_SDIO = 2
-};
-
-enum {
-	SDIO_IRQ_FLAG,
-	SDIO_WAKE_LOCK_FLAG,
-};
-
-struct msdc_pinctrl {
-	/* filter */
-	u16 timing;
-	u16 voltage;
-	/* settings */
-	u8 clk_drv;
-	u8 cmd_drv;
-	u8 dat_drv;
-};
-
-struct msdc_hw {
-	unsigned char cmd_edge;	/* command latch edge */
-	unsigned char rdata_edge;	/* read data latch edge */
-	unsigned char wdata_edge;	/* write data latch edge */
-
-	/* support up to 4 different sets of parameters */
-	struct msdc_pinctrl pin_ctl[4];
-
-	unsigned long flags;	/* hardware capability flags */
-	unsigned long data_offset;	/* data address offset */
-	unsigned char dat0rddly;	/* read; range: 0~31 */
-	unsigned char dat1rddly;	/* read; range: 0~31 */
-	unsigned char dat2rddly;	/* read; range: 0~31 */
-	unsigned char dat3rddly;	/* read; range: 0~31 */
-	unsigned char dat4rddly;	/* read; range: 0~31 */
-	unsigned char dat5rddly;	/* read; range: 0~31 */
-	unsigned char dat6rddly;	/* read; range: 0~31 */
-	unsigned char dat7rddly;	/* read; range: 0~31 */
-	unsigned char datwrddly;	/* write; range: 0~31 */
-	unsigned char cmdrrddly;	/* cmd; range: 0~31 */
-	unsigned char cmdrddly;	/* cmd; range: 0~31 */
-	unsigned char ckgen_msdc_dly_sel;
-	int power_state;
-
-	struct sdio_config {
-		struct sdio_iocon {
-			u32 dspl;
-			u32 w_dspl;
-			u32 rspl;
-		} iocon;
-		struct sdio_pad_tune {
-			u32 rrdly;
-			u32 rdly;
-			u32 wrdly;
-		} pad_tune;
-		struct sdio_dat_rd {
-			u8 dly0[4];
-		} dat_rd;
-		msdc_pm_callback_t power_enable;
-		void *power_data;
-		bool enable_tune:1;
-		struct mt_pin_info irq;
-	} sdio;
-
-	unsigned long host_function;	/* define host function */
-	bool boot:1;		/* define boot host */
-	bool cd_level:1;	/* card detection level */
-	/* config gpio pull mode */
-	void (*config_gpio_pin)(int type, int pull);
-
-	/* external power control for card */
-	void (*ext_power_on)(void);
-	void (*ext_power_off)(void);
-
-	/* external cd irq operations */
-	void (*request_cd_eirq)(msdc_sdio_irq_handler_t cd_irq_handler,
-			void *data);
-	void (*enable_cd_eirq)(void);
-	void (*disable_cd_eirq)(void);
-	int (*get_cd_status)(void);
-};
 
 #endif /* __MTK_SD_H */
