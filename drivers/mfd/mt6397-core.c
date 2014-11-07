@@ -16,16 +16,23 @@
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/of_device.h>
-#include "mtk_pmic_wrap.h"
+#include "mtk-pmic-wrap.h"
 #include "mt6397-irq.h"
 #include <linux/of_irq.h>
 
 static struct mfd_cell mt6397_devs[] = {
-	{  .name = "mt6397-pmic", -1},
-	{  .name = "mt6397-rtc", -1},
-	{  .name = "mt6397-regulator", -1},
-	{  .name = "mt6397-codec", -1,
-	   .of_compatible = "mediatek,mt6397-codec"
+	{
+		.name = "mt6397-rtc",
+		.id = -1,
+	},
+	{
+		.name = "mt6397-regulator",
+		.id = -1,
+	},
+	{
+		.name = "mt6397-codec",
+		.id = -1,
+		.of_compatible = "mediatek,mt6397-codec"
 	},
 };
 

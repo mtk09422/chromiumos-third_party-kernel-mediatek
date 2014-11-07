@@ -170,4 +170,4 @@ obj-$(CONFIG_MFD_AS3722)	+= as3722.o
 obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
 obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
 obj-$(CONFIG_MFD_MT6397)	+= mt6397-core.o mt6397-irq.o
-obj-$(CONFIG_MT8135_WRAP)	+= mt8135_pmic_wrap.o
+obj-$(CONFIG_MT8135_WRAP)	+= mt8135-pmic-wrap.o

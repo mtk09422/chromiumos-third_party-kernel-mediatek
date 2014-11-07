@@ -17,13 +17,9 @@
 
 struct pmic_wrapper {
 	struct platform_device *pdev;
-	struct mutex lock;
-	struct clk *pmicspi;
-	struct clk *pmicspi_parent;
 	void __iomem *pwrap_base;
 	void __iomem *pwrap_bridge_base;
 	struct regmap *regmap;
-	bool is_done;
 };
 
 #endif	/* __MTK_PMIC_WRAP_H__ */

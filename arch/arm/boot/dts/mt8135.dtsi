@@ -140,8 +140,10 @@
 				<0 0x11017000 0 0x1000>;
 			reg-names = "pwrap-base", "pwrap-bridge-base";
 			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-			resets = <&infrarst 7>, <&perirst 34>;
-			reset-names = "infrarst", "perirst";
+			resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
+					<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
+			reset-names = "infra-pwrap-rst",
+					"peri-pwrap-bridge-rst";
 			clocks = <&pmicspi_sel>, <&clk26m> ;
 			clock-names = "pmicspi-sel", "pmicspi-parent";
 
