@@ -266,7 +266,7 @@ struct mtk_pinctrl {
 
 int mtk_pctrl_init(struct platform_device *pdev,
 		const struct mtk_pinctrl_devdata *data,
-		const struct regmap *regmap);
+		struct regmap *regmap);
 
 int mtk_pctrl_remove(struct platform_device *pdev);
 

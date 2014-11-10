@@ -409,6 +409,7 @@
 			      <0 0x1020C020 0 0x1000>,
 			      <0 0x1000B000 0 0x1000>;
 			gpio-controller;
+			#gpio-cells = <2>;
 			interrupt-controller;
 			#interrupt-cells = <2>;
 			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,

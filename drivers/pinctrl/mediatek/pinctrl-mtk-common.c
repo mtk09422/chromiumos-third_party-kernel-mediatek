@@ -356,21 +356,17 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 		mtk_pconf_set_pull_select(pctl, pin, false, false, arg);
 		break;
 	case PIN_CONFIG_BIAS_PULL_UP:
-		mtk_pmx_gpio_set_direction(pctldev, NULL, pin, true);
 		mtk_pconf_set_pull_select(pctl, pin, true, true, arg);
 		break;
 	case PIN_CONFIG_BIAS_PULL_DOWN:
-		mtk_pmx_gpio_set_direction(pctldev, NULL, pin, true);
 		mtk_pconf_set_pull_select(pctl, pin, true, false, arg);
 		break;
 	case PIN_CONFIG_INPUT_ENABLE:
 		mtk_pconf_set_ies(pctl, pin, arg);
-		if (arg)
-			mtk_pmx_gpio_set_direction(pctldev, NULL, pin, true);
 		break;
 	case PIN_CONFIG_OUTPUT:
-		mtk_pmx_gpio_set_direction(pctldev, NULL, pin, false);
 		mtk_gpio_set(pctl->chip, pin, arg);
+		mtk_pmx_gpio_set_direction(pctldev, NULL, pin, false);
 		break;
 	case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
 		mtk_pconf_set_smt(pctl, pin, arg);
@@ -415,8 +411,8 @@ static int mtk_pconf_group_set(struct pinctrl_dev *pctldev, unsigned group,
 }
 
 static const struct pinconf_ops mtk_pconf_ops = {
-	.pin_config_group_get	= mtk_pconf_group_get,
-	.pin_config_group_set	= mtk_pconf_group_set,
+	.pin_config_group_get = mtk_pconf_group_get,
+	.pin_config_group_set = mtk_pconf_group_set,
 };
 
 static struct mtk_pinctrl_group *
@@ -774,6 +770,7 @@ static int mtk_gpio_direction_input(struct gpio_chip *chip,
 static int mtk_gpio_direction_output(struct gpio_chip *chip,
 					unsigned offset, int value)
 {
+	mtk_gpio_set(chip, offset, value);
 	return pinctrl_gpio_direction_output(chip->base + offset);
 }
 
@@ -814,6 +811,23 @@ static int mtk_eint_set_hw_debounce(struct mtk_pinctrl *pctl,
 	unsigned int eint_num,
 	unsigned int ms);
 
+static int mtk_gpio_of_xlate(struct gpio_chip *gc,
+				const struct of_phandle_args *gpiospec,
+				u32 *flags)
+{
+	int pin;
+
+	pin = gpiospec->args[0];
+
+	if (pin > (gc->base + gc->ngpio))
+		return -EINVAL;
+
+	if (flags)
+		*flags = gpiospec->args[1];
+
+	return pin;
+}
+
 static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 {
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
@@ -846,6 +860,7 @@ static struct gpio_chip mtk_gpio_chip = {
 	.direction_output	= mtk_gpio_direction_output,
 	.get			= mtk_gpio_get,
 	.set			= mtk_gpio_set,
+	.of_xlate		= mtk_gpio_of_xlate,
 	.to_irq			= mtk_gpio_to_irq,
 	.of_gpio_n_cells	= 2,
 	.set_debounce		= mtk_gpio_set_debounce,
@@ -1200,7 +1215,7 @@ static struct pinctrl_desc mtk_pctrl_desc = {
 
 int mtk_pctrl_init(struct platform_device *pdev,
 		const struct mtk_pinctrl_devdata *data,
-		const struct regmap *regmap)
+		struct regmap *regmap)
 {
 	struct pinctrl_pin_desc *pins;
 	struct mtk_pinctrl *pctl;
