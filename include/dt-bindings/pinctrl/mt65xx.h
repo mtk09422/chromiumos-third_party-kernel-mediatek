@@ -19,9 +19,10 @@
 #define MTK_GET_PIN_NO(x) ((x) >> 8)
 #define MTK_GET_PIN_FUNC(x) ((x) & 0xf)
 
-#define MTK_PUPD_SET_R0_10 10
-#define MTK_PUPD_SET_R1_55 55
-#define MTK_PUPD_SET_R0R1  8
+#define MTK_PUPD_SET_R1R0_00 0
+#define MTK_PUPD_SET_R1R0_01 1
+#define MTK_PUPD_SET_R1R0_10 2
+#define MTK_PUPD_SET_R1R0_11 3
 
 #define MTK_DRIVE_2mA  2
 #define MTK_DRIVE_4mA  4

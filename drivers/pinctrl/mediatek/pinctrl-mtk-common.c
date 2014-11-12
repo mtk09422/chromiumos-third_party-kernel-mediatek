@@ -20,6 +20,7 @@
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
+#include <asm/hardirq.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pinctrl/machine.h>
 #include <linux/pinctrl/pinconf.h>
@@ -132,24 +133,32 @@ static void mtk_pconf_set_ies(struct mtk_pinctrl *pctl,
 	unsigned int i;
 	unsigned int reg_addr;
 	unsigned int bit;
+	bool find = false;
 
 	if (pctl->devdata->ies_smt_pins) {
 		for (i = 0; i < pctl->devdata->n_ies_smt_pins; i++) {
 			if (pin >= pctl->devdata->ies_smt_pins[i].start &&
-				pin <= pctl->devdata->ies_smt_pins[i].end)
+				pin <= pctl->devdata->ies_smt_pins[i].end) {
+				find = true;
 				break;
+			}
 		}
 
-		if (value)
-			reg_addr = SET_ADDR(
-				pctl->devdata->ies_smt_pins[i].offset, pctl);
-		else
-			reg_addr = CLR_ADDR(
-				pctl->devdata->ies_smt_pins[i].offset, pctl);
+		if (find) {
+			if (value)
+				reg_addr = SET_ADDR(
+					pctl->devdata->ies_smt_pins[i].offset,
+						pctl);
+			else
+				reg_addr = CLR_ADDR(
+					pctl->devdata->ies_smt_pins[i].offset,
+						pctl);
 
-		bit = BIT(pctl->devdata->ies_smt_pins[i].bit);
-		writel_relaxed(bit, mtk_get_base_addr(pctl, pin) + reg_addr);
-		return;
+			bit = BIT(pctl->devdata->ies_smt_pins[i].bit);
+			writel_relaxed(bit, mtk_get_base_addr(pctl, pin) +
+					reg_addr);
+			return;
+		}
 	}
 
 	bit = BIT(pin & 0xf);
@@ -169,24 +178,32 @@ static void mtk_pconf_set_smt(struct mtk_pinctrl *pctl,
 	unsigned int i;
 	unsigned int reg_addr;
 	unsigned int bit;
+	bool find = false;
 
 	if (pctl->devdata->ies_smt_pins) {
 		for (i = 0; i < pctl->devdata->n_ies_smt_pins; i++) {
 			if (pin >= pctl->devdata->ies_smt_pins[i].start &&
-				pin <= pctl->devdata->ies_smt_pins[i].end)
+				pin <= pctl->devdata->ies_smt_pins[i].end) {
+				find = true;
 				break;
+			}
 		}
 
-		if (value)
-			reg_addr = SET_ADDR(
-				pctl->devdata->ies_smt_pins[i].offset, pctl);
-		else
-			reg_addr = CLR_ADDR(
-				pctl->devdata->ies_smt_pins[i].offset, pctl);
+		if (find) {
+			if (value)
+				reg_addr = SET_ADDR(
+					pctl->devdata->ies_smt_pins[i].offset,
+						pctl);
+			else
+				reg_addr = CLR_ADDR(
+					pctl->devdata->ies_smt_pins[i].offset,
+						pctl);
 
-		bit = BIT(pctl->devdata->ies_smt_pins[i].bit);
-		writel_relaxed(bit,  mtk_get_base_addr(pctl, pin) + reg_addr);
-		return;
+			bit = BIT(pctl->devdata->ies_smt_pins[i].bit);
+			writel_relaxed(bit,  mtk_get_base_addr(pctl, pin) +
+					reg_addr);
+			return;
+		}
 	}
 
 	bit = BIT(pin & 0xf);
@@ -298,19 +315,25 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 				pctl->devdata->pupu_spec_pins[i].offset, pctl);
 
 			switch (arg) {
-			case MTK_PUPD_SET_R0_10:
+			case MTK_PUPD_SET_R1R0_00:
+				writel_relaxed(bit_r0,
+					mtk_get_base_addr(pctl, pin) + reg_rst);
+				writel_relaxed(bit_r1,
+					mtk_get_base_addr(pctl, pin) + reg_rst);
+				break;
+			case MTK_PUPD_SET_R1R0_01:
 				writel_relaxed(bit_r0,
 					mtk_get_base_addr(pctl, pin) + reg_set);
 				writel_relaxed(bit_r1,
 					mtk_get_base_addr(pctl, pin) + reg_rst);
 				break;
-			case MTK_PUPD_SET_R1_55:
+			case MTK_PUPD_SET_R1R0_10:
 				writel_relaxed(bit_r0,
 					mtk_get_base_addr(pctl, pin) + reg_rst);
 				writel_relaxed(bit_r1,
 					mtk_get_base_addr(pctl, pin) + reg_set);
 				break;
-			case MTK_PUPD_SET_R0R1:
+			case MTK_PUPD_SET_R1R0_11:
 				writel_relaxed(bit_r0,
 					mtk_get_base_addr(pctl, pin) + reg_set);
 				writel_relaxed(bit_r1,
@@ -1235,13 +1258,11 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	if (IS_ERR(pctl->membase1))
 		return PTR_ERR(pctl->membase1);
 
-	if (pdev->num_resources > 1) {
-		/* Only 8135 has two base addr, other SoCs have only one. */
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-		pctl->membase2 = devm_ioremap_resource(&pdev->dev, res);
-		if (IS_ERR(pctl->membase2))
-			return PTR_ERR(pctl->membase2);
-	}
+	/* Only 8135 has two base addr, other SoCs have only one. */
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	pctl->membase2 = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(pctl->membase2))
+		dev_info(&pdev->dev, "%s has no membase2.\n", pdev->name);
 
 	pctl->devdata = data;
 	pctl->regmap = regmap;

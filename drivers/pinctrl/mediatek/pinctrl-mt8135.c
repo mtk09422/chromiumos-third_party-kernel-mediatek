@@ -22,7 +22,7 @@
 #include "pinctrl-mtk-mt8135.h"
 
 #define DRV_BASE1					  0x500
-#define DRV_BASE2					  0x490
+#define DRV_BASE2					  0x510
 
 static const struct mtk_drv_group_desc mt8135_drv_grp[] =  {
 	/* E8E4E2 2/4/6/8/10/12/14/16 */
@@ -253,7 +253,7 @@ static struct platform_driver mtk_pinctrl_driver = {
 	.probe = mt8135_pinctrl_probe,
 	.remove = mt8135_pinctrl_remove,
 	.driver = {
-		.name = "mediatek-pinctrl",
+		.name = "mediatek-mt8135-pinctrl",
 		.owner = THIS_MODULE,
 		.of_match_table = mt8135_pctrl_match,
 	},

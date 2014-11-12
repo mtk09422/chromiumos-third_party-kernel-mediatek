@@ -155,17 +155,17 @@ struct mtk_pin_spec_pupd_set {
 	unsigned int pin;
 	unsigned int offset;
 	unsigned char pupd_bit;
-	unsigned char r0_bit;
 	unsigned char r1_bit;
+	unsigned char r0_bit;
 };
 
-#define MTK_PIN_PUPD_SPEC(_pin, _offset, _pupd, _r0, _r1)	\
+#define MTK_PIN_PUPD_SPEC(_pin, _offset, _pupd, _r1, _r0)	\
 	{	\
 		.pin = _pin,	\
 		.offset = _offset,	\
 		.pupd_bit = _pupd,	\
-		.r0_bit = _r0,		\
 		.r1_bit = _r1,		\
+		.r0_bit = _r0,		\
 	}
 
 struct mtk_eint_offsets {

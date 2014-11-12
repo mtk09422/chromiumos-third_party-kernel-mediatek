@@ -11,8 +11,11 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 #include "skeleton.dtsi"
 #include <dt-bindings/reset-controller/mt8173-resets.h>
+#include "mt8173-pinfunc.h"
 
 / {
 	model = "MT8173";
@@ -145,7 +148,19 @@
 			reg = <0 0x10200620 0 0x1000>;
 			interrupt-controller;
 		};
-		
+
+		pio: pinctrl@0x10005000 {
+			compatible = "mediatek,mt8173-pinctrl";
+			reg = <0 0x10005000 0 0x1000>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
+						<GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		gic: interrupt-controller@0x10220000 {
 			compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
 			#interrupt-cells = <3>;

@@ -406,7 +406,7 @@
 		pio: pinctrl@10005000 {
 			compatible = "mediatek,mt8135-pinctrl";
 			reg = <0 0x10005000 0 0x1000>,
-			      <0 0x1020C020 0 0x1000>,
+			      <0 0x1020C000 0 0x1000>,
 			      <0 0x1000B000 0 0x1000>;
 			gpio-controller;
 			#gpio-cells = <2>;
@@ -462,23 +462,23 @@
 		pinctrl_mmc0_uhs: mmc0uhs {
 			input-enable;
 			drive-strength = <MTK_DRIVE_6mA>;
-			bias-pull-up = <MTK_PUPD_SET_R0_10>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
 		};
 
 		pinctrl_mmc0_uhs_clk: mmc0uhs_clk {
 			drive-strength = <MTK_DRIVE_6mA>;
-			bias-pull-down = <MTK_PUPD_SET_R0_10>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_01>;
 		};
 
 		pinctrl_mmc1_uhs: mmc1uhs {
 			input-enable;
 			drive-strength = <MTK_DRIVE_8mA>;
-			bias-pull-up = <MTK_PUPD_SET_R1_55>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
 		};
 
 		pinctrl_mmc1_uhs_clk: mmc1uhs_clk {
 			drive-strength = <MTK_DRIVE_8mA>;
-			bias-pull-down = <MTK_PUPD_SET_R1_55>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
 		};
 
 		mmc0_pins_uhs: mmc0@0 {

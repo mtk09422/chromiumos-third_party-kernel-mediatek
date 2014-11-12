@@ -71,7 +71,7 @@ static struct platform_driver mtk_pinctrl_driver = {
 	.probe = mt6397_pinctrl_probe,
 	.remove = mt6397_pinctrl_remove,
 	.driver = {
-		.name = "mediatek-pmic-pinctrl",
+		.name = "mediatek-mt6397-pinctrl",
 		.owner = THIS_MODULE,
 		.of_match_table = mt6397_pctrl_match,
 	},
