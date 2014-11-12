@@ -2340,7 +2340,6 @@ static const struct of_device_id mt6397_dt_match[] = {
 	{ .compatible = "mediatek,mt6397-codec", },
 	{ }
 };
-MODULE_DEVICE_TABLE(of, mt6397_dt_match);
 
 static struct platform_driver mt6397_codec_driver = {
 	.driver = {
@@ -2355,5 +2354,8 @@ static struct platform_driver mt6397_codec_driver = {
 module_platform_driver(mt6397_codec_driver);
 
 /* Module information */
-MODULE_DESCRIPTION("MTK 6397 codec driver");
+MODULE_DESCRIPTION("MT6397 ALSA SoC codec driver");
+MODULE_AUTHOR("Koro Chen <koro.chen@mediatek.com>");
 MODULE_LICENSE("GPL v2");
+MODULE_DEVICE_TABLE(of, mt6397_dt_match);
+

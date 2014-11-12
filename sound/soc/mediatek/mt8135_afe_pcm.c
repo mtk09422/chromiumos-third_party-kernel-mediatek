@@ -26,7 +26,9 @@
 #include <sound/soc.h>
 #include <linux/debugfs.h>
 
+/*upstream todo: separate id and pin*/
 #define AFE_DL1_ID		MT_AFE_PIN_DL1
+#define AFE_AWB_ID		MT_AFE_PIN_AWB
 #define AFE_VUL_ID		MT_AFE_PIN_VUL
 #define AFE_HDMI_ID		MT_AFE_PIN_HDMI
 #define AFE_ROUTING_ID		MT_AFE_PIN_NUM
@@ -48,7 +50,7 @@ static const struct snd_pcm_hardware mt8135_d1_hardware = {
 	.fifo_size = 0,
 };
 
-static const struct snd_pcm_hardware mt8135_vul_hardware = {
+static const struct snd_pcm_hardware mt8135_ul_hardware = {
 	.info = (SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID),
 	.buffer_bytes_max = 16*1024,
@@ -361,15 +363,16 @@ static void mt8135_afe_hdmi_set_connection(struct mt_afe_info *afe_info,
 	}
 }
 
-static void mt8135_afe_set_vul_buf(struct mt_afe_info *afe_info,
-				   struct snd_pcm_substream *substream,
-				   struct snd_pcm_hw_params *hw_params)
+static int mt8135_afe_set_ul_buf(struct mt_afe_info *afe_info,
+				 struct snd_pcm_substream *substream,
+				 struct snd_pcm_hw_params *hw_params,
+				  int id)
 {
 	struct snd_pcm_runtime * const runtime = substream->runtime;
 	struct mt_afe_block * const block =
-		&afe_info->memif[MT_AFE_PIN_VUL].block;
+		&afe_info->memif[id].block;
 
-	afe_info->memif[MT_AFE_PIN_VUL].memif_num = MT_AFE_PIN_VUL;
+	afe_info->memif[id].memif_num = id;
 
 	block->phys_buf_addr = runtime->dma_addr;
 	block->virt_buf_addr = runtime->dma_area;
@@ -385,32 +388,77 @@ static void mt8135_afe_set_vul_buf(struct mt_afe_info *afe_info,
 		__func__, block->buffer_size, block->virt_buf_addr,
 		block->phys_buf_addr);
 	/* set sram address top hardware */
-	mt_afe_set_reg(afe_info, AFE_VUL_BASE,
-		       block->phys_buf_addr, 0xFFFFFFFF);
-	mt_afe_set_reg(afe_info, AFE_VUL_END,
-		       block->phys_buf_addr + (block->buffer_size - 1),
-		       0xFFFFFFFF);
+	switch (id) {
+	case AFE_VUL_ID:
+		mt_afe_set_reg(afe_info, AFE_VUL_BASE,
+			       block->phys_buf_addr, 0xFFFFFFFF);
+		mt_afe_set_reg(afe_info, AFE_VUL_END,
+			       block->phys_buf_addr + (block->buffer_size - 1),
+			       0xFFFFFFFF);
+		break;
+	case AFE_AWB_ID:
+		mt_afe_set_reg(afe_info, AFE_AWB_BASE,
+			       block->phys_buf_addr, 0xFFFFFFFF);
+		mt_afe_set_reg(afe_info, AFE_AWB_END,
+			       block->phys_buf_addr + (block->buffer_size - 1),
+			       0xFFFFFFFF);
+		break;
+	default:
+		dev_err(afe_info->dev, "error: invalid DAI ID %d\n", id);
+		return -EINVAL;
+	};
+	return 0;
 }
 
-static int mt8135_afe_pcm_vul_stop(struct mt_afe_info *afe_info,
-				   struct snd_pcm_substream *substream)
+static int mt8135_afe_pcm_ul_stop(struct mt_afe_info *afe_info,
+				  struct snd_pcm_substream *substream,
+				  int id)
 {
 	struct mt_afe_block *vul_block =
-		&(afe_info->memif[MT_AFE_PIN_VUL].block);
+		&(afe_info->memif[id].block);
 
 	dev_dbg(afe_info->dev, "%s\n", __func__);
 
-	mt_afe_set_i2s_adc_enable(afe_info, false);
-	mt_afe_set_memory_path_enable(afe_info, MT_AFE_PIN_VUL, false);
+	switch (id) {
+	case AFE_VUL_ID:
+		mt_afe_set_i2s_adc_enable(afe_info, false);
+		break;
+	case AFE_AWB_ID:
+		mt_afe_set_2nd_i2s_enable(afe_info, MT_AFE_I2S_DIR_IN, false);
+		break;
+	default:
+		dev_err(afe_info->dev, "error: invalid DAI ID %d\n", id);
+		return -EINVAL;
+	};
+
+	mt_afe_set_memory_path_enable(afe_info, id, false);
 
 	/* here to set interrupt */
 	mt_afe_set_irq_enable(afe_info, MT_AFE_IRQ_MODE_2, false);
 
 	/* here to turn off digital part */
-	mt_afe_set_connection(afe_info, MT_AFE_DISCONN, MT_AFE_INTERCONN_I03,
-			      MT_AFE_INTERCONN_O09);
-	mt_afe_set_connection(afe_info, MT_AFE_DISCONN, MT_AFE_INTERCONN_I04,
-			      MT_AFE_INTERCONN_O10);
+	switch (id) {
+	case AFE_VUL_ID:
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I03,
+				      MT_AFE_INTERCONN_O09);
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I04,
+				      MT_AFE_INTERCONN_O10);
+		break;
+	case AFE_AWB_ID:
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I00,
+				      MT_AFE_INTERCONN_O05);
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I01,
+				      MT_AFE_INTERCONN_O06);
+		break;
+	default:
+		dev_err(afe_info->dev, "error: invalid DAI ID %d\n", id);
+		return -EINVAL;
+	};
+
 
 	mt_afe_enable_afe(afe_info, false);
 
@@ -423,17 +471,33 @@ static int mt8135_afe_pcm_vul_stop(struct mt_afe_info *afe_info,
 static int mt8135_afe_pcm_dl1_post_stop(struct mt_afe_info *afe_info,
 					struct snd_pcm_substream *substream)
 {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+
 	dev_dbg(afe_info->dev, "%s\n", __func__);
 
-	if (!mt_afe_get_i2s_dac_enable(afe_info))
-		mt_afe_set_i2s_dac_enable(afe_info, false);
+	/*upstream fixme*/
+	if (!strcmp(rtd->codec_dai->name, "mt-soc-codec-tx-dai")) {
+		if (!mt_afe_get_i2s_dac_enable(afe_info))
+			mt_afe_set_i2s_dac_enable(afe_info, false);
 
-	/* here to turn off digital part */
-	mt_afe_set_connection(afe_info, MT_AFE_DISCONN, MT_AFE_INTERCONN_I05,
-			      MT_AFE_INTERCONN_O03);
-	mt_afe_set_connection(afe_info, MT_AFE_DISCONN, MT_AFE_INTERCONN_I06,
-			      MT_AFE_INTERCONN_O04);
+		/* here to turn off digital part */
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I05,
+				      MT_AFE_INTERCONN_O03);
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I06,
+				      MT_AFE_INTERCONN_O04);
+	} else {
+		mt_afe_set_2nd_i2s_enable(afe_info, MT_AFE_I2S_DIR_OUT, false);
 
+		/* here to turn off digital part */
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I05,
+				      MT_AFE_INTERCONN_O00);
+		mt_afe_set_connection(afe_info, MT_AFE_DISCONN,
+				      MT_AFE_INTERCONN_I06,
+				      MT_AFE_INTERCONN_O01);
+	}
 	mt_afe_enable_afe(afe_info, false);
 	return 0;
 }
@@ -451,7 +515,8 @@ static int mt8135_afe_pcm_close(struct snd_pcm_substream *substream)
 		mt8135_afe_pcm_dl1_post_stop(afe_info, substream);
 		break;
 	case AFE_VUL_ID:
-		mt8135_afe_pcm_vul_stop(afe_info, substream);
+	case AFE_AWB_ID:
+		mt8135_afe_pcm_ul_stop(afe_info, substream, rtd->cpu_dai->id);
 		/*SetDeepIdleEnableForAfe(true); upstream todo*/
 		break;
 	case AFE_HDMI_ID:
@@ -469,17 +534,38 @@ static int mt8135_afe_pcm_close(struct snd_pcm_substream *substream)
 static int mt8135_afe_pcm_dl1_prestart(struct mt_afe_info *afe_info,
 				       struct snd_pcm_substream *substream)
 {
-	/* here start digital part */
-	mt_afe_set_connection(afe_info, MT_AFE_CONN, MT_AFE_INTERCONN_I05,
-			      MT_AFE_INTERCONN_O03);
-	mt_afe_set_connection(afe_info, MT_AFE_CONN, MT_AFE_INTERCONN_I06,
-			      MT_AFE_INTERCONN_O04);
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 
-	/* start I2S DAC out */
-	mt_afe_set_i2s_dac_out(afe_info, substream->runtime->rate);
-	mt_afe_set_memory_path_enable(afe_info, MT_AFE_PIN_I2S_DAC, true);
-	mt_afe_set_i2s_dac_enable(afe_info, true);
+	/*upstream fixme*/
+	if (!strcmp(rtd->codec_dai->name, "mt-soc-codec-tx-dai")) {
+		pr_info("%s = dac\n", __func__);
+		/* here start digital part */
+		mt_afe_set_connection(afe_info, MT_AFE_CONN,
+				      MT_AFE_INTERCONN_I05,
+				      MT_AFE_INTERCONN_O03);
+		mt_afe_set_connection(afe_info, MT_AFE_CONN,
+				      MT_AFE_INTERCONN_I06,
+				      MT_AFE_INTERCONN_O04);
 
+		/* start I2S DAC out */
+		mt_afe_set_i2s_dac_out(afe_info, substream->runtime->rate);
+		mt_afe_set_memory_path_enable(afe_info, MT_AFE_PIN_I2S_DAC,
+					      true);
+		mt_afe_set_i2s_dac_enable(afe_info, true);
+	} else {
+		pr_info("%s = i2s\n", __func__);
+		/* here start digital part */
+		mt_afe_set_connection(afe_info, MT_AFE_CONN,
+				      MT_AFE_INTERCONN_I05,
+				      MT_AFE_INTERCONN_O00);
+		mt_afe_set_connection(afe_info, MT_AFE_CONN,
+				      MT_AFE_INTERCONN_I06,
+				      MT_AFE_INTERCONN_O01);
+
+		/* start 2nd I2S out */
+		mt_afe_set_2nd_i2s(afe_info, substream->runtime->rate);
+		mt_afe_set_2nd_i2s_enable(afe_info, MT_AFE_I2S_DIR_OUT, true);
+	}
 	mt_afe_enable_afe(afe_info, true);
 	return 0;
 }
@@ -502,7 +588,9 @@ static int mt8135_afe_pcm_stop(struct snd_pcm_substream *substream)
 		/* clean audio hardware buffer */
 		return mt_afe_reset_buffer(afe_info, MT_AFE_PIN_DL1);
 	case AFE_VUL_ID:
-		return mt8135_afe_pcm_vul_stop(afe_info, substream);
+	case AFE_AWB_ID:
+		return mt8135_afe_pcm_ul_stop(afe_info, substream,
+					      rtd->cpu_dai->id);
 
 	case AFE_HDMI_ID:
 		mt8135_afe_hdmi_set_connection(afe_info, MT_AFE_DISCONN,
@@ -581,11 +669,13 @@ static int mt8135_afe_pcm_hw_params(struct snd_pcm_substream *substream,
 			substream->pcm->device);
 		break;
 	case AFE_VUL_ID:
+	case AFE_AWB_ID:
 		ret = snd_pcm_lib_malloc_pages(substream,
 					       params_buffer_bytes(hw_params));
 
 		if (ret >= 0)
-			mt8135_afe_set_vul_buf(afe_info, substream, hw_params);
+			mt8135_afe_set_ul_buf(afe_info, substream, hw_params,
+					      rtd->cpu_dai->id);
 		else
 			dev_err(afe_info->dev,
 				"%s snd_pcm_lib_malloc_pages fail %d\n",
@@ -644,6 +734,7 @@ static int mt8135_afe_pcm_hw_free(struct snd_pcm_substream *substream)
 	case AFE_DL1_ID:
 		return 0;
 	case AFE_VUL_ID:
+	case AFE_AWB_ID:
 		return snd_pcm_lib_free_pages(substream);
 	case AFE_HDMI_ID:
 		memset(&afe_info->memif[MT_AFE_PIN_HDMI], 0,
@@ -672,7 +763,7 @@ static unsigned int mt8135_vul_sample_rates[] = {
 	8000, 16000, 32000, 48000
 };
 
-static struct snd_pcm_hw_constraint_list mt8135_vul_constraint_rates = {
+static struct snd_pcm_hw_constraint_list mt8135_ul_constraint_rates = {
 	.count = ARRAY_SIZE(mt8135_vul_sample_rates),
 	.list = mt8135_vul_sample_rates,
 };
@@ -734,15 +825,16 @@ static int mt8135_afe_pcm_open(struct snd_pcm_substream *substream)
 		}
 		break;
 	case AFE_VUL_ID:
-		snd_soc_set_runtime_hwparams(substream, &mt8135_vul_hardware);
+	case AFE_AWB_ID:
+		snd_soc_set_runtime_hwparams(substream, &mt8135_ul_hardware);
 
 		dev_dbg(afe_info->dev,
-			"%s rates = 0x%x mt8135_vul_hardware = %p\n ",
-			__func__, runtime->hw.rates, &mt8135_vul_hardware);
+			"%s rates = 0x%x mt8135_ul_hardware = %p\n ",
+			__func__, runtime->hw.rates, &mt8135_ul_hardware);
 
 		ret = snd_pcm_hw_constraint_list(runtime, 0,
 						 SNDRV_PCM_HW_PARAM_RATE,
-						 &mt8135_vul_constraint_rates);
+						 &mt8135_ul_constraint_rates);
 		if (ret < 0)
 			dev_err(afe_info->dev,
 				"%s snd_pcm_hw_constraint_list failed %d\n",
@@ -835,6 +927,7 @@ static int mt8135_afe_pcm_prepare(struct snd_pcm_substream *substream)
 		}
 		break;
 	case AFE_VUL_ID:
+	case AFE_AWB_ID:
 	case AFE_HDMI_ID:
 		break;
 	default:
@@ -878,26 +971,33 @@ static int mt8135_afe_pcm_start(struct snd_pcm_substream *substream)
 			curr_tstamp.tv_sec, curr_tstamp.tv_nsec);
 		break;
 	case AFE_VUL_ID:
-		/*config ADC I2S*/
-		memset(&i2s_setting, 0, sizeof(i2s_setting));
-		i2s_setting.lr_swap = MT_AFE_LR_SWAP_NO;
-		i2s_setting.buffer_update_word = 8;
-		i2s_setting.fpga_bit_test = 0;
-		i2s_setting.fpga_bit = 0;
-		i2s_setting.loopback = 0;
-		i2s_setting.inv_lrck = MT_AFE_INV_LRCK_NO;
-		i2s_setting.i2s_fmt = MT_AFE_I2S_FORMAT_I2S;
-		i2s_setting.i2s_wlen = MT_AFE_I2S_WLEN_16BITS;
-		i2s_setting.i2s_sample_rate = (substream->runtime->rate);
+	case AFE_AWB_ID:
+		if (rtd->cpu_dai->id == AFE_VUL_ID) {
+			/*config ADC I2S*/
+			memset(&i2s_setting, 0, sizeof(i2s_setting));
+			i2s_setting.lr_swap = MT_AFE_LR_SWAP_NO;
+			i2s_setting.buffer_update_word = 8;
+			i2s_setting.fpga_bit_test = 0;
+			i2s_setting.fpga_bit = 0;
+			i2s_setting.loopback = 0;
+			i2s_setting.inv_lrck = MT_AFE_INV_LRCK_NO;
+			i2s_setting.i2s_fmt = MT_AFE_I2S_FORMAT_I2S;
+			i2s_setting.i2s_wlen = MT_AFE_I2S_WLEN_16BITS;
+			i2s_setting.i2s_sample_rate = substream->runtime->rate;
 
-		mt_afe_set_i2s_adc(afe_info, &i2s_setting);
-		mt_afe_set_i2s_adc_enable(afe_info, true);
-
-		mt_afe_set_sample_rate(afe_info, MT_AFE_PIN_VUL,
+			mt_afe_set_i2s_adc(afe_info, &i2s_setting);
+			mt_afe_set_i2s_adc_enable(afe_info, true);
+		} else {
+			/*config 2nd I2S*/
+			mt_afe_set_2nd_i2s(afe_info, runtime->rate);
+			mt_afe_set_2nd_i2s_enable(afe_info, MT_AFE_I2S_DIR_IN,
+						  true);
+		}
+		mt_afe_set_sample_rate(afe_info, rtd->cpu_dai->id,
 				       substream->runtime->rate);
-		mt_afe_set_ch(afe_info, MT_AFE_PIN_VUL,
+		mt_afe_set_ch(afe_info, rtd->cpu_dai->id,
 			      ((substream->runtime->channels == 2) ? 0 : 1));
-		mt_afe_set_memory_path_enable(afe_info, MT_AFE_PIN_VUL, true);
+		mt_afe_set_memory_path_enable(afe_info, rtd->cpu_dai->id, true);
 
 		/* here to set interrupt */
 		if (!afe_info->audio_mcu_mode[MT_AFE_IRQ_MODE_2].status) {
@@ -919,16 +1019,23 @@ static int mt8135_afe_pcm_start(struct snd_pcm_substream *substream)
 				__func__);
 		}
 		/* here to turn off digital part */
-		mt_afe_set_connection(afe_info, MT_AFE_CONN,
-				      MT_AFE_INTERCONN_I03,
-				      MT_AFE_INTERCONN_O09);
-		mt_afe_set_connection(afe_info, MT_AFE_CONN,
-				      MT_AFE_INTERCONN_I04,
-				      MT_AFE_INTERCONN_O10);
-
+		if (rtd->cpu_dai->id == AFE_VUL_ID) {
+			mt_afe_set_connection(afe_info, MT_AFE_CONN,
+					      MT_AFE_INTERCONN_I03,
+					      MT_AFE_INTERCONN_O09);
+			mt_afe_set_connection(afe_info, MT_AFE_CONN,
+					      MT_AFE_INTERCONN_I04,
+					      MT_AFE_INTERCONN_O10);
+		} else {
+			mt_afe_set_connection(afe_info, MT_AFE_CONN,
+					      MT_AFE_INTERCONN_I00,
+					      MT_AFE_INTERCONN_O05);
+			mt_afe_set_connection(afe_info, MT_AFE_CONN,
+					      MT_AFE_INTERCONN_I01,
+					      MT_AFE_INTERCONN_O06);
+		}
 		mt_afe_enable_afe(afe_info, true);
 		break;
-
 	case AFE_HDMI_ID:
 		dev_info(afe_info->dev, "%s period_size = %lu\n",
 			 __func__, runtime->period_size);
@@ -1025,7 +1132,8 @@ static int mt8135_afe_pcm_new(struct snd_soc_pcm_runtime *rtd)
 	case AFE_HDMI_ID:
 		return 0;
 	case AFE_VUL_ID:
-		size = mt8135_vul_hardware.buffer_bytes_max;
+	case AFE_AWB_ID:
+		size = mt8135_ul_hardware.buffer_bytes_max;
 		return snd_pcm_lib_preallocate_pages_for_all(pcm,
 							    SNDRV_DMA_TYPE_DEV,
 							    card->dev,
@@ -1089,6 +1197,17 @@ static struct snd_soc_dai_driver mt8135_afe_pcm_dais[] = {
 			.channels_min = 1,
 			.channels_max = 2,
 			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		},
+	},
+	{
+		.name  = "AWB",
+		.id  = AFE_AWB_ID,
+		.capture = {
+			.stream_name = "Capture",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = UL_RATE,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		},
 	},
@@ -1171,7 +1290,6 @@ static const struct of_device_id mt8135_afe_pcm_dt_match[] = {
 	{ .compatible = "mediatek,mt8135-afe-pcm", },
 	{ }
 };
-MODULE_DEVICE_TABLE(of, mt8135_afe_pcm_dt_match);
 
 static struct platform_driver mt8135_afe_pcm_driver = {
 	.driver = {
@@ -1185,5 +1303,8 @@ static struct platform_driver mt8135_afe_pcm_driver = {
 
 module_platform_driver(mt8135_afe_pcm_driver);
 
-MODULE_DESCRIPTION("AFE PCM module platform driver");
-MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Mediatek ALSA SoC Afe platform driver");
+MODULE_AUTHOR("Koro Chen <koro.chen@mediatek.com>");
+MODULE_LICENSE("GPL v2");
+MODULE_DEVICE_TABLE(of, mt8135_afe_pcm_dt_match);
+

@@ -456,7 +456,7 @@ static bool mt_afe_get_ul_memif_enable(struct mt_afe_info *afe_info)
 {
 	int i;
 
-	for (i = MT_AFE_PIN_VUL; i < MT_AFE_MEMIF_NUM; i++) {
+	for (i = MT_AFE_PIN_VUL; i <= MT_AFE_PIN_MOD_DAI; i++) {
 		if ((afe_info->afe_pin[i].state) == true)
 			return true;
 	}
@@ -734,7 +734,7 @@ void mt_afe_set_hdmi_path_enable(struct mt_afe_info *afe_info, bool enable)
 int mt_afe_set_memory_path_enable(struct mt_afe_info *afe_info,
 				  uint32_t aud_block, bool enable)
 {
-	if (aud_block >= MT_AFE_MEMIF_NUM)
+	if (aud_block > MT_AFE_PIN_MOD_DAI)
 		return -EINVAL;
 
 	if (enable) {

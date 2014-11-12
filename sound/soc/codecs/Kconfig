@@ -415,11 +415,7 @@ config SND_SOC_MAX9850
 	tristate
 
 config SND_SOC_MT6397
-	bool "SoC Audio support for MT6397"
-	depends on ARCH_MEDIATEK
-	help
-	 Say Y if you want to use MT6397 audio
-	 codec for the Mediatek SoCs' Audio.
+	bool
 
 config SND_SOC_PCM1681
 	tristate "Texas Instruments PCM1681 CODEC"

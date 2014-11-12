@@ -510,6 +510,18 @@
 						<MT8135_PIN_39_AUD_DAT_MISO__FUNC_AUD_DAT_MISO &pcfg_pull_down>;
 			};
 
+			aud_i2s2: aud_i2s2 {
+				mediatek,pins = <MT8135_PIN_105_I2S_CLK__FUNC_I2SIN_CK &pcfg_pull_down>,
+						<MT8135_PIN_106_I2S_WS__FUNC_I2SIN_WS &pcfg_pull_down>,
+						<MT8135_PIN_107_I2S_DATA_IN__FUNC_I2SIN_DAT &pcfg_pull_down>,
+						<MT8135_PIN_108_I2S_DATA_OUT__FUNC_I2SOUT_DAT &pcfg_pull_down>,
+						<MT8135_PIN_118_EINT2__FUNC_GPIO118 &pcfg_output_low>;
+			};
+
+			max98090_irq: max98090_irq {
+				mediatek,pins = <MT8135_PIN_120_EINT4__FUNC_EINT4 &pcfg_pull_up>;
+			};
+
 			spi1_pins_a: spi1@0 {
 				mediatek,pins = <MT8135_PIN_91_MSDC4_DAT5__FUNC_SPI1_CSN &pcfg_pull_none>,
 						<MT8135_PIN_92_MSDC4_DAT6__FUNC_SPI1_MO &pcfg_pull_none>,
@@ -544,6 +556,8 @@
 			clock-div = <16>;
 			clocks = <&i2c1_ck>, <&ap_dma_ck>;
 			clock-names = "main", "dma";
+			#address-cells = <1>;
+			#size-cells = <0>;
 		};
 
 		i2c2: i2c@1100f000 {

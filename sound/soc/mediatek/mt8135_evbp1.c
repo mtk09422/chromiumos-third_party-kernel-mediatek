@@ -92,7 +92,8 @@ static int mt8135_evbp1_dev_probe(struct platform_device *pdev)
 			"Property 'audio-codec' missing or invalid\n");
 	} else {
 		for (i = 0; i < card->num_links; i++) {
-			if (!strcmp(mt8135_evbp1_dai_common[i].codec_name,
+			if (mt8135_evbp1_dai_common[i].codec_name &&
+			    !strcmp(mt8135_evbp1_dai_common[i].codec_name,
 				    "snd-soc-dummy"))
 				continue;
 			mt8135_evbp1_dai_common[i].codec_name = NULL;
@@ -123,7 +124,6 @@ static const struct of_device_id mt8135_evbp1_dt_match[] = {
 	{ .compatible = "mediatek,mt8135-evbp1", },
 	{ }
 };
-MODULE_DEVICE_TABLE(of, mt8135_evbp1_dt_match);
 
 static struct platform_driver mt8135_evbp1_driver = {
 	.driver = {
@@ -141,6 +141,9 @@ static struct platform_driver mt8135_evbp1_driver = {
 module_platform_driver(mt8135_evbp1_driver);
 
 /* Module information */
-MODULE_DESCRIPTION("ALSA SoC driver for mtxxxx");
-MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("MT8135 EVBP1 ALSA SoC machine driver");
+MODULE_AUTHOR("Koro Chen <koro.chen@mediatek.com>");
+MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:mt-snd-card");
+MODULE_DEVICE_TABLE(of, mt8135_evbp1_dt_match);
+

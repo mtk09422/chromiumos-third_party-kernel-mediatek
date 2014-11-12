@@ -34,6 +34,7 @@ enum mt_afe_pin {
 	MT_AFE_PIN_I2S,	/* currently no use */
 	MT_AFE_PIN_AWB,
 	MT_AFE_PIN_MOD_DAI,
+	MT_AFE_PIN_HDMI,
 	/* connection to int main modem */
 	MT_AFE_PIN_MOD_PCM1,
 	/* connection to extrt/int modem */
@@ -51,10 +52,9 @@ enum mt_afe_pin {
 	MT_AFE_PIN_MRG_O,
 	MT_AFE_PIN_MRG_I,
 	MT_AFE_PIN_DAIBT,
-	MT_AFE_PIN_HDMI,
 	MT_AFE_PIN_NUM,
 	MT_AFE_MEMIF_NUM =
-		MT_AFE_PIN_MOD_DAI + 1
+		MT_AFE_PIN_HDMI + 1
 };
 
 enum mt_afe_memif_dir {

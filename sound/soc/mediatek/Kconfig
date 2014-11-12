@@ -1,8 +1,24 @@
 config SND_SOC_MT8135
-		bool "SoC Audio support for MT8135"
-		depends on ARCH_MEDIATEK
-		help
-			Select Y if you want to add support
-			for the Mediatek MT8135 SoC Audio.
-			You must also select audio codec
-			from the codec driver list.
+	bool
+config SND_SOC_MT8135_MT6397
+	bool "ASoC Audio driver for MT8135 with MT6397 codec"
+	depends on ARCH_MEDIATEK
+	select SND_SOC_MT8135
+	select SND_SOC_MT6397
+	help
+	  This adds ASoC driver for Mediatek MT8135 boards
+	  with the MT6397 audio codec.
+	  Select Y if you have such device.
+	  Ex: mt8135_evbp1
+
+config SND_SOC_MT8135_MAX98090
+	bool "ASoC Audio driver for MT8135 with MAX98090 codec"
+	depends on ARCH_MEDIATEK
+	select SND_SOC_MT8135
+	select SND_SOC_MAX98090
+	help
+	  This adds ASoC driver for Mediatek MT8135 boards
+	  with the MAX98090 audio codec.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
