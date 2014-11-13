@@ -16,7 +16,7 @@
 #include "mt8135.dtsi"
 
 / {
-	model = "mt8135-akuma";
+	model = "mt8135-corsnb";
 	memory {
 		reg = <0 0x80000000 0 0x40000000>;
 	};
