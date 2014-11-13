@@ -16,7 +16,6 @@
 #define __MFD_MT6397_REGISTERS_H__
 
 /* PMIC Rgisters  */
-#define CID             0x0100
 #define MT6397_CID             0x0100
 #define MT6397_TOP_CKPDN       0x0102
 #define MT6397_TOP_CKPDN_SET   0x0104

@@ -311,6 +311,7 @@ static struct regulator_ops mt6397_volt_range_ops = {
 	.map_voltage = regulator_map_voltage_linear_range,
 	.set_voltage_sel = mt6397_buck_set_voltage_sel,
 	.get_voltage_sel = mt6397_buck_get_voltage_sel,
+	.set_voltage_time_sel = regulator_set_voltage_time_sel,
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
 	.is_enabled = mt6397_regulator_is_enabled,
@@ -321,6 +322,7 @@ static struct regulator_ops mt6397_volt_table_ops = {
 	.map_voltage = regulator_map_voltage_iterate,
 	.set_voltage_sel = mt6397_ldo_set_voltage_sel,
 	.get_voltage_sel = mt6397_ldo_get_voltage_sel,
+	.set_voltage_time_sel = regulator_set_voltage_time_sel,
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
 	.is_enabled = mt6397_regulator_is_enabled,
@@ -422,7 +424,7 @@ static int mt6397_regulator_dt_init(struct platform_device *pdev,
 	struct mt6397_chip *mt6397 = dev_get_drvdata(pdev->dev.parent);
 	struct device_node *np, *regulators;
 	struct mt6397_regulator_data *rdata;
-	int matched, i, ret;
+	int matched, i, j, ret;
 	unsigned int reg_value;
 
 	if (!priv) {
@@ -459,16 +461,17 @@ static int mt6397_regulator_dt_init(struct platform_device *pdev,
 		return -ENOMEM;
 
 	/* Read PMIC chip revision to update constraints and voltage table */
-	if (regmap_read(mt6397->regmap, CID, &reg_value) < 0)
+	if (regmap_read(mt6397->regmap, MT6397_CID, &reg_value) < 0) {
 		dev_err(&pdev->dev, "Failed to read Chip ID\n");
-	else
-		dev_info(&pdev->dev, "Chip ID = 0x%x\n", reg_value);
+		return -EIO;
+	}
+	dev_info(&pdev->dev, "Chip ID = 0x%x\n", reg_value);
 
 	if ((reg_value & 0xFF) == MT6397_REGULATOR_ID91) {
-		priv->regulators[MT6397_ID_VCAMIO].initdata->constraints.min_uV =
-			1000000;
-		mt6397_regulators[MT6397_ID_VCAMIO].desc.volt_table =
-			ldo_volt_table5_v2;
+		j = MT6397_ID_VCAMIO;
+		mt6397_regulator_matches[j].init_data->constraints.min_uV =
+		1000000;
+		mt6397_regulators[j].desc.volt_table = ldo_volt_table5_v2;
 	}
 
 	rdata = priv->regulators;
