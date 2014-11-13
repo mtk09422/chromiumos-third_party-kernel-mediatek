@@ -31,7 +31,6 @@
 #define AFE_AWB_ID		MT_AFE_PIN_AWB
 #define AFE_VUL_ID		MT_AFE_PIN_VUL
 #define AFE_HDMI_ID		MT_AFE_PIN_HDMI
-#define AFE_ROUTING_ID		MT_AFE_PIN_NUM
 
 #define UL_RATE		(SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 | \
 			 SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000)
@@ -1232,10 +1231,6 @@ static struct snd_soc_dai_driver mt8135_afe_pcm_dais[] = {
 			.rates = HDMI_RATES,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		},
-	},
-	{
-		.name  = "Routing",
-		.id  = AFE_ROUTING_ID,
 	},
 };
 

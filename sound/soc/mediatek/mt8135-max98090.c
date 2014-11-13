@@ -109,7 +109,7 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.cpu_dai_name = "DL1",
 		.platform_name = "mt8135-afe-pcm",
 		.codec_dai_name = "HiFi",
-		.codec_name = "max98090",
+		.codec_name = "max98090.1-0010",
 		.init = mt8135_max98090_init,
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 			   SND_SOC_DAIFMT_CBS_CFS,
@@ -121,7 +121,7 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.cpu_dai_name = "AWB",
 		.platform_name = "mt8135-afe-pcm",
 		.codec_dai_name = "HiFi",
-		.codec_name = "max98090",
+		.codec_name = "max98090.1-0010",
 	},
 	{
 		.name = "HDMI Playback",
@@ -130,16 +130,6 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.platform_name = "mt8135-afe-pcm",
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
-	},
-
-	{
-		.name = "Loopback",
-		.stream_name = "Loopback",
-		.cpu_dai_name = "Routing",
-		.platform_name = "mt8135-afe-pcm",
-		.codec_name = "snd-soc-dummy",
-		.codec_dai_name = "snd-soc-dummy-dai",
-		.no_pcm = 1,
 	},
 };
 

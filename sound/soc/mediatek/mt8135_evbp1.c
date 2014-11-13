@@ -48,18 +48,6 @@ static struct snd_soc_dai_link mt8135_evbp1_dai_common[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
-
-	{
-		.name = "Loopback",
-		.stream_name = "Loopback",
-		.cpu_dai_name = "Routing",
-		.platform_name = "mt8135-afe-pcm",
-		.codec_name = "snd-soc-dummy",
-		.codec_dai_name = "snd-soc-dummy-dai",
-		.no_pcm = 1,
-	},
-
-
 };
 
 static const struct snd_kcontrol_new mt8135_evbp1_controls[] = {
