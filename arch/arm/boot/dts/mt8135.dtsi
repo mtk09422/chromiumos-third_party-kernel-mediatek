@@ -170,10 +170,6 @@
 				interrupt-parent = <&pio>;
 				interrupts = <0 IRQ_TYPE_LEVEL_HIGH>;
 
-				rtc:rtc@8000 {
-					reg = <0x8000 0x3e>;
-				};
-
 				mt6397codec: mt6397codec {
 					compatible = "mediatek,mt6397-codec";
 				};

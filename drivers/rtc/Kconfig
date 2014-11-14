@@ -1356,7 +1356,7 @@ config RTC_DRV_MOXART
 	   This driver can also be built as a module. If so, the module
 	   will be called rtc-moxart
 
-config RTC_DRV_MTK
+config RTC_DRV_MT63XX
 	tristate "Mediatek Real Time Clock driver"
 	depends on MFD_MT6397
 	help

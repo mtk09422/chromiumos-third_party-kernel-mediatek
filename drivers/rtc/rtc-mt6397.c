@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/regmap.h>
 #include <linux/rtc.h>
+#include <linux/irqdomain.h>
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
@@ -117,6 +118,7 @@ struct mt6397_rtc {
 	struct device		*dev;
 	struct rtc_device	*rtc_dev;
 	struct mutex		lock;
+	int irq;
 };
 static struct mt6397_chip	*mt6397;
 
@@ -224,7 +226,25 @@ static void _mtk_rtc_set_alarm_time(struct rtc_time *tm)
 
 }
 
-static int mt_rtc_read_time(struct device *dev, struct rtc_time *tm)
+static irqreturn_t rtc_irq_handler_thread(int irq, void *data)
+{
+	struct mt6397_rtc *rtc = data;
+	u16 irqsta;
+
+	mutex_lock(&rtc->lock);
+	irqsta = rtc_read(RTC_IRQ_STA);
+	mutex_unlock(&rtc->lock);
+	if (unlikely(!(irqsta & RTC_IRQ_STA_AL))) {
+		if (irqsta & RTC_IRQ_STA_LP) {
+			dev_err(rtc->dev, "32K was stop!!!\n");
+			return IRQ_HANDLED;
+		}
+	}
+	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
+	return IRQ_HANDLED;
+}
+
+static int mtk_rtc_read_time(struct device *dev, struct rtc_time *tm)
 {
 	unsigned long time;
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
@@ -242,7 +262,7 @@ static int mt_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	return 0;
 }
 
-static int mt_rtc_set_time(struct device *dev, struct rtc_time *tm)
+static int mtk_rtc_set_time(struct device *dev, struct rtc_time *tm)
 {
 	unsigned long time;
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
@@ -260,7 +280,7 @@ static int mt_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	return 0;
 }
 
-static int mt_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
+static int mtk_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 {
 	struct rtc_time *tm = &alm->time;
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
@@ -269,10 +289,13 @@ static int mt_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	_mtk_rtc_read_alarm_time(tm, alm);
 	mutex_unlock(&rtc->lock);
 
+	tm->tm_year += RTC_MIN_YEAR_OFFSET;
+	tm->tm_mon--;
+
 	return 0;
 }
 
-static int mt_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+static int mtk_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 {
 	unsigned long time;
 	struct rtc_time *tm = &alm->time;
@@ -294,14 +317,15 @@ static int mt_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 }
 
 static struct rtc_class_ops mtk_rtc_ops = {
-	.read_time  = mt_rtc_read_time,
-	.set_time   = mt_rtc_set_time,
-	.read_alarm = mt_rtc_read_alarm,
-	.set_alarm  = mt_rtc_set_alarm,
+	.read_time  = mtk_rtc_read_time,
+	.set_time   = mtk_rtc_set_time,
+	.read_alarm = mtk_rtc_read_alarm,
+	.set_alarm  = mtk_rtc_set_alarm,
 };
 
-static int mt_rtc_probe(struct platform_device *pdev)
+static int mtk_rtc_probe(struct platform_device *pdev)
 {
+	struct mt6397_chip *mt6397_chip = dev_get_drvdata(pdev->dev.parent);
 	struct mt6397_rtc *rtc;
 	int ret = 0;
 
@@ -318,9 +342,25 @@ static int mt_rtc_probe(struct platform_device *pdev)
 	rtc->rtc_dev = rtc_device_register("mt6397-rtc", &pdev->dev,
 				&mtk_rtc_ops, THIS_MODULE);
 	if (IS_ERR(rtc)) {
-		pr_err("register rtc device failed (%ld)\n", PTR_ERR(rtc));
+		dev_err(&pdev->dev, "register rtc device failed\n");
 		goto out_rtc;
 	}
+	if (!mt6397_chip->irq_domain)
+		dev_warn(&pdev->dev, "irq domain is NULL\n");
+
+	rtc->irq = irq_create_mapping(mt6397_chip->irq_domain,
+				RG_INT_STATUS_RTC);
+	if (!rtc->irq)
+		dev_warn(&pdev->dev, "Failed to map alarm IRQ\n");
+
+	ret = devm_request_threaded_irq(&pdev->dev, rtc->irq, NULL,
+			rtc_irq_handler_thread,
+			IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+			"mt6397-rtc", rtc);
+	if (ret < 0)
+		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
+			rtc->irq, ret);
+
 	device_init_wakeup(&pdev->dev, 1);
 	_rtc_set_lp_irq();
 
@@ -333,7 +373,7 @@ out_rtc:
 
 }
 
-static int mt_rtc_remove(struct platform_device *pdev)
+static int mtk_rtc_remove(struct platform_device *pdev)
 {
 	struct mt6397_rtc *rtc = platform_get_drvdata(pdev);
 
@@ -345,7 +385,10 @@ static int mt_rtc_remove(struct platform_device *pdev)
 }
 
 static const struct platform_device_id mt6397_rtc_id[] = {
-	{"mt6397-rtc", 0 },
+	{
+		.name = "mt6397-rtc",
+		.driver_data = 0,
+	},
 	{ },
 };
 
@@ -354,23 +397,23 @@ static struct platform_driver mtk_rtc_pdrv = {
 		.name = "mt6397-rtc",
 		.owner = THIS_MODULE,
 	},
-	.probe	= mt_rtc_probe,
-	.remove = mt_rtc_remove,
+	.probe	= mtk_rtc_probe,
+	.remove = mtk_rtc_remove,
 	.id_table = mt6397_rtc_id,
 };
 
 static int __init mt6397_rtc_init(void)
 {
-	int ret;
+	return platform_driver_register(&mtk_rtc_pdrv);
+}
 
-	ret = platform_driver_register(&mtk_rtc_pdrv);
-	if (ret)
-		pr_err("register driver failed (%d)\n", ret);
-
-	return 0;
+static void __exit mt6397_rtc_exit(void)
+{
+	platform_driver_unregister(&mtk_rtc_pdrv);
 }
 
 subsys_initcall(mt6397_rtc_init);
+module_exit(mt6397_rtc_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tianping Fang <tianping.fang@mediatek.com>");
