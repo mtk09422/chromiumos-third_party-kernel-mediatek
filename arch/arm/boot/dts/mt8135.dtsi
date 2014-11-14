@@ -191,6 +191,20 @@
 				mediatek,pull = <0>;
 			};
 
+			mmc0_pins_a: mmc0@0 {
+				mediatek,pins = "D21", "D22", "E22", "F21", "F20",
+					"G18", "G21", "E21", "E23", "F22", "G22";
+				mediatek,function = <1>;
+				mediatek,pull = <1>;
+			};
+
+			mmc1_pins_a: mmc1@0 {
+				mediatek,pins = "AC19", "AA19", "AA20", "AA21",
+					"AB19", "AB20";
+				mediatek,function = <1>;
+				mediatek,pull = <1>;
+			};
+
 		};
 
 		i2c0: i2c@1100d000 {

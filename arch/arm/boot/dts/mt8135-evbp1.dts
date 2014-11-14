@@ -24,6 +24,17 @@
 	};
 	soc {
 
+		mmc0@11230000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&mmc0_pins_a>;
+			status = "okay";
+		};
+
+		mmc1@11240000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&mmc1_pins_a>;
+			status = "okay";
+		};
 	};
 };
 &i2c0 {
