@@ -94,13 +94,22 @@
 		};
 	};
 
+	timer {
+		compatible = "arm,armv7-timer";
+		interrupts = <1 13 0x8>,
+			     <1 14 0x8>,
+			     <1 11 0x8>,
+			     <1 10 0x8>;
+		clock-frequency = <13000000>;
+	};
+
 	soc {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		compatible = "simple-bus";
 		ranges;
 
-		timer: timer@10008000 {
+		gpt: gpt@10008000 {
 			compatible = "mediatek,mt6577-timer";
 			reg = <0 0x10008000 0 0x80>;
 			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
@@ -362,10 +371,10 @@
 			};
 		};
 
-                intpol: intpol@10200030 {
-                        compatible = "mediatek,mt6577-intpol";
-                        reg = <0 0x10200030 0 0x1c>;
-                };
+		intpol: intpol@10200030 {
+			compatible = "mediatek,mt6577-intpol";
+			reg = <0 0x10200030 0 0x1c>;
+		};
 
 		watchdog: watchdog@10000000 {
 			compatible = "mediatek,mt6577-watchdog";
@@ -511,7 +520,7 @@
 		};
 
 		mmc0_pins_uhs: mmc0@0 {
-		       mediatek,pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pinctrl_mmc0_uhs>,
+			mediatek,pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pinctrl_mmc0_uhs>,
 			       <MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pinctrl_mmc0_uhs>,
 			       <MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pinctrl_mmc0_uhs>,
 			       <MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pinctrl_mmc0_uhs>,
@@ -522,16 +531,16 @@
 			       <MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pinctrl_mmc0_uhs>,
 			       <MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pinctrl_mmc0_uhs>,
 			       <MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB &pinctrl_mmc0_uhs>;
-	       };
+		};
 
 		mmc1_pins_uhs: mmc1@0 {
-		       mediatek,pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pinctrl_mmc1_uhs>,
+			mediatek,pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pinctrl_mmc1_uhs>,
 			       <MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pinctrl_mmc1_uhs>,
 			       <MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD &pinctrl_mmc1_uhs>,
 			       <MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pinctrl_mmc1_uhs>,
 			       <MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK &pinctrl_mmc1_uhs_clk>,
 			       <MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pinctrl_mmc1_uhs>;
-	       };
+		};
 
 			aud_mtkif: aud_mtkif {
 				mediatek,pins = <MT8135_PIN_37_AUD_CLK_MOSI__FUNC_AUD_CLK &pcfg_pull_down>,

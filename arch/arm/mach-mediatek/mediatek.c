@@ -37,13 +37,10 @@ static void __init mediatek_timer_init(void)
 {
 	static void __iomem *gpt_base;
 
-	if (of_machine_is_compatible("mediatek,mt6589")) {
-		/* set cntfreq register which is not done in bootloader */
-		asm volatile("mcr p15, 0, %0, c14, c0, 0" : : "r" (13000000));
-
-		/* turn on GPT6 which ungates arch timer clocks */
+	/* turn on GPT6 which ungates arch timer clocks */
+	if (of_machine_is_compatible("mediatek,mt6589") ||
+			of_machine_is_compatible("mediatek,mt8135"))
 		gpt_base = ioremap(GPT6_CON_MT65xx, 0x04);
-	}
 
 	/* enabel clock and set to free-run */
 	if (gpt_base)
