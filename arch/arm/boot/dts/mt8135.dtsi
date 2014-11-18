@@ -92,6 +92,12 @@
 			clock-frequency = <32000>;
 			#clock-cells = <0>;
 		};
+
+		uart_clk: dummy26m {
+			compatible = "fixed-clock";
+			clock-frequency = <26000000>;
+			#clock-cells = <0>;
+		};
 	};
 
 	timer {
@@ -572,6 +578,34 @@
 						<MT8135_PIN_89_MSDC4_DAT0__FUNC_GPIO89 &pcfg_pull_down>;
 			};
 
+		};
+
+		uart0: serial@11006000 {
+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
+			reg = <0 0x11006000 0 0x400>;
+			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&uart_clk>;
+		};
+
+		uart1: serial@11007000 {
+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
+			reg = <0 0x11007000 0 0x400>;
+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&uart_clk>;
+		};
+
+		uart2: serial@11008000 {
+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
+			reg = <0 0x11008000 0 0x400>;
+			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&uart_clk>;
+		};
+
+		uart3: serial@11009000 {
+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
+			reg = <0 0x11009000 0 0x400>;
+			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&uart_clk>;
 		};
 
 		i2c0: i2c@1100d000 {
