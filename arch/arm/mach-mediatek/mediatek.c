@@ -35,7 +35,7 @@ static void __iomem *int_pol_base;
 
 static void __init mediatek_timer_init(void)
 {
-	static void __iomem *gpt_base;
+	void __iomem *gpt_base = NULL;
 
 	/* turn on GPT6 which ungates arch timer clocks */
 	if (of_machine_is_compatible("mediatek,mt6589") ||

@@ -96,10 +96,10 @@
 
 	timer {
 		compatible = "arm,armv7-timer";
-		interrupts = <1 13 0x8>,
-			     <1 14 0x8>,
-			     <1 11 0x8>,
-			     <1 10 0x8>;
+		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
 		clock-frequency = <13000000>;
 	};
 
