@@ -38,6 +38,12 @@ config COMMON_CLK_MAX77686
 	---help---
 	  This driver supports Maxim 77686 crystal oscillator clock. 
 
+config COMMON_CLK_MT6397
+	tristate "Clock driver for MT6397 MFD"
+	depends on MFD_MT6397
+	---help---
+	  This driver supports mt6397 clocks.
+
 config COMMON_CLK_SI5351
 	tristate "Clock driver for SiLabs 5351A/B/C"
 	depends on I2C

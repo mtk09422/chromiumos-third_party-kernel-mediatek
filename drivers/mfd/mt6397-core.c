@@ -34,6 +34,11 @@ static struct mfd_cell mt6397_devs[] = {
 		.id = -1,
 		.of_compatible = "mediatek,mt6397-codec"
 	},
+	{
+		.name = "mt6397-clk",
+		.id = -1,
+		.of_compatible = "mediatek,mt6397-clk"
+	},
 };
 
 static int mt6397_probe(struct platform_device *pdev)

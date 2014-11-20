@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/mediatek,mt6397-clks.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/reset-controller/mt8135-resets.h>
@@ -181,6 +182,11 @@
 					compatible = "mediatek,mt6397-pinctrl";
 					reg = <0 0x0000C000 0 0x0108>;
 					gpio-controller;
+				};
+
+				mt6397clock: mt6397clock {
+					compatible = "mediatek,mt6397-clk";
+					#clock-cells = <1>;
 				};
 
 				regulators {
