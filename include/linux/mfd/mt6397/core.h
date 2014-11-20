@@ -15,14 +15,20 @@
 #ifndef __MFD_MT6397_CORE_H__
 #define __MFD_MT6397_CORE_H__
 
-enum PMIC_INT_STATUS_GRP {
-	GRP_INT_STATUS0 = 0,
-	GRP_INT_STATUS1,
+enum PMIC_INT_CON_GRP {
+	GRP_INT_CON0 = 0,
+	GRP_INT_CON1,
 	MT6397_IRQ_GROUP_NR,
 };
 
+enum PMIC_INT_STATUS_GRP {
+	GRP_INT_STATUS0 = 0,
+	GRP_INT_STATUS1,
+	MT6397_IRQ_STATUS_GROUP_NR,
+};
+
 enum PMIC_INT_STATUS {
-	RG_INT_STATUS_SPKL_AB,
+	RG_INT_STATUS_SPKL_AB = 0,
 	RG_INT_STATUS_SPKR_AB,
 	RG_INT_STATUS_SPKL,
 	RG_INT_STATUS_SPKR,
@@ -66,8 +72,8 @@ struct mt6397_chip {
 	struct irq_domain *irq_domain;
 	struct mutex irqlock;
 	int irq;
-	int irq_masks_cur[MT6397_IRQ_GROUP_NR];
-	int irq_masks_cache[MT6397_IRQ_GROUP_NR];
+	u16 irq_masks_cur[MT6397_IRQ_GROUP_NR];
+	u16 irq_masks_cache[MT6397_IRQ_GROUP_NR];
 };
 
 #endif /* __MFD_MT6397_CORE_H__ */
