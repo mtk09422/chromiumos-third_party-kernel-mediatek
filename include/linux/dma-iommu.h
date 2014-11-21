@@ -74,6 +74,8 @@ void iommu_dma_unmap_sg(struct device *dev, struct scatterlist *sgl, int nents,
 int iommu_dma_supported(struct device *dev, u64 mask);
 int iommu_dma_mapping_error(struct device *dev, dma_addr_t dma_addr);
 
+#else
+
 static inline struct iommu_dma_domain *arch_get_dma_domain(struct device *dev)
 {
 	return NULL;
@@ -82,8 +84,6 @@ static inline struct iommu_dma_domain *arch_get_dma_domain(struct device *dev)
 static inline void arch_set_dma_domain(struct device *dev,
 		struct iommu_dma_domain *dma_domain)
 { }
-
-#else
 
 static inline int iommu_dma_init(void)
 {
