@@ -45,11 +45,8 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
 		return __generic_dma_ops(dev);
 }
 
-static inline void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
-				      struct iommu_ops *iommu, bool coherent)
-{
-	dev->archdata.dma_coherent = coherent;
-}
+void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+			struct iommu_ops *iommu, bool coherent);
 #define arch_setup_dma_ops	arch_setup_dma_ops
 
 /* do not use this function in a driver */
@@ -64,6 +61,10 @@ static inline bool is_device_dma_coherent(struct device *dev)
 #include <linux/dma-iommu.h>
 
 #ifdef CONFIG_IOMMU_DMA
+
+void arch_teardown_dma_ops(struct device *dev);
+#define arch_teardown_dma_ops	arch_teardown_dma_ops
+
 static inline struct iommu_dma_domain *arch_get_dma_domain(struct device *dev)
 {
 	return dev->archdata.dma_domain;
