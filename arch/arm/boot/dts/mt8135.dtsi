@@ -639,7 +639,6 @@
 			io-power-supply = <&mt6397_vmc_reg>;
 			clocks = <&msdc20_2_ck>, <&msdcpll>;
 			clock-names = "src_clk", "pll_clk";
-			cd-gpios = <&pio 188 0>;
 			func = "SDCARD";
 		};
 
