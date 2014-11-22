@@ -188,7 +188,8 @@ static int mt65xx_wdt_probe(struct platform_device *pdev)
 	wdt->wdt_notifier.notifier_call = wdt_notify_sys;
 	rc = register_reboot_notifier(&wdt->wdt_notifier);
 	if (rc)
-		dev_err("cannot register reboot notifier (err=%d)\n", rc);
+		dev_err(&pdev->dev, "cannot register reboot notifier (err=%d)\n",
+				rc);
 
 	return ret;
 }
