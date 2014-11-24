@@ -97,7 +97,7 @@
 		};
 
 		watchdog: watchdog@10007000 {
-			compatible = "mediatek,mt6577-watchdog";
+			compatible = "mediatek,mt8127-watchdog","mediatek,mt6577-watchdog";
 			reg = <0 0x10007000 0 0x100>;
 		};
 
