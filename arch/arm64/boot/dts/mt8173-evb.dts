@@ -48,6 +48,13 @@
 			reg = <0 0x0000C000 0 0x0108>;
 		};
 
+		rtc: rtc@e000 {
+			compatible = "mediatek,mt6397-rtc";
+			reg = <0xe000 0x3e>;
+			interrupt-parent = <&pmic>;
+			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		mt6397regulator: mt6397regulator {
 			compatible = "mediatek,mt6397-regulator";
 
