@@ -110,10 +110,10 @@
 
 	timer {
 		compatible = "arm,armv8-timer";
-		interrupts = <1 13 0x8>,
-			     <1 14 0x8>,
-			     <1 11 0x8>,
-			     <1 10 0x8>;
+		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
 		clock-frequency = <13000000>;
              };
 
@@ -126,21 +126,21 @@
 	        apxgpt@0x10008000 {
         	        compatible = "mediatek,mt8173-timer","mediatek,mt6577-timer";
                 	reg = <0 0x10008000 0 0x1000>;
-	                interrupts = <0 144 0x8>;
+	                interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
         	        clock-frequency = <13000000>;
 	        };
 
 		cpuxgpt@0x10200000 {
 			compatible = "mediatek,mt8173-cputimer";
 			reg = <0 0x10200000 0 0x1000>;
-			interrupts = <0 56 0x4>,
-				     <0 57 0x4>,
-				     <0 58 0x4>,
-				     <0 59 0x4>,
-				     <0 60 0x4>,
-				     <0 61 0x4>,
-				     <0 62 0x4>,
-				     <0 63 0x4>;
+			interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		intpol: intpol-controller@0x10200620 {
@@ -157,8 +157,8 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
-						<GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
-						<GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
+					<GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
+					<GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		gic: interrupt-controller@0x10220000 {
@@ -167,8 +167,8 @@
 			#address-cells = <0>;
 			interrupt-controller;
 			reg = <0 0x10221000 0 0x1000>,
-		    	  <0 0x10222000 0 0x1000>,
-		      	<0 0x10200620 0 0x1000>;
+			      <0 0x10222000 0 0x1000>,
+			      <0 0x10200620 0 0x1000>;
 			interrupts = <1 9 0xf04>;
 		};
 
@@ -201,28 +201,28 @@
 		uart0: serial@11002000 {
 			compatible = "mediatek,mt8173-uart","mediatek,mt6577-uart";
 			reg = <0 0x11002000 0 0x400>;
-			interrupts = <0 83 8>;
+			interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 		};
 
 		uart1: serial@11003000 {
 			compatible = "mediatek,mt8173-uart","mediatek,mt6577-uart";
 			reg = <0 0x11003000 0 0x400>;
-			interrupts = <0 84 8>;
+			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 		};
 
 		uart2: serial@11004000 {
 			compatible = "mediatek,mt8173-uart","mediatek,mt6577-uart";
 			reg = <0 0x11004000 0 0x400>;
-			interrupts = <0 85 8>;
+			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 		};
 
 		uart3: serial@11005000 {
 			compatible = "mediatek,mt8173-uart","mediatek,mt6577-uart";
 			reg = <0 0x11005000 0 0x400>;
-			interrupts = <0 86 8>;
+			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 		};
 	};
