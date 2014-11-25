@@ -720,7 +720,7 @@ static void cros_ec_spi_dt_probe(struct cros_ec_spi *ec_spi, struct device *dev)
 
 /* For MTK SPI driver */
 static struct mt_chip_conf spi_conf_mt6577 = {
-#if 0
+#if 1
 	.setuptime = 4,
 	.holdtime = 4,
 	.high_time = 8,		/* for mt6589, 100000khz/(4+4) = 125000khz */
