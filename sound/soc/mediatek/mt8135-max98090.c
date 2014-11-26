@@ -20,6 +20,7 @@
 #include <sound/soc.h>
 #include <sound/jack.h>
 #include <linux/gpio.h>
+#include <linux/regulator/consumer.h>
 #include "../codecs/max98090.h"
 
 #define MCLK_FOR_MAX98090	12288000
@@ -149,6 +150,8 @@ static int mt8135_max98090_dev_probe(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = &mt8135_max98090_card;
 	struct device_node *codec_node;
+	struct regulator *reg_vgp1, *reg_vgp4;
+	unsigned int volt;
 	int ret, i;
 
 	if (pdev->dev.of_node) {
@@ -177,6 +180,53 @@ static int mt8135_max98090_dev_probe(struct platform_device *pdev)
 			__func__, ret);
 		return ret;
 	}
+	/*enable power for MAX98090*/
+	reg_vgp1 = devm_regulator_get(&pdev->dev, "reg-vgp1");
+	if (IS_ERR(reg_vgp1)) {
+		ret = PTR_ERR(reg_vgp1);
+		dev_err(&pdev->dev, "failed to get reg_vgp1\n");
+		return ret;
+	}
+	/* set voltage to 1.2V */
+	volt = regulator_get_voltage(reg_vgp1);
+	ret = regulator_set_voltage(reg_vgp1, 1220000, 1220000);
+	if (ret != 0) {
+		dev_err(&pdev->dev,
+			"Failed to set reg_vgp1 voltage: %d\n", ret);
+		return ret;
+	}
+	dev_info(&pdev->dev, "reg_vgp1 voltage = %d->%d\n",
+		 volt, regulator_get_voltage(reg_vgp1));
+
+	ret = regulator_enable(reg_vgp1);
+	if (ret != 0) {
+		dev_err(&pdev->dev, "Failed to enable reg_vgp1: %d\n", ret);
+		return ret;
+	}
+
+	reg_vgp4 = devm_regulator_get(&pdev->dev, "reg-vgp4");
+	if (IS_ERR(reg_vgp4)) {
+		ret = PTR_ERR(reg_vgp4);
+		dev_err(&pdev->dev, "failed to get reg_vgp4\n");
+		return ret;
+	}
+	/* set voltage to 1.8V */
+	volt = regulator_get_voltage(reg_vgp4);
+	ret = regulator_set_voltage(reg_vgp4, 1800000, 1800000);
+	if (ret != 0) {
+		dev_err(&pdev->dev,
+			"Failed to set reg_vgp4 voltage: %d\n", ret);
+		return ret;
+	}
+	dev_info(&pdev->dev, "reg_vgp4 voltage = %d->%d\n",
+		 volt, regulator_get_voltage(reg_vgp4));
+
+	ret = regulator_enable(reg_vgp4);
+	if (ret != 0) {
+		dev_err(&pdev->dev, "Failed to enable reg_vgp4: %d\n", ret);
+		return ret;
+	}
+
 
 	card->dev = &pdev->dev;
 

@@ -137,6 +137,8 @@
 	sound {
 		compatible = "mediatek,mt8135-max98090";
 		mediatek,audio-codec = <&max98090>;
+		reg-vgp1-supply = <&mt6397_vgp1_reg>;
+		reg-vgp4-supply = <&mt6397_vgp4_reg>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&aud_i2s2>;
 		status = "okay";
