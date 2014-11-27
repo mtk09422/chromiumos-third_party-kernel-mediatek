@@ -482,6 +482,16 @@
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
+
+			it6151mipirx@5c {
+				compatible = "ite,it6151mipirx";
+				reg = <0x5c>;
+			};
+
+			it6151dptx@6c {
+				compatible = "ite,it6151dptx";
+				reg = <0x6c>;
+			};
 		};
 
 		i2c4: i2c@11011000 {
@@ -646,5 +656,63 @@
 			larb-port-mapping = <1 1 0 1 1>;
 		};
 
+		mediatek-drm@14000000 {
+			compatible = "mediatek,mt8135-drm";
+			reg = <0 0x14000000 0 0x9000>,
+				<0 0x1400D000 0 0x1000>,
+				<0 0x14011000 0 0x2000>,
+				<0 0x10012000 0 0x1000>;
+			interrupts = <GIC_SPI 166 IRQ_TYPE_LEVEL_LOW>; /*RDMA0*/
+
+			clocks = <&dispsys DISP_SMI_LARB2_CK>,
+				<&dispsys DISP_OVL_DISP_CK>,
+				<&dispsys DISP_OVL_SMI_CK>,
+				<&dispsys DISP_BLS_DISP_CK>,
+				<&dispsys DISP_RDMA0_DISP_CK>,
+				<&dispsys DISP_RDMA0_SMI_CK>,
+				<&dispsys DISP_RDMA0_OUTPUT_CK>,
+				<&dispsys DISP_MUTEX_26M_CK>,
+				<&dispsys DISP_DSI_DISP_CK>,
+				<&dispsys DISP_DSI_DSI_CK>,
+				<&dispsys DISP_DSI_DIV2_DSI_CK>;
+			clock-names = "smi_larb2_ck",
+				"ovl_disp_ck", "ovl_smi_ck",
+				"bls_disp_ck",
+				"rdma0_disp_ck", "rdma0_smi_ck", "rdma0_output_ck",
+				"mutex_disp_ck",
+				"dsi_disp_clk_cg", "dsi_dsi_clk_cg", "dsi_div2_dsi_clk_cg";
+
+			reg-vgp2-supply = <&mt6397_vgp2_reg>;
+			mediatek,mipi-tx-burst-freq = <150>;
+			it6151pwr12-gpio = <183>;
+			reset-gpio = <185>;
+			bl-en-gpio = <23>;
+			bl-pwmas-gpio = <86>;
+			mediatek,panel = <&panel>;
+		};
+
+		panel: panel {
+			compatible = "chunghwa,claa101wa01a", "simple-panel";
+		};
+
+		scpsys: scpsys@10001000 {
+			compatible = "mediatek,mt8135-scpsys";
+			reg = <0 0x10001000 0 0x1000>, <0 0x10006000 0 0x1000>, <0 0x10206000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		mfgsys-gpu@10206000 {
+			compatible = "mediatek,mt8135-gpu";
+			reg = <0 0x10206000 0 0x1000>;
+			mfgsys-power-supply = <&mt6397_vgpu_reg>;
+			clocks = <&mfgsys MFG_BAXI_CK>,/*axi_sel*/
+					 <&mfgsys MFG_BMEM_CK>,/*smi_mfg_as_sel*/
+					 <&mfgsys MFG_BG3D_CK>,/*mfg_sel*/
+					 <&mfgsys MFG_B26M_CK>;
+			clock-names = "mfg_axi",
+					"mfg_mem",
+					"mfg_g3d",
+					"mfg_26m";
+		};
 	};
 };
