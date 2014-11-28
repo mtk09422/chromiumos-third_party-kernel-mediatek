@@ -12,6 +12,8 @@
  */
 
 #include <dt-bindings/reset-controller/mt8173-resets.h>
+#include "mt8173-clocks.dtsi"
+
 / {
 	compatible = "mediatek,mt8173";
 	interrupt-parent = <&sysirq>;
