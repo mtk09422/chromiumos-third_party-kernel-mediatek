@@ -297,10 +297,12 @@ out:
 #define musb_ulpi_write		NULL
 #endif
 
+#if 0
 static struct usb_phy_io_ops musb_ulpi_access = {
 	.read = musb_ulpi_read,
 	.write = musb_ulpi_write,
 };
+#endif
 
 /*-------------------------------------------------------------------------*/
 
@@ -1781,12 +1783,14 @@ static const struct attribute_group musb_attr_group = {
 /* Only used to provide driver mode change events */
 static void musb_irq_work(struct work_struct *data)
 {
+#if 0
 	struct musb *musb = container_of(data, struct musb, irq_work);
 
-	/*if (musb->xceiv->state != musb->xceiv_old_state) {
+	if (musb->xceiv->state != musb->xceiv_old_state) {
 		musb->xceiv_old_state = musb->xceiv->state;
 		sysfs_notify(&musb->controller->kobj, NULL, "mode");
-	}*/
+	}
+#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -2053,13 +2057,15 @@ fail0:
  */
 static int musb_probe(struct platform_device *pdev)
 {
-    printk("musb_probe: pdev->dev\n");
-	struct device	*dev = &pdev->dev;
-    printk("musb_probe: &pdev->dev\n", &pdev->dev);
+	struct device	*dev;
 	int		irq = 0;
 	int		status;
 	/* struct resource	*iomem; */
 	void __iomem	*base;
+
+	printk("musb_probe: pdev: %p\n", pdev);
+	dev = &pdev->dev;
+	printk("musb_probe: &pdev->dev: %p\n", dev);
 
 #if 1
 	base = (void *)USB_BASE;
@@ -2074,9 +2080,9 @@ static int musb_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 #endif
-    printk("musb_probe: base:%x\n", base);
+	dev_dbg(dev, "musb_probe: base:%p\n", base);
 	status = musb_init_controller(dev, irq, base);
-     printk("musb_init_controller: status:%d\n", status);
+	dev_dbg(dev, "musb_init_controller: status:%d\n", status);
 
 #if 0
 	if (status < 0)
