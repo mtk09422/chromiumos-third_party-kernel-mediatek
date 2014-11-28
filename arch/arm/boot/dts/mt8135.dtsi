@@ -127,6 +127,7 @@
 			#size-cells = <1>;
 			compatible = "mediatek,mt8135-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
+			#clock-cells = <1>;
 
 			infrarst: reset-controller@30 {
 				#reset-cells = <1>;
@@ -140,6 +141,7 @@
 			#size-cells = <1>;
 			compatible = "mediatek,mt8135-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;
+			#clock-cells = <1>;
 
 			perirst: reset-controller@00 {
 				#reset-cells = <1>;
@@ -158,7 +160,7 @@
 					<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
 			reset-names = "infra-pwrap-rst",
 					"peri-pwrap-bridge-rst";
-			clocks = <&pmicspi_sel>, <&clk26m> ;
+			clocks = <&topckgen TOP_PMICSPI_SEL>, <&clk26m> ;
 			clock-names = "pmicspi-sel", "pmicspi-parent";
 
 			pmic {
@@ -584,28 +586,28 @@
 			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
 			reg = <0 0x11006000 0 0x400>;
 			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&uart_clk>;
+			clocks = <&pericfg PERI_UART0_CK>;
 		};
 
 		uart1: serial@11007000 {
 			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
 			reg = <0 0x11007000 0 0x400>;
 			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&uart_clk>;
+			clocks = <&pericfg PERI_UART1_CK>;
 		};
 
 		uart2: serial@11008000 {
 			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
 			reg = <0 0x11008000 0 0x400>;
 			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&uart_clk>;
+			clocks = <&pericfg PERI_UART2_CK>;
 		};
 
 		uart3: serial@11009000 {
 			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
 			reg = <0 0x11009000 0 0x400>;
 			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&uart_clk>;
+			clocks = <&pericfg PERI_UART3_CK>;
 		};
 
 		i2c0: i2c@1100d000 {
@@ -615,7 +617,7 @@
 				<0 0x11000300 0 0x80>;
 			interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&i2c0_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C0_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -628,7 +630,7 @@
 				<0 0x11000380 0 0x80>;
 			interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&i2c1_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C1_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -641,7 +643,7 @@
 				<0 0x11000400 0 0x80>;
 			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&i2c2_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C2_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -654,7 +656,7 @@
 				<0 0x11000480 0 0x80>;
 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&i2c3_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C3_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -668,7 +670,7 @@
 			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&i2c4_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C4_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -682,7 +684,7 @@
 			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&i2c5_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C5_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -696,7 +698,7 @@
 			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&i2c6_ck>, <&ap_dma_ck>;
+			clocks = <&pericfg PERI_I2C6_CK>, <&pericfg PERI_AP_DMA_CK>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -707,7 +709,7 @@
 			reg = <0 0x11016000 0 0x1000>;
 			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
 			cell-index = <0>;
-			clocks = <&spi1_ck>;
+			clocks = <&pericfg PERI_SPI1_CK>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
@@ -721,7 +723,7 @@
 			cap-mmc-highspeed;
 			core-power-supply = <&mt6397_vemc_3v3_reg>;
 			io-power-supply = <&mt6397_vio18_reg>;
-			clocks = <&msdc20_1_ck>, <&msdcpll>;
+			clocks = <&pericfg PERI_MSDC20_1_CK>, <&apmixedsys APMIXED_MSDCPLL>;
 			clock-names = "src_clk", "pll_clk";
 			non-removable;
 			func = "EMMC";
@@ -737,7 +739,7 @@
 			sd-uhs-sdr25;
 			core-power-supply = <&mt6397_vmch_reg>;
 			io-power-supply = <&mt6397_vmc_reg>;
-			clocks = <&msdc20_2_ck>, <&msdcpll>;
+			clocks = <&pericfg PERI_MSDC20_2_CK>, <&apmixedsys APMIXED_MSDCPLL>;
 			clock-names = "src_clk", "pll_clk";
 			func = "SDCARD";
 		};
@@ -752,7 +754,7 @@
 			multipoint = <1>;
 			num_eps = <16>;
 			ram_bits = <11>;
-			clocks =<&usb0_ck>, <&univpll>;
+			clocks =<&pericfg PERI_USB0_CK>, <&apmixedsys APMIXED_UNIVPLL>;
 			clock-names = "usb0_clk_main", "univpll_clk";
 			usb-power-supply = <&mt6397_usb_reg>;
 		};
@@ -760,7 +762,7 @@
 		usb1@11210000 {
 			compatible = "mediatek,mt6577-usb1";
 			reg = <0 0x11210000 0 0x10000>;
-			clocks =<&usb1_ck>, <&univpll>;
+			clocks =<&pericfg PERI_USB1_CK>, <&apmixedsys APMIXED_UNIVPLL>;
 			clock-names = "usb1_clk_main", "univpll1_clk";
 			usb-power-supply = <&mt6397_usb_reg>;
 		};
@@ -771,15 +773,15 @@
 			reg = <0 0x12008000 0 0x4000>,
 			      <0 0x12070000 0 0x10000>;
 			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&audio_ck>,
+			clocks = <&infracfg INFRA_AUDIO_CK>,
 				 <&afe_ck>,
 				 <&hdmi_ck>,
-				 <&apll_sel>,
-				 <&apll_d16>,
-				 <&apll_d24>,
-				 <&apll_d4>,
-				 <&apll_d8>,
-				 <&audpll>,
+				 <&topckgen TOP_APLL_SEL>,
+				 <&topckgen TOP_APLL_D16>,
+				 <&topckgen TOP_APLL_D24>,
+				 <&topckgen TOP_APLL_D4>,
+				 <&topckgen TOP_APLL_D8>,
+				 <&apmixedsys APMIXED_AUDPLL>,
 				 <&apll_tuner_ck>;
 			clock-names = "infra_audio_clk",
 				      "afe_clk",
@@ -800,7 +802,7 @@
 				<0 0x10202000 0 0x1000>; /*smi common ext*/
 			interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>, /*m4u0 irq*/
 				<GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>; /*m4u1 irq*/
-			clocks = <&m4u_ck>,<&smi_ck>;
+			clocks = <&infracfg INFRA_M4U_CK>,<&infracfg INFRA_SMI_CK>;
 			clock-names = "m4uclk","smiclk";
 			iova-size = <0x40000000>;
 			larb-port-mapping = <1 1 0 1 1>;

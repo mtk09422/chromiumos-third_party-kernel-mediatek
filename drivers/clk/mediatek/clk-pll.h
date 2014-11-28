@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __DRV_CLK_MTK_H
-#define __DRV_CLK_MTK_H
+#ifndef __DRV_CLK_PLL_H
+#define __DRV_CLK_PLL_H
 
 /*
  * This is a private header file. DO NOT include it except clk-*.c.
@@ -23,25 +23,28 @@
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 
-#define CLK_DEBUG		0
-#define DUMMY_REG_TEST		0
+struct mtk_clk_pll {
+	struct clk_hw	hw;
+	void __iomem	*base_addr;
+	void __iomem	*pwr_addr;
+	u32		en_mask;
+	u32		flags;
+};
 
-extern spinlock_t *get_mtk_clk_lock(void);
+#define to_mtk_clk_pll(_hw) container_of(_hw, struct mtk_clk_pll, hw)
 
-#define mtk_clk_lock(flags)	spin_lock_irqsave(get_mtk_clk_lock(), flags)
-#define mtk_clk_unlock(flags)	\
-	spin_unlock_irqrestore(get_mtk_clk_lock(), flags)
+#define HAVE_RST_BAR	BIT(0)
+#define HAVE_PLL_HP	BIT(1)
+#define HAVE_FIX_FRQ	BIT(2)
+#define PLL_AO		BIT(3)
 
-#define MAX_MUX_GATE_BIT	31
-#define INVALID_MUX_GATE_BIT	(MAX_MUX_GATE_BIT + 1)
-
-struct clk *mtk_clk_register_mux(
+struct clk *mtk_clk_register_pll(
 		const char *name,
-		const char **parent_names,
-		u8 num_parents,
-		void __iomem *base_addr,
-		u8 shift,
-		u8 width,
-		u8 gate_bit);
+		const char *parent_name,
+		u32 *base_addr,
+		u32 *pwr_addr,
+		u32 en_mask,
+		u32 flags,
+		const struct clk_ops *ops);
 
-#endif /* __DRV_CLK_MTK_H */
+#endif /* __DRV_CLK_PLL_H */

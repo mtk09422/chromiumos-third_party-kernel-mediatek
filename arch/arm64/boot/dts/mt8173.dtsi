@@ -15,6 +15,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include "skeleton.dtsi"
 #include <dt-bindings/reset-controller/mt8173-resets.h>
+#include "mt8173-clocks.dtsi"
 #include "mt8173-pinfunc.h"
 
 / {
@@ -83,23 +84,6 @@
 	};
 
 	clocks {
-		clk_null: clk_null {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <0>;
-		};
-
-		clk26m: clk26m {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <26000000>;
-		};
-
-		clk32k: clk32k {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <32000>;
-		};
 
 		uart_clk: dummy26m {
 			compatible = "fixed-clock";
