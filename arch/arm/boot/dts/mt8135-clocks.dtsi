@@ -1,0 +1,97 @@
+#include <dt-bindings/clock/mt8135-clk.h>
+
+/ {
+	clocks {
+		clk_null: clk_null {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		rtc32k: rtc32k {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32000>;
+		};
+	};
+
+	soc {
+		ranges;
+
+		topckgen: topckgen@10000000 {
+			compatible = "mediatek,mt8135-topckgen";
+			reg = <0 0x10000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		apmixedsys: apmixedsys@10209000 {
+			compatible = "mediatek,mt8135-apmixedsys";
+			reg = <0 0x10209000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		mfgsys: mfgsys@10206000 {
+			compatible = "mediatek,mt8135-mfgsys";
+			reg = <0 0x10206000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		audiosys: audiosys@12070000 {
+			compatible = "mediatek,mt8135-audiosys";
+			reg = <0 0x12070000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		dispsys: dispsys@14000000 {
+			compatible = "mediatek,mt8135-dispsys";
+			reg = <0 0x14000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		imgsys: imgsys@15000000 {
+			compatible = "mediatek,mt8135-imgsys";
+			reg = <0 0x15000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		vdecsys: vdecsys@16000000 {
+			compatible = "mediatek,mt8135-vdecsys";
+			reg = <0 0x16000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		vencsys: vencsys@17000000 {
+			compatible = "mediatek,mt8135-vencsys";
+			reg = <0 0x17000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+	};
+
+	old_clocks {
+		afe_ck: afe_ck {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		hdmi_ck: hdmi_ck {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		apll_tuner_ck: apll_tuner_ck {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+	};
+
+};
+
