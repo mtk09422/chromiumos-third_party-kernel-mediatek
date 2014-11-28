@@ -151,19 +151,21 @@ static int wdt_notify_sys(struct notifier_block *this, unsigned long code,
 								wdt_notifier);
 	unsigned int tmp;
 
-	if (code == SYS_DOWN || code == SYS_HALT) {
+	if (code == SYS_RESTART) {
 		tmp = readl(wdt->reg_base + MT65XX_WDT_MODE);
 		tmp |= MT65XX_WDT_MODE_KEY;
 		tmp |= MT65XX_WDT_MODE_AUTO_START | MT65XX_WDT_MODE_EXTEN;
 		writel(tmp, wdt->reg_base + MT65XX_WDT_MODE);
 
-		writel(MT65XX_WDT_SWRST_KEY, wdt->reg_base + MT65XX_WDT_SWRST);
+		while (1) {
+			writel(MT65XX_WDT_SWRST_KEY,
+				wdt->reg_base + MT65XX_WDT_SWRST);
+			mdelay(5);
+		}
 	}
 
-	while (1) {
-		mdelay(5);
-		writel(MT65XX_WDT_SWRST_KEY, wdt->reg_base + MT65XX_WDT_SWRST);
-	}
+	else if (code == SYS_HALT)
+		wdt->wdd.ops->ping(&wdt->wdd);
 
 	return NOTIFY_DONE;
 }
