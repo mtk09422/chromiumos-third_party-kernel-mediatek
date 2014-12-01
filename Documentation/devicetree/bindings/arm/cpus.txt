@@ -191,6 +191,7 @@ nodes to be present and contain the properties described below.
 			    "qcom,kpss-acc-v1"
 			    "qcom,kpss-acc-v2"
 			    "rockchip,rk3066-smp"
+			    "mediatek,mt81xx-smp"
 
 	- cpu-release-addr
 		Usage: required for systems that have an "enable-method"
@@ -214,6 +215,12 @@ nodes to be present and contain the properties described below.
 		       "qcom,kpss-acc-v2"
 		Value type: <phandle>
 		Definition: Specifies the ACC[2] node associated with this CPU.
+
+	- mediatek,smp-reg
+		Usage: required for systems that have an "enable-method"
+		       property value of "mediatek,mt81xx-smp".
+		Value type: <phandle>
+		Definition: Specifies the boot register base associated with this CPU.
 
 
 Example 1 (dual-cluster big.LITTLE system 32-bit):
