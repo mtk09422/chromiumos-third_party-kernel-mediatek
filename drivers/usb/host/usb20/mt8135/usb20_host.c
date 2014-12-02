@@ -325,6 +325,7 @@ out:
 
 }
 
+#if 0
 static void mt_usb_ext_iddig_int(void)
 {
     if (!mtk_musb->is_ready) {
@@ -335,6 +336,7 @@ static void mt_usb_ext_iddig_int(void)
     }
 	DBG(0,"id pin interrupt assert\n");
 }
+#endif
 
 void mt_usb_iddig_int(struct musb *musb)
 {

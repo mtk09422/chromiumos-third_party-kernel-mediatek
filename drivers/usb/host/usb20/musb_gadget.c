@@ -2218,7 +2218,8 @@ static int musb_gadget_vbus_session(struct usb_gadget *gadget, int is_active)
 
 static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
 {
-	struct musb	*musb = gadget_to_musb(gadget);
+	// no use
+	//struct musb	*musb = gadget_to_musb(gadget);
 
 	
 	return 1;
@@ -2373,7 +2374,9 @@ static inline void musb_g_init_endpoints(struct musb *musb)
  */
 int musb_gadget_setup(struct musb *musb)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 	int status;
+#endif
 
 	/* REVISIT minor race:  if (erroneously) setting up two
 	 * musb peripherals at the same time, only the bus lock
@@ -2413,10 +2416,12 @@ int musb_gadget_setup(struct musb *musb)
     #endif
 
 	return 0;
+#if 0
 err:
 	musb->g.dev.parent = NULL;
 	device_unregister(&musb->g.dev);
 	return status;
+#endif
 }
 
 void musb_gadget_cleanup(struct musb *musb)

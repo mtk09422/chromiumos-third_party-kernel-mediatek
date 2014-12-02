@@ -402,9 +402,8 @@ static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 	 	WARNING("musbfsh_advance_schedule qh not ready\r\n");
 		return ;
 	 }
-	 if(&qh->hep->urb_list<0xc0000000)
+	 if((unsigned long)(&qh->hep->urb_list)<0xc0000000)
 	 	{
-		 printk(KERN_ERR"hank:%s(%d)urb=0x%x,qh=0x%x,qh->hep=0x%x,&qh->hep->urb_list=0x%x\n",__FUNCTION__,__LINE__,urb,qh,qh->hep,&qh->hep->urb_list);
 		 return ;
 	 	}
 	if (list_empty(&qh->hep->urb_list)) { // if the urb list is empty, the next qh will be excute.
@@ -2026,9 +2025,9 @@ musbfsh_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 	qh->is_ready = 0;
 	if (musbfsh_ep_get_qh(qh->hw_ep, is_in) == qh) {
 		urb = next_urb(qh);
-    if(urb < 0xc0000000 )
+    if((unsigned long)urb < 0xc0000000 )
     	{
-    		printk(KERN_ERR"joson musbfsh_h_disable urb=0x%x",urb);
+    		printk(KERN_ERR"joson musbfsh_h_disable urb=0x%x",(unsigned int)urb);
     		goto exit;
     	}
 		/* make software (then hardware) stop ASAP */
