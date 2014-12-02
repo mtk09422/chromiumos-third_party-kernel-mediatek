@@ -34,6 +34,7 @@
 #include <linux/delay.h>
 #include <dt-bindings/pinctrl/mt65xx.h>
 
+#include "../core.h"
 #include "../pinconf.h"
 #include "pinctrl-mtk-common.h"
 
@@ -1356,7 +1357,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	return 0;
 
 chip_error:
-	gpiochip_remove(pctl->chip);
+	ret = gpiochip_remove(pctl->chip);
 pctrl_error:
 	pinctrl_unregister(pctl->pctl_dev);
 	return ret;
@@ -1368,9 +1369,8 @@ int mtk_pctrl_remove(struct platform_device *pdev)
 	struct mtk_pinctrl *pctl = platform_get_drvdata(pdev);
 
 	pinctrl_unregister(pctl->pctl_dev);
-	gpiochip_remove(pctl->chip);
 
-	return 0;
+	return gpiochip_remove(pctl->chip);
 }
 
 MODULE_LICENSE("GPL");
