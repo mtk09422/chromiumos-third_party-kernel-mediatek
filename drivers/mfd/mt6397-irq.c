@@ -189,7 +189,6 @@ int mt6397_irq_init(struct mt6397_chip *mt6397)
 {
 	int ret;
 	struct platform_device *pdev = to_platform_device(mt6397->dev);
-	struct device_node *node = pdev->dev.of_node;
 
 	mutex_init(&mt6397->irqlock);
 	mt6397->irq = platform_get_irq(pdev, 0);

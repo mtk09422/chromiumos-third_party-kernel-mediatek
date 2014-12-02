@@ -434,9 +434,10 @@ static int mtk_spi_transfer_one_message(struct spi_master *master,
 	int ret = 0;
 	u32 reg_val;
 	struct spi_device *spidev = msg->spi;
-	msd = spi_master_get_devdata(master);
+	void __iomem *regs;
 
-	void __iomem *regs = msd->regs;
+	msd = spi_master_get_devdata(master);
+	regs = msd->regs;
 
 	dev_info(&msd->pdev->dev, "enter,start add msg:0x%p\n", msg);
 	/*if device don't config chip, set default */
@@ -674,7 +675,6 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	int	ret = 0;
 	int	irq;
 	struct clk *clk;
-	struct resource *regs;
 	struct spi_master *master;
 	struct mtk_spi_driver_data *msd;
 	void __iomem *spi_base;
