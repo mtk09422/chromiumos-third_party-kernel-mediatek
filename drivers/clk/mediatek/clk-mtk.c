@@ -1175,7 +1175,7 @@ struct clk *mt_clk_register_pll(
  */
 
 
-static void __init mt_clk_fixed_rate_init(struct device_node *node, void *data)
+static void __init mt_clk_fixed_rate_init(struct device_node *node)
 {
 	u32 rate;
 	struct clk *clk;
@@ -1232,7 +1232,7 @@ static void __init mt_clk_pll_init(
 }
 
 
-static void __init mt_clk_pll_arm_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_arm_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		HAVE_PLL_HP, &mt_clk_arm_pll_ops);
@@ -1240,7 +1240,7 @@ static void __init mt_clk_pll_arm_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_arm, "mediatek,clk-pll-arm", mt_clk_pll_arm_init);
 
 
-static void __init mt_clk_pll_main_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_main_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0xF0000001,
 		HAVE_PLL_HP | HAVE_RST_BAR | PLL_AO, &mt_clk_pll_ops);
@@ -1248,7 +1248,7 @@ static void __init mt_clk_pll_main_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_main, "mediatek,clk-pll-main", mt_clk_pll_main_init);
 
 
-static void __init mt_clk_pll_univ_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_univ_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0xF3000001,
 		HAVE_RST_BAR | HAVE_FIX_FRQ | PLL_AO, &mt_clk_lc_pll_ops);
@@ -1256,7 +1256,7 @@ static void __init mt_clk_pll_univ_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_univ, "mediatek,clk-pll-univ", mt_clk_pll_univ_init);
 
 
-static void __init mt_clk_pll_mm_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_mm_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0xF0000001,
 		HAVE_PLL_HP | HAVE_RST_BAR, &mt_clk_pll_ops);
@@ -1264,7 +1264,7 @@ static void __init mt_clk_pll_mm_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_mm, "mediatek,clk-pll-mm", mt_clk_pll_mm_init);
 
 
-static void __init mt_clk_pll_msdc_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_msdc_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		HAVE_PLL_HP, &mt_clk_pll_ops);
@@ -1272,7 +1272,7 @@ static void __init mt_clk_pll_msdc_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_msdc, "mediatek,clk-pll-msdc", mt_clk_pll_msdc_init);
 
 
-static void __init mt_clk_pll_tvd_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_tvd_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		HAVE_PLL_HP, &mt_clk_tvd_pll_ops);
@@ -1280,7 +1280,7 @@ static void __init mt_clk_pll_tvd_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_tvd, "mediatek,clk-pll-tvd", mt_clk_pll_tvd_init);
 
 
-static void __init mt_clk_pll_lvds_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_lvds_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		HAVE_PLL_HP, &mt_clk_pll_ops);
@@ -1288,7 +1288,7 @@ static void __init mt_clk_pll_lvds_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_lvds, "mediatek,clk-pll-lvds", mt_clk_pll_lvds_init);
 
 
-static void __init mt_clk_pll_aud_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_aud_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		0, &mt_clk_aud_pll_ops);
@@ -1296,7 +1296,7 @@ static void __init mt_clk_pll_aud_init(struct device_node *node, void *data)
 CLK_OF_DECLARE(mtk_pll_aud, "mediatek,clk-pll-aud", mt_clk_pll_aud_init);
 
 
-static void __init mt_clk_pll_vdec_init(struct device_node *node, void *data)
+static void __init mt_clk_pll_vdec_init(struct device_node *node)
 {
 	mt_clk_pll_init(node, 0x80000001,
 		HAVE_PLL_HP, &mt_clk_pll_ops);
@@ -1305,7 +1305,7 @@ CLK_OF_DECLARE(mtk_pll_vdec, "mediatek,clk-pll-vdec", mt_clk_pll_vdec_init);
 
 
 static void __init mt_clk_fixed_factor_init(
-		struct device_node *node, void *data)
+		struct device_node *node)
 {
 	u32 mult, div;
 	const char *parent_name;
@@ -1341,7 +1341,7 @@ CLK_OF_DECLARE(
 	mt_clk_fixed_factor_init);
 
 
-static void __init mt_clk_mux_init(struct device_node *node, void *data)
+static void __init mt_clk_mux_init(struct device_node *node)
 {
 	struct device_node *np;
 	struct device_node *clocks;
@@ -1476,21 +1476,21 @@ static void __init mt_clk_common_gate_init(
 }
 
 
-static void __init mt_clk_gate_init(struct device_node *node, void *data)
+static void __init mt_clk_gate_init(struct device_node *node)
 {
 	mt_clk_common_gate_init(node, 0);
 }
 CLK_OF_DECLARE(mtk_gate, "mediatek,clk-gate", mt_clk_gate_init);
 
 
-static void __init mt_clk_gate_inv_init(struct device_node *node, void *data)
+static void __init mt_clk_gate_inv_init(struct device_node *node)
 {
 	mt_clk_common_gate_init(node, CLK_GATE_INVERSE);
 }
 CLK_OF_DECLARE(mtk_gate_inv, "mediatek,clk-gate-inv", mt_clk_gate_inv_init);
 
 
-static void __init mt_clk_gate_audio_init(struct device_node *node, void *data)
+static void __init mt_clk_gate_audio_init(struct device_node *node)
 {
 	struct device_node *np;
 	struct device_node *clocks;
