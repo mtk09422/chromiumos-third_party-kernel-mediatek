@@ -409,7 +409,7 @@ void musbfsh_dma_controller_destroy(struct dma_controller *c)
 	kfree(controller);
 }
 
-struct dma_controller *__init
+struct dma_controller *
 musbfsh_dma_controller_create(struct musbfsh *musbfsh, void __iomem *base)
 {
 	struct musbfsh_dma_controller *controller;

@@ -478,7 +478,7 @@ static const struct musbfsh_platform_ops mt_usb11_ops = {
 
 static u64 mt_usb11_dmamask = DMA_BIT_MASK(32);
 
-static int __init mt_usb11_probe(struct platform_device *pdev)
+static int mt_usb11_probe(struct platform_device *pdev)
 {
 	struct musbfsh_hdrc_platform_data	*pdata = pdev->dev.platform_data;
 	struct platform_device		*musbfsh;

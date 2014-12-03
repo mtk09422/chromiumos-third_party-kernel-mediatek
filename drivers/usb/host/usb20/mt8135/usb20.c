@@ -67,7 +67,7 @@ u32 sw_uart_path = 0;
 #endif
 
 /*EP Fifo Config*/
-static struct musb_fifo_cfg __initdata fifo_cfg[] = {
+static struct musb_fifo_cfg fifo_cfg[] = {
 { .hw_ep_num =  1, .style = MUSB_FIFO_TX,   .maxpacket = 512, .ep_mode = EP_BULK,.mode = MUSB_BUF_DOUBLE},
 { .hw_ep_num =  1, .style = MUSB_FIFO_RX,   .maxpacket = 512, .ep_mode = EP_BULK,.mode = MUSB_BUF_DOUBLE},
 { .hw_ep_num =  2, .style = MUSB_FIFO_TX,   .maxpacket = 512, .ep_mode = EP_BULK,.mode = MUSB_BUF_DOUBLE},
@@ -705,7 +705,7 @@ DEVICE_ATTR(uartpath,  0664, mt_usb_show_uart_path, NULL);
 static struct i2c_client *usb_i2c_client = NULL;
 static const struct i2c_device_id usb_i2c_id[] = {{"mtk-usb",0},{}};
 
-static struct i2c_board_info __initdata usb_i2c_dev = { I2C_BOARD_INFO("mtk-usb", 0x60)};
+static struct i2c_board_info usb_i2c_dev = { I2C_BOARD_INFO("mtk-usb", 0x60)};
 
 
 void USB_PHY_Write_Register8(UINT8 var,  UINT8 addr)
@@ -1020,7 +1020,7 @@ static struct platform_driver mt_usb_driver = {
 	},
 };
 
-static int __init usb20_init(void)
+static int usb20_init(void)
 {
 	DBG(0,"usb20 init\n");
 
