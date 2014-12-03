@@ -202,7 +202,7 @@
 			compatible = "mediatek,mt8173-pwrap";
 			reg = <0 0x1000D000 0 0x1000>;
 			reg-names = "pwrap-base";
-			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 			resets = <&infrarst MT8173_INFRA_PMIC_WRAP_RST>;
 			reset-names = "infra-pwrap-rst";
 		};
