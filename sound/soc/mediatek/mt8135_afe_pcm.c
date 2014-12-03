@@ -1252,9 +1252,6 @@ static int mt8135_afe_pcm_dev_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	if (pdev->dev.of_node)
-		dev_set_name(&pdev->dev, "%s", "mt8135-afe-pcm");
-
 	ret = mt_afe_platform_init(pdev);
 	if (ret)
 		return ret;

@@ -108,7 +108,7 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.name = "Playback",
 		.stream_name = "Playback",
 		.cpu_dai_name = "DL1",
-		.platform_name = "mt8135-afe-pcm",
+		.platform_name = "12008000.mt8135-afe-pcm",
 		.codec_dai_name = "HiFi",
 		.codec_name = "max98090.1-0010",
 		.init = mt8135_max98090_init,
@@ -120,7 +120,7 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.name = "Capture",
 		.stream_name = "Capture",
 		.cpu_dai_name = "AWB",
-		.platform_name = "mt8135-afe-pcm",
+		.platform_name = "12008000.mt8135-afe-pcm",
 		.codec_dai_name = "HiFi",
 		.codec_name = "max98090.1-0010",
 	},
@@ -128,7 +128,7 @@ static struct snd_soc_dai_link mt8135_max98090_dais[] = {
 		.name = "HDMI Playback",
 		.stream_name = "HDMI Playback",
 		.cpu_dai_name = "HDMI",
-		.platform_name = "mt8135-afe-pcm",
+		.platform_name = "12008000.mt8135-afe-pcm",
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
@@ -154,11 +154,6 @@ static int mt8135_max98090_dev_probe(struct platform_device *pdev)
 	unsigned int volt;
 	int ret, i;
 
-	if (pdev->dev.of_node) {
-		dev_set_name(&pdev->dev, "%s", "mt8135-max98090");
-		dev_notice(&pdev->dev, "%s set dev name %s\n", __func__,
-			   dev_name(&pdev->dev));
-	}
 	codec_node = of_parse_phandle(pdev->dev.of_node,
 				      "mediatek,audio-codec", 0);
 	if (!codec_node) {
