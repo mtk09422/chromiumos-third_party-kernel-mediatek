@@ -720,6 +720,28 @@ mtk_pctrl_desc_find_function_by_number(struct mtk_pinctrl *pctl,
 	return NULL;
 }
 
+/*Get pinnum for support */
+static int
+mtk_pctrl_desc_find_gpio_num_from_eint_num(struct mtk_pinctrl *pctl,
+					 unsigned int eint_num,
+					 struct mtk_desc_function **dfunc)
+{
+	int i, j;
+
+	for (i = 0; i < pctl->devdata->npins; i++) {
+		const struct mtk_desc_pin *pin = pctl->devdata->pins + i;
+		struct mtk_desc_function *func = pin->functions;
+
+		for (j = 0; j < PINMUX_MAX_VAL; j++,  func++) {
+			if (func->irqnum == eint_num) {
+				*dfunc = func;
+				return pin->pin.number;
+			}
+		}
+	}
+	return -1;
+}
+
 static struct mtk_desc_function *
 mtk_pctrl_desc_find_irq_function_from_name(struct mtk_pinctrl *pctl,
 					 const char *pin_name)
@@ -978,12 +1000,60 @@ static void mtk_eint_unmask(struct irq_data *d)
 	writel(mask, reg);
 }
 
+/*support mm mtk_pinctrl_irq_request_resources*/
+static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
+{
+	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
+	struct mtk_desc_function *func;
+	struct mtk_pinctrl_group *g;
+	int ret;
+	int pin_num = mtk_pctrl_desc_find_gpio_num_from_eint_num(pctl,
+		d->hwirq, &func);
+
+	if (pin_num < 0) {
+		dev_err(pctl->dev, "Can not find pin num\n");
+		return -EINVAL;
+	}
+
+	g = pctl->groups + pin_num;
+	ret = gpio_lock_as_irq(pctl->chip, g->pin);
+	if (ret) {
+		dev_err(pctl->dev, "unable to lock HW IRQ %lu for IRQ\n",
+			irqd_to_hwirq(d));
+		return ret;
+	}
+
+	/* set mux to INT mode */
+	mtk_pmx_set_mode(pctl->pctl_dev, g->pin, func->muxval);
+
+	return 0;
+}
+
+static void mtk_pinctrl_irq_release_resources(struct irq_data *d)
+{
+	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
+	struct mtk_pinctrl_group *g;
+	struct mtk_desc_function *func;
+	int pin_num = mtk_pctrl_desc_find_gpio_num_from_eint_num(pctl,
+		d->hwirq, &func);
+
+	if (pin_num < 0) {
+		dev_err(pctl->dev, "Can not find pin num\n");
+		return;
+	}
+
+	g = pctl->groups + pin_num;
+	gpio_unlock_as_irq(pctl->chip, g->pin);
+}
+
 static struct irq_chip mtk_pinctrl_irq_chip = {
 	.name = "mt-eint",
 	.irq_mask = mtk_eint_mask,
 	.irq_unmask = mtk_eint_unmask,
 	.irq_ack = mtk_eint_ack,
 	.irq_set_type = mtk_eint_set_type,
+	.irq_request_resources = mtk_pinctrl_irq_request_resources,
+	.irq_release_resources = mtk_pinctrl_irq_release_resources,
 };
 
 static unsigned int mtk_eint_init(struct mtk_pinctrl *pctl)
@@ -1088,8 +1158,8 @@ static int mtk_eint_set_hw_debounce(struct mtk_pinctrl *pctl,
 	unsigned int eint_num,
 	unsigned int ms)
 {
-	unsigned int set_reg, bit, clr_bit, clr_base, rst, i, unmask = 0;
-	unsigned int dbnc = 0;
+	unsigned long set_reg, clr_base;
+	unsigned int bit, clr_bit, rst, i, unmask, dbnc;
 	static const unsigned int dbnc_arr[] = {0 , 1, 16, 32, 64, 128, 256};
 	int virq = irq_find_mapping(pctl->domain, eint_num);
 	struct irq_data *d = irq_get_irq_data(virq);
@@ -1136,17 +1206,17 @@ static int mtk_eint_set_hw_debounce(struct mtk_pinctrl *pctl,
 static inline void
 mtk_eint_debounce_process(struct mtk_pinctrl *pctl, int index)
 {
-	unsigned int rst, set_reg;
-	unsigned int bit, dbnc;
+	unsigned long set_reg;
+	unsigned int rst, bit, dbnc;
 	const struct mtk_eint_offsets *eint_offsets =
 		&(pctl->devdata->eint_offsets);
 
-	set_reg = (index / 4) * 4 + (unsigned int)pctl->eint_reg_base +
+	set_reg = (index / 4) * 4 + (unsigned long)pctl->eint_reg_base +
 	eint_offsets->dbnc_ctrl;
 	dbnc = readl((void __iomem *)set_reg);
 	bit = (EINT_DBNC_EN_BIT << EINT_DBNC_SET_EN_BITS) << ((index % 4) * 8);
 	if ((bit & dbnc) > 0) {
-		set_reg = (index / 4) * 4 + (unsigned int)pctl->eint_reg_base +
+		set_reg = (index / 4) * 4 + (unsigned long)pctl->eint_reg_base +
 			eint_offsets->dbnc_set;
 		rst = (EINT_DBNC_RST_BIT << EINT_DBNC_SET_RST_BITS) <<
 			((index % 4) * 8);
@@ -1319,13 +1389,21 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		ret = -EINVAL;
 		goto chip_error;
 	}
+
 	/* Get EINT register base from dts. */
-	pctl->eint_reg_base = of_io_request_and_map(pdev->dev.of_node,
-			2, pdev->name);
-	if (!pctl->eint_reg_base) {
-		ret = -ENOMEM;
-		goto pctrl_error;
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
+	if (!res) {
+		dev_err(&pdev->dev, "Unable to get Pinctrl resource\n");
+		ret = -EINVAL;
+		goto chip_error;
 	}
+
+	pctl->eint_reg_base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(pctl->eint_reg_base)) {
+		ret = -EINVAL;
+		goto chip_error;
+	}
+
 	pctl->domain = irq_domain_add_linear(pdev->dev.of_node,
 		pctl->devdata->ap_num, &irq_domain_simple_ops, NULL);
 	if (!pctl->domain) {

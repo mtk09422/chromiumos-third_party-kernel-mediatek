@@ -151,7 +151,9 @@
 
 		pio: pinctrl@0x10005000 {
 			compatible = "mediatek,mt8173-pinctrl";
-			reg = <0 0x10005000 0 0x1000>;
+			reg = <0 0x10005000 0 0x1000>,
+				<0 0x1020C020 0 0x1000>,
+			    <0 0x1000B000 0 0x1000>;
 			gpio-controller;
 			#gpio-cells = <2>;
 			interrupt-controller;
