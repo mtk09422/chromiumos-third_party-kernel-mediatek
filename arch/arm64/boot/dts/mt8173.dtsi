@@ -130,19 +130,6 @@
         	        clock-frequency = <13000000>;
 	        };
 
-		cpuxgpt@0x10200000 {
-			compatible = "mediatek,mt8173-cputimer";
-			reg = <0 0x10200000 0 0x1000>;
-			interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
-		};
-
 		intpol: intpol-controller@0x10200620 {
 			compatible = "mediatek,mt6577-intpol";
 			reg = <0 0x10200620 0 0x1000>;
