@@ -207,14 +207,6 @@
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 			resets = <&infrarst MT8173_INFRA_PMIC_WRAP_RST>;
 			reset-names = "infra-pwrap-rst";
-
-			pmic {
-				compatible = "mediatek,mt6397";
-				#address-cells = <1>;
-				#size-cells = <1>;
-				interrupt-parent = <&pio>;
-				interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
-			};
 		};
 
 		uart0: serial@11002000 {
@@ -247,4 +239,3 @@
 	};
 
 };
-
