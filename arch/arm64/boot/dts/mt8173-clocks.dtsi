@@ -1,3 +1,5 @@
+#include <dt-bindings/clock/mt8173-clk.h>
+
 / {
 	clocks {
 		clk_null: clk_null {
