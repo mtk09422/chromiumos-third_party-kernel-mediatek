@@ -120,6 +120,14 @@
 			interrupt-controller;
 		};
 
+		pcfg_pull_down: pcfg_pull_down {
+			bias-pull-down;
+		};
+
+		pcfg_pull_up: pcfg_pull_up {
+			bias-pull-up;
+		};
+
 		pio: pinctrl@0x10005000 {
 			compatible = "mediatek,mt8173-pinctrl";
 			reg = <0 0x10005000 0 0x1000>,
@@ -132,6 +140,76 @@
 			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
+
+			mmc0_pins_default: mmc0default {
+				mediatek,pins = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pcfg_pull_up>,
+						<MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pcfg_pull_up>,
+						<MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pcfg_pull_up>,
+						<MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pcfg_pull_up>,
+						<MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD &pcfg_pull_up>,
+						<MT8173_PIN_65_MSDC0_CLK__FUNC_MSDC0_CLK &pcfg_pull_down>,
+						<MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3 &pcfg_pull_up>,
+						<MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2 &pcfg_pull_up>,
+						<MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pcfg_pull_up>,
+						<MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pcfg_pull_up>,
+						<MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB &pcfg_pull_up>;
+			};
+
+			mmc1_pins_default: mmc1default {
+				mediatek,pins = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pcfg_pull_up>,
+						<MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pcfg_pull_up>,
+						<MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD &pcfg_pull_up>,
+						<MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pcfg_pull_up>,
+						<MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK &pcfg_pull_down>,
+						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>;
+			};
+
+
+			pinctrl_mmc0_uhs: mmc0uhs {
+				input-enable;
+				drive-strength = <MTK_DRIVE_2mA>;
+				bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+			};
+
+			pinctrl_mmc0_uhs_clk: mmc0uhs_clk {
+				drive-strength = <MTK_DRIVE_2mA>;
+				bias-pull-down = <MTK_PUPD_SET_R1R0_01>;
+			};
+
+			pinctrl_mmc1_uhs: mmc1uhs {
+				input-enable;
+				drive-strength = <MTK_DRIVE_4mA>;
+				bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+			};
+
+			pinctrl_mmc1_uhs_clk: mmc1uhs_clk {
+				drive-strength = <MTK_DRIVE_4mA>;
+				bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+			};
+
+			mmc0_pins_uhs:  mmc0@0{
+				mediatek,pins = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_65_MSDC0_CLK__FUNC_MSDC0_CLK &pinctrl_mmc0_uhs_clk>,
+						<MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0 &pinctrl_mmc0_uhs>,
+						<MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB &pinctrl_mmc0_uhs>;
+			};
+
+			mmc1_pins_uhs: mmc1@0 {
+				mediatek,pins = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0 &pinctrl_mmc1_uhs>,
+						<MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1 &pinctrl_mmc1_uhs>,
+						<MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD &pinctrl_mmc1_uhs>,
+						<MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pinctrl_mmc1_uhs>,
+						<MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK &pinctrl_mmc1_uhs_clk>,
+						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pinctrl_mmc1_uhs>;
+			};
+
 		};
 
 		gic: interrupt-controller@0x10220000 {
@@ -206,6 +284,36 @@
 			reg = <0 0x11005000 0 0x400>;
 			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
+		};
+
+		mmc0: mmc@11230000 {
+			compatible = "mediatek,mt8173-mmc","mediatek,mmc";
+			reg = <0 0x11230000 0 0x108>;
+			interrupts-extended = <&gic GIC_SPI 71 IRQ_TYPE_LEVEL_LOW>;
+			bus-width = <8>;
+			max-frequency = <50000000>;
+			cap-mmc-highspeed;
+			core-power-supply = <&mt6397_vemc_3v3_reg>;
+			io-power-supply = <&mt6397_vio18_reg>;
+			clocks = <&perisys PERI_MSDC30_0>, <&apmixedsys APMIXED_MSDCPLL>;
+			clock-names = "src_clk", "pll_clk";
+			non-removable;
+			func = "EMMC";
+		};
+
+		mmc1: mmc@11240000 {
+			compatible = "mediatek,mt8173-mmc","mediatek,mmc";
+			reg = <0 0x11240000 0 0x108>;
+			interrupts-extended = <&gic GIC_SPI 72 IRQ_TYPE_LEVEL_LOW>;
+			bus-width = <4>;
+			max-frequency = <50000000>;
+			cap-sd-highspeed;
+			sd-uhs-sdr25;
+			core-power-supply = <&mt6397_vmch_reg>;
+			io-power-supply = <&mt6397_vmc_reg>;
+			clocks = <&perisys PERI_MSDC30_1>, <&apmixedsys APMIXED_MSDCPLL>;
+			clock-names = "src_clk", "pll_clk";
+			func = "SDCARD";
 		};
 	};
 
