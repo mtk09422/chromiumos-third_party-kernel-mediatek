@@ -602,7 +602,7 @@ static int mtk_iommu_attach_device(struct iommu_domain *domain,
 		m4u_config_port(priv, data);
 		data = data->pnext;
 	}
-	spin_lock_irqsave(&priv->pgtlock, flags);
+	spin_unlock_irqrestore(&priv->pgtlock, flags);
 
 	return 0;
 }
@@ -698,6 +698,7 @@ struct dma_iommu_mapping *mtk_iommu_mapping(void)
 {
 	return mtk_mapping;
 }
+EXPORT_SYMBOL(mtk_iommu_mapping);
 
 static int mtk_iommu_parse_dt(struct device *piommudev,
 			      struct mtk_iommu_info *piommu_info)
