@@ -2131,16 +2131,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	struct msdc_host *host;
 
 	mmc = platform_get_drvdata(pdev);
-	if (!mmc) {
-		dev_info(&pdev->dev, "Already free!\n");
-		return 0;
-	}
-
 	host = mmc_priv(mmc);
-	if (!host) {
-		dev_info(&pdev->dev, "Already free!\n");
-		return 0;
-	}
 
 	pm_runtime_get_sync(host->dev);
 
