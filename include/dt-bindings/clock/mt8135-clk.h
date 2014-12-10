@@ -187,4 +187,89 @@
 #define PERI_I2C6_CK		41
 #define PERI_NR_CLK		42
 
+/* MFG_SYS */
+
+#define MFG_BAXI_CK		1
+#define MFG_BMEM_CK		2
+#define MFG_BG3D_CK		3
+#define MFG_B26M_CK		4
+#define MFG_NR_CLK		5
+
+/* IMG_SYS */
+
+#define IMG_FPC_CK		1
+#define IMG_JPGENC_JPG_CK	2
+#define IMG_JPGENC_SMI_CK	3
+#define IMG_JPGDEC_JPG_CK	4
+#define IMG_JPGDEC_SMI_CK	5
+#define IMG_SEN_CAM_CK		6
+#define IMG_SEN_TG_CK		7
+#define IMG_CAM_CAM_CK		8
+#define IMG_CAM_SMI_CK		9
+#define IMG_COMM_SMI_CK		10
+#define IMG_LARB4_SMI_CK	11
+#define IMG_LARB3_SMI_CK	12
+#define IMG_NR_CLK		13
+
+/* VENC_SYS */
+
+#define VENC_VENC_CK		1
+#define VENC_NR_CLK		2
+
+/* VDEC_SYS */
+
+#define VDEC_VDEC_CK		1
+#define VDEC_VDEC_LARB_CK	2
+#define VDEC_NR_CLK		3
+
+/* DISP_SYS */
+
+#define DISP_SMI_LARB2_CK	1
+#define DISP_ROT_DISP_CK	2
+#define DISP_ROT_SMI_CK		3
+#define DISP_SCL_DISP_CK	4
+#define DISP_OVL_DISP_CK	5
+#define DISP_OVL_SMI_CK		6
+#define DISP_COLOR_DISP_CK	7
+#define DISP_TDSHP_DISP_CK	8
+#define DISP_BLS_DISP_CK	9
+#define DISP_WDMA0_DISP_CK	10
+#define DISP_WDMA0_SMI_CK	11
+#define DISP_WDMA1_DISP_CK	12
+#define DISP_WDMA1_SMI_CK	13
+#define DISP_RDMA0_DISP_CK	14
+#define DISP_RDMA0_SMI_CK	15
+#define DISP_RDMA0_OUTPUT_CK	16
+#define DISP_RDMA1_DISP_CK	17
+#define DISP_RDMA1_SMI_CK	18
+#define DISP_RDMA1_OUTPUT_CK	19
+#define DISP_GAMMA_DISP_CK	20
+#define DISP_GAMMA_PIXEL_CK	21
+#define DISP_CMDQ_DISP_CK	22
+#define DISP_CMDQ_SMI_CK	23
+#define DISP_G2D_DISP_CK	24
+#define DISP_G2D_SMI_CK		25
+#define DISP_DSI_DISP_CK	26
+#define DISP_DSI_DSI_CK		27
+#define DISP_DSI_DIV2_DSI_CK	28
+#define DISP_DPI1_CK		29
+#define DISP_LVDS_DISP_CK	30
+#define DISP_LVDS_CTS_CK	31
+#define DISP_HDMI_DISP_CK	32
+#define DISP_HDMI_PLL_CK	33
+#define DISP_HDMI_AUDIO_CK	34
+#define DISP_HDMI_SPDIF_CK	35
+#define DISP_MUTEX_26M_CK	36
+#define DISP_UFO_DISP_CK	37
+#define DISP_NR_CLK		38
+
+/* AUDIO_SYS */
+
+#define AUDIO_AFE_CK		1
+#define AUDIO_I2S_CK		2
+#define AUDIO_APLL_TUNER_CK	3
+#define AUDIO_HDMI_CK		4
+#define AUDIO_SPDF_CK		5
+#define AUDIO_NR_CLK		6
+
 #endif /* _DT_BINDINGS_CLK_MT8135_H */

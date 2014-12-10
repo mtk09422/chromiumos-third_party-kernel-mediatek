@@ -210,6 +210,81 @@
 #define smi_ck			"smi_ck"
 #define dbgclk_ck		"dbgclk_ck"
 
+/* MFG */
+#define baxi_ck			"baxi_ck"
+#define bmem_ck			"bmem_ck"
+#define bg3d_ck			"bg3d_ck"
+#define b26m_ck			"b26m_ck"
+
+/* ISP (IMG) */
+#define fpc_ck			"fpc_ck"
+#define jpgenc_jpg_ck		"jpgenc_jpg_ck"
+#define jpgenc_smi_ck		"jpgenc_smi_ck"
+#define jpgdec_jpg_ck		"jpgdec_jpg_ck"
+#define jpgdec_smi_ck		"jpgdec_smi_ck"
+#define sen_cam_ck		"sen_cam_ck"
+#define sen_tg_ck		"sen_tg_ck"
+#define cam_cam_ck		"cam_cam_ck"
+#define cam_smi_ck		"cam_smi_ck"
+#define comm_smi_ck		"comm_smi_ck"
+#define larb4_smi_ck		"larb4_smi_ck"
+#define larb3_smi_ck		"larb3_smi_ck"
+
+/* VENC */
+#define venc_ck			"venc_ck"
+
+/* VDEC */
+#define vdec_ck			"vdec_ck"
+#define vdec_larb_ck		"vdec_larb_ck"
+
+/* DISP0 */
+#define smi_larb2_ck		"smi_larb2_ck"
+#define rot_disp_ck		"rot_disp_ck"
+#define rot_smi_ck		"rot_smi_ck"
+#define scl_disp_ck		"scl_disp_ck"
+#define ovl_disp_ck		"ovl_disp_ck"
+#define ovl_smi_ck		"ovl_smi_ck"
+#define color_disp_ck		"color_disp_ck"
+#define tdshp_disp_ck		"tdshp_disp_ck"
+#define bls_disp_ck		"bls_disp_ck"
+#define wdma0_disp_ck		"wdma0_disp_ck"
+#define wdma0_smi_ck		"wdma0_smi_ck"
+#define wdma1_disp_ck		"wdma1_disp_ck"
+#define wdma1_smi_ck		"wdma1_smi_ck"
+#define rdma0_disp_ck		"rdma0_disp_ck"
+#define rdma0_smi_ck		"rdma0_smi_ck"
+#define rdma0_output_ck		"rdma0_output_ck"
+#define rdma1_disp_ck		"rdma1_disp_ck"
+#define rdma1_smi_ck		"rdma1_smi_ck"
+#define rdma1_output_ck		"rdma1_output_ck"
+#define gamma_disp_ck		"gamma_disp_ck"
+#define gamma_pixel_ck		"gamma_pixel_ck"
+#define cmdq_disp_ck		"cmdq_disp_ck"
+#define cmdq_smi_ck		"cmdq_smi_ck"
+#define g2d_disp_ck		"g2d_disp_ck"
+#define g2d_smi_ck		"g2d_smi_ck"
+
+/* DISP1 */
+#define dsi_disp_ck		"dsi_disp_ck"
+#define dsi_dsi_ck		"dsi_dsi_ck"
+#define dsi_div2_dsi_ck		"dsi_div2_dsi_ck"
+#define dpi1_ck			"dpi1_ck"
+#define lvds_disp_ck		"lvds_disp_ck"
+#define lvds_cts_ck		"lvds_cts_ck"
+#define hdmi_disp_ck		"hdmi_disp_ck"
+#define hdmi_pll_ck		"hdmi_pll_ck"
+#define hdmi_audio_ck		"hdmi_audio_ck"
+#define hdmi_spdif_ck		"hdmi_spdif_ck"
+#define mutex_26m_ck		"mutex_26m_ck"
+#define ufo_disp_ck		"ufo_disp_ck"
+
+/* AUDIO */
+#define afe_ck			"afe_ck"
+#define i2s_ck			"i2s_ck"
+#define apll_tuner_ck		"apll_tuner_ck"
+#define hdmi_ck			"hdmi_ck"
+#define spdf_ck			"spdf_ck"
+
 struct mtk_fixed_factor {
 	int id;
 	const char *name;
@@ -885,6 +960,226 @@ static void __init init_clk_perisys(void __iomem *perisys_base,
 		clk_data);
 }
 
+static struct mtk_gate_regs mfg_cg_regs = {
+	.set_ofs = 0x0004,
+	.clr_ofs = 0x0008,
+	.sta_ofs = 0x0000,
+};
+
+static struct mtk_gate mfg_clks[] __initdata = {
+	GATE(MFG_BAXI_CK, baxi_ck, axi_sel, mfg_cg_regs, 0, 0),
+	GATE(MFG_BMEM_CK, bmem_ck, smi_mfg_as_sel, mfg_cg_regs, 1, 0),
+	GATE(MFG_BG3D_CK, bg3d_ck, mfg_sel, mfg_cg_regs, 2, 0),
+	GATE(MFG_B26M_CK, b26m_ck, clk26m, mfg_cg_regs, 3, 0),
+};
+
+static void __init init_clk_mfgsys(void __iomem *mfgsys_base,
+		struct clk_onecell_data *clk_data)
+{
+	pr_debug("init mfgsys gates:\n");
+	init_clk_gates(mfgsys_base, mfg_clks, ARRAY_SIZE(mfg_clks), clk_data);
+}
+
+static struct mtk_gate_regs img_cg_regs = {
+	.set_ofs = 0x0004,
+	.clr_ofs = 0x0008,
+	.sta_ofs = 0x0000,
+};
+
+static struct mtk_gate img_clks[] __initdata = {
+	GATE(IMG_FPC_CK, fpc_ck, smi_sel, img_cg_regs, 13, 0),
+	GATE(IMG_JPGENC_JPG_CK, jpgenc_jpg_ck, jpg_sel, img_cg_regs, 12, 0),
+	GATE(IMG_JPGENC_SMI_CK, jpgenc_smi_ck, smi_sel, img_cg_regs, 11, 0),
+	GATE(IMG_JPGDEC_JPG_CK, jpgdec_jpg_ck, jpg_sel, img_cg_regs, 10, 0),
+	GATE(IMG_JPGDEC_SMI_CK, jpgdec_smi_ck, smi_sel, img_cg_regs, 9, 0),
+	GATE(IMG_SEN_CAM_CK, sen_cam_ck, cam_sel, img_cg_regs, 8, 0),
+	GATE(IMG_SEN_TG_CK, sen_tg_ck, camtg_sel, img_cg_regs, 7, 0),
+	GATE(IMG_CAM_CAM_CK, cam_cam_ck, cam_sel, img_cg_regs, 6, 0),
+	GATE(IMG_CAM_SMI_CK, cam_smi_ck, smi_sel, img_cg_regs, 5, 0),
+	GATE(IMG_COMM_SMI_CK, comm_smi_ck, smi_sel, img_cg_regs, 4, 0),
+	GATE(IMG_LARB4_SMI_CK, larb4_smi_ck, smi_sel, img_cg_regs, 2, 0),
+	GATE(IMG_LARB3_SMI_CK, larb3_smi_ck, smi_sel, img_cg_regs, 0, 0),
+};
+
+static void __init init_clk_imgsys(void __iomem *imgsys_base,
+		struct clk_onecell_data *clk_data)
+{
+	pr_debug("init imgsys gates:\n");
+	init_clk_gates(imgsys_base, img_clks, ARRAY_SIZE(img_clks), clk_data);
+}
+
+static struct mtk_gate_regs venc_cg_regs = {
+	.set_ofs = 0x0004,
+	.clr_ofs = 0x0008,
+	.sta_ofs = 0x0000,
+};
+
+static struct mtk_gate venc_clks[] __initdata = {
+	GATE(VENC_VENC_CK, venc_ck, venc_sel, venc_cg_regs, 0,
+		CLK_GATE_INVERSE),
+};
+
+static void __init init_clk_vencsys(void __iomem *vencsys_base,
+		struct clk_onecell_data *clk_data)
+{
+	pr_debug("init vencsys gates:\n");
+	init_clk_gates(vencsys_base, venc_clks, ARRAY_SIZE(venc_clks),
+		clk_data);
+}
+
+static struct mtk_gate_regs vdec0_cg_regs = {
+	.set_ofs = 0x0000,
+	.clr_ofs = 0x0004,
+	.sta_ofs = 0x0000,
+};
+
+static struct mtk_gate_regs vdec1_cg_regs = {
+	.set_ofs = 0x0008,
+	.clr_ofs = 0x000c,
+	.sta_ofs = 0x0008,
+};
+
+static struct mtk_gate vdec_clks[] __initdata = {
+	GATE(VDEC_VDEC_CK, vdec_ck, vdec_sel, vdec0_cg_regs, 0,
+		CLK_GATE_INVERSE),
+	GATE(VDEC_VDEC_LARB_CK, vdec_larb_ck, smi_sel, vdec1_cg_regs, 0,
+		CLK_GATE_INVERSE),
+};
+
+static void __init init_clk_vdecsys(void __iomem *vdecsys_base,
+		struct clk_onecell_data *clk_data)
+{
+	pr_debug("init vdecsys gates:\n");
+	init_clk_gates(vdecsys_base, vdec_clks, ARRAY_SIZE(vdec_clks),
+		clk_data);
+}
+
+static struct mtk_gate_regs disp0_cg_regs = {
+	.set_ofs = 0x0104,
+	.clr_ofs = 0x0108,
+	.sta_ofs = 0x0100,
+};
+
+static struct mtk_gate_regs disp1_cg_regs = {
+	.set_ofs = 0x0114,
+	.clr_ofs = 0x0118,
+	.sta_ofs = 0x0110,
+};
+
+static struct mtk_gate disp_clks[] __initdata = {
+	/* DISP0 */
+	GATE(DISP_SMI_LARB2_CK, smi_larb2_ck, smi_sel, disp0_cg_regs, 0, 0),
+	GATE(DISP_ROT_DISP_CK, rot_disp_ck, disp_sel, disp0_cg_regs, 1, 0),
+	GATE(DISP_ROT_SMI_CK, rot_smi_ck, smi_sel, disp0_cg_regs, 2, 0),
+	GATE(DISP_SCL_DISP_CK, scl_disp_ck, disp_sel, disp0_cg_regs, 3, 0),
+	GATE(DISP_OVL_DISP_CK, ovl_disp_ck, disp_sel, disp0_cg_regs, 4, 0),
+	GATE(DISP_OVL_SMI_CK, ovl_smi_ck, smi_sel, disp0_cg_regs, 5, 0),
+	GATE(DISP_COLOR_DISP_CK, color_disp_ck, disp_sel, disp0_cg_regs, 6, 0),
+	GATE(DISP_TDSHP_DISP_CK, tdshp_disp_ck, disp_sel, disp0_cg_regs, 7, 0),
+	GATE(DISP_BLS_DISP_CK, bls_disp_ck, disp_sel, disp0_cg_regs, 8, 0),
+	GATE(DISP_WDMA0_DISP_CK, wdma0_disp_ck, disp_sel, disp0_cg_regs, 9, 0),
+	GATE(DISP_WDMA0_SMI_CK, wdma0_smi_ck, smi_sel, disp0_cg_regs, 10, 0),
+	GATE(DISP_WDMA1_DISP_CK, wdma1_disp_ck, disp_sel, disp0_cg_regs, 11, 0),
+	GATE(DISP_WDMA1_SMI_CK, wdma1_smi_ck, smi_sel, disp0_cg_regs, 12, 0),
+	GATE(DISP_RDMA0_DISP_CK, rdma0_disp_ck, disp_sel, disp0_cg_regs, 13, 0),
+	GATE(DISP_RDMA0_SMI_CK, rdma0_smi_ck, clk_null, disp0_cg_regs, 14, 0),
+	GATE(DISP_RDMA0_OUTPUT_CK, rdma0_output_ck, clk_null,
+		disp0_cg_regs, 15, 0),
+	GATE(DISP_RDMA1_DISP_CK, rdma1_disp_ck, disp_sel, disp0_cg_regs, 16, 0),
+	GATE(DISP_RDMA1_SMI_CK, rdma1_smi_ck, clk_null, disp0_cg_regs, 17, 0),
+	GATE(DISP_RDMA1_OUTPUT_CK, rdma1_output_ck, clk_null,
+		disp0_cg_regs, 18, 0),
+	GATE(DISP_GAMMA_DISP_CK, gamma_disp_ck, disp_sel, disp0_cg_regs, 19, 0),
+	GATE(DISP_GAMMA_PIXEL_CK, gamma_pixel_ck, clk_null,
+		disp0_cg_regs, 20, 0),
+	GATE(DISP_CMDQ_DISP_CK, cmdq_disp_ck, disp_sel, disp0_cg_regs, 21, 0),
+	GATE(DISP_CMDQ_SMI_CK, cmdq_smi_ck, smi_sel, disp0_cg_regs, 22, 0),
+	GATE(DISP_G2D_DISP_CK, g2d_disp_ck, disp_sel, disp0_cg_regs, 23, 0),
+	GATE(DISP_G2D_SMI_CK, g2d_smi_ck, smi_sel, disp0_cg_regs, 24, 0),
+	/* DISP1 */
+	GATE(DISP_DSI_DISP_CK, dsi_disp_ck, disp_sel, disp1_cg_regs, 3, 0),
+	GATE(DISP_DSI_DSI_CK, dsi_dsi_ck, dsi0_lntc_dsiclk,
+		disp1_cg_regs, 4, 0),
+	GATE(DISP_DSI_DIV2_DSI_CK, dsi_div2_dsi_ck, dsi0_lntc_dsiclk,
+		disp1_cg_regs, 5, 0),
+	GATE(DISP_DPI1_CK, dpi1_ck, dpi1_sel, disp1_cg_regs, 7, 0),
+	GATE(DISP_LVDS_DISP_CK, lvds_disp_ck, vpll_dpix_ck,
+		disp1_cg_regs, 10, 0),
+	GATE(DISP_LVDS_CTS_CK, lvds_cts_ck, lvdstx_clkdig_cts,
+		disp1_cg_regs, 11, 0),
+	GATE(DISP_HDMI_DISP_CK, hdmi_disp_ck, dpi1_sel, disp1_cg_regs, 12, 0),
+	GATE(DISP_HDMI_PLL_CK, hdmi_pll_ck, hdmipll_sel, disp1_cg_regs, 13, 0),
+	GATE(DISP_HDMI_AUDIO_CK, hdmi_audio_ck, apll_sel, disp1_cg_regs, 14, 0),
+	GATE(DISP_HDMI_SPDIF_CK, hdmi_spdif_ck, apll_sel, disp1_cg_regs, 15, 0),
+	GATE(DISP_MUTEX_26M_CK, mutex_26m_ck, clk26m, disp1_cg_regs, 18, 0),
+	GATE(DISP_UFO_DISP_CK, ufo_disp_ck, disp_sel, disp1_cg_regs, 19, 0),
+};
+
+static void __init init_clk_dispsys(void __iomem *dispsys_base,
+		struct clk_onecell_data *clk_data)
+{
+	pr_debug("init dispsys gates:\n");
+	init_clk_gates(dispsys_base, disp_clks, ARRAY_SIZE(disp_clks),
+		clk_data);
+}
+
+static struct mtk_gate_regs audio_cg_regs = {
+	.set_ofs = 0x0000,
+	.clr_ofs = 0x0000,
+	.sta_ofs = 0x0000,
+};
+
+static struct mtk_gate audio_clks[] __initdata = {
+	GATE(AUDIO_AFE_CK, afe_ck, audio_sel,
+		audio_cg_regs, 2, CLK_GATE_NO_SETCLR_REG),
+	GATE(AUDIO_I2S_CK, i2s_ck, clk_null,
+		audio_cg_regs, 6, CLK_GATE_NO_SETCLR_REG),
+	GATE(AUDIO_APLL_TUNER_CK, apll_tuner_ck, apll_sel,
+		audio_cg_regs, 19, CLK_GATE_NO_SETCLR_REG),
+	GATE(AUDIO_HDMI_CK, hdmi_ck, apll_sel,
+		audio_cg_regs, 20, CLK_GATE_NO_SETCLR_REG),
+	GATE(AUDIO_SPDF_CK, spdf_ck, apll_sel,
+		audio_cg_regs, 21, CLK_GATE_NO_SETCLR_REG),
+};
+
+static void __init init_clk_audiosys(void __iomem *audiosys_base,
+		struct clk_onecell_data *clk_data)
+{
+#if USE_AUDIO_PRE_CLK
+	int i;
+	struct clk *clk;
+	struct clk *pre_clk;
+
+	pr_debug("init audiosys gates:\n");
+
+	pre_clk = __clk_lookup(audio_ck);
+
+	for (i = 0; i < ARRAY_SIZE(audio_clks); i++) {
+		struct mtk_gate *gate = &audio_clks[i];
+
+		clk = mt_clk_register_audio_cg(gate->name,
+				gate->parent_name, pre_clk,
+				audiosys_base + gate->regs->sta_ofs,
+				gate->shift, gate->flags);
+
+		if (IS_ERR(clk)) {
+			pr_err("Failed to register clk %s: %ld\n",
+					gate->name, PTR_ERR(clk));
+			continue;
+		}
+
+		if (clk_data)
+			clk_data->clks[gate->id] = clk;
+
+		pr_debug("gate %3d: %s\n", i, gate->name);
+	}
+#else /* !USE_AUDIO_PRE_CLK */
+	pr_debug("init audiosys gates:\n");
+	init_clk_gates(audiosys_base, audio_clks, ARRAY_SIZE(audio_clks),
+		clk_data);
+#endif /* USE_AUDIO_PRE_CLK */
+}
+
 /*
  * device tree support
  */
@@ -1010,3 +1305,147 @@ static void __init mtk_perisys_init(struct device_node *node)
 		pr_err("could not register clock provide\n");
 }
 CLK_OF_DECLARE(mtk_perisys, "mediatek,mt8135-pericfg", mtk_perisys_init);
+
+static void __init mtk_mfgsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap mfgsys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(MFG_NR_CLK);
+
+	init_clk_mfgsys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_mfgsys, "mediatek,mt8135-mfgsys", mtk_mfgsys_init);
+
+static void __init mtk_imgsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap imgsys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(IMG_NR_CLK);
+
+	init_clk_imgsys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_imgsys, "mediatek,mt8135-imgsys", mtk_imgsys_init);
+
+static void __init mtk_vencsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap vencsys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(VENC_NR_CLK);
+
+	init_clk_vencsys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_vencsys, "mediatek,mt8135-vencsys", mtk_vencsys_init);
+
+static void __init mtk_vdecsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap vdecsys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(VDEC_NR_CLK);
+
+	init_clk_vdecsys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_vdecsys, "mediatek,mt8135-vdecsys", mtk_vdecsys_init);
+
+static void __init mtk_dispsys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap dispsys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(DISP_NR_CLK);
+
+	init_clk_dispsys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_dispsys, "mediatek,mt8135-dispsys", mtk_dispsys_init);
+
+static void __init mtk_audiosys_init(struct device_node *node)
+{
+	struct clk_onecell_data *clk_data;
+	void __iomem *base;
+	int r;
+
+	pr_debug("%s: %s\n", __func__, node->name);
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("ioremap audiosys failed\n");
+		return;
+	}
+
+	clk_data = alloc_clk_data(AUDIO_NR_CLK);
+
+	init_clk_audiosys(base, clk_data);
+
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+	if (r)
+		pr_err("could not register clock provide\n");
+}
+CLK_OF_DECLARE(mtk_audiosys, "mediatek,mt8135-audiosys", mtk_audiosys_init);
