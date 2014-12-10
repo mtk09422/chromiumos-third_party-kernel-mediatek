@@ -243,4 +243,13 @@ config BT_WILINK
 	  Say Y here to compile support for Texas Instrument's WiLink7 driver
 	  into the kernel or say M to compile it as module (btwilink).
 
+config BT_MT7662
+	tristate "Mediatek MT7662 USB Bluetooth support"
+	depends on USB
+	help
+	  This dirver support Mediatek MT7662 USB bluetooth chip
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called btmtk_usb.  If unsure, say N.
+
 endmenu
