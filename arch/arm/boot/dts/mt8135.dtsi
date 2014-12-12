@@ -782,15 +782,15 @@
 			      <0 0x12070000 0 0x10000>;
 			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infracfg INFRA_AUDIO_CK>,
-				 <&afe_ck>,
-				 <&hdmi_ck>,
+				 <&audiosys AUDIO_AFE_CK>,
+				 <&audiosys AUDIO_HDMI_CK>,
 				 <&topckgen TOP_APLL_SEL>,
 				 <&topckgen TOP_APLL_D16>,
 				 <&topckgen TOP_APLL_D24>,
 				 <&topckgen TOP_APLL_D4>,
 				 <&topckgen TOP_APLL_D8>,
 				 <&apmixedsys APMIXED_AUDPLL>,
-				 <&apll_tuner_ck>;
+				 <&audiosys AUDIO_APLL_TUNER_CK>;
 			clock-names = "infra_audio_clk",
 				      "afe_clk",
 				      "hdmi_clk",

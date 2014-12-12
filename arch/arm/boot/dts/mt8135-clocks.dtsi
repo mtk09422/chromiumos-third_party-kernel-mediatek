@@ -72,26 +72,5 @@
 			#clock-cells = <1>;
 		};
 	};
-
-	old_clocks {
-		afe_ck: afe_ck {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <26000000>;
-		};
-
-		hdmi_ck: hdmi_ck {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <26000000>;
-		};
-
-		apll_tuner_ck: apll_tuner_ck {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <26000000>;
-		};
-	};
-
 };
 
