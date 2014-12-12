@@ -153,10 +153,10 @@
 	status = "okay";
 };
 
-&mmc1 {
+&mmc2 {
 	pinctrl-names = "default", "state_uhs";
-	pinctrl-0 = <&mmc1_pins_default>;
-	pinctrl-1 = <&mmc1_pins_uhs>;
+	pinctrl-0 = <&mmc2_pins_default>;
+	pinctrl-1 = <&mmc2_pins_uhs>;
 	status = "okay";
 };
 
