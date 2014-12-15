@@ -532,6 +532,7 @@
 			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
 			cell-index = <0>;
 			clocks = <&pericfg PERI_SPI1_CK>;
+			clock-names = "peri_spi";
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
