@@ -1017,8 +1017,9 @@ INT Set_SSID_Proc(RTMP_ADAPTER *pAd, PSTRING arg)
 		Set the AutoReconnectSsid to prevent it reconnect to old SSID
 		Since calling this indicate user don't want to connect to that SSID anymore.
 	*/
-	pAd->MlmeAux.AutoReconnectSsidLen= 32;
-	NdisZeroMemory(pAd->MlmeAux.AutoReconnectSsid, pAd->MlmeAux.AutoReconnectSsidLen);
+	pAd->MlmeAux.AutoReconnectSsidLen = 32;
+	NdisZeroMemory(pAd->MlmeAux.AutoReconnectSsid,
+		       sizeof(pAd->MlmeAux.AutoReconnectSsid));
 
 	if( strlen(arg) <= MAX_LEN_OF_SSID)
 	{
@@ -5764,7 +5765,8 @@ INT RTMPSetInformation(
 
 	        /* check the PMKID information */
 	        if (pPmkId->BSSIDInfoCount == 0)
-                NdisZeroMemory(pAd->StaCfg.SavedPMK, sizeof(BSSID_INFO)*PMKID_NO);
+			NdisZeroMemory(pAd->StaCfg.SavedPMK,
+				       sizeof(pAd->StaCfg.SavedPMK));
 	        else
 	        {
 		        PBSSID_INFO	pBssIdInfo;
@@ -11570,12 +11572,8 @@ VOID RTMPIoctlShow(
 		return RtmpIoctl_rt_ioctl_siwencodeext(__pAd, __pData, __Data);		\
 	case CMD_RTPRIV_IOCTL_STA_SIOCGIWENCODEEXT:								\
 		return RtmpIoctl_rt_ioctl_giwencodeext(__pAd, __pData, __Data);		\
-	case CMD_RTPRIV_IOCTL_STA_SIOCSIWGENIE:									\
-		return RtmpIoctl_rt_ioctl_siwgenie(__pAd, __pData, __Data);			\
 	case CMD_RTPRIV_IOCTL_STA_SIOCGIWGENIE:									\
 		return RtmpIoctl_rt_ioctl_giwgenie(__pAd, __pData, __Data);			\
-	case CMD_RTPRIV_IOCTL_STA_SIOCSIWPMKSA:									\
-		return RtmpIoctl_rt_ioctl_siwpmksa(__pAd, __pData, __Data);			\
 	case CMD_RTPRIV_IOCTL_STA_SIOCSIWRATE:									\
 		return RtmpIoctl_rt_ioctl_siwrate(__pAd, __pData, __Data);			\
 	case CMD_RTPRIV_IOCTL_STA_SIOCGIWRATE:									\
@@ -13217,65 +13215,6 @@ static INT RtmpIoctl_rt_ioctl_giwencodeext(RTMP_ADAPTER *pAd, VOID *pData, ULONG
 	return NDIS_STATUS_SUCCESS;
 }
 
-
-/*
-========================================================================
-Routine Description:
-	Handler for CMD_RTPRIV_IOCTL_STA_SIOCSIWGENIE.
-
-Arguments:
-	pAd				- WLAN control block pointer
-	*pData			- the communication data pointer
-	Data			- the communication data
-
-Return Value:
-	NDIS_STATUS_SUCCESS or NDIS_STATUS_FAILURE
-
-Note:
-========================================================================
-*/
-static INT
-RtmpIoctl_rt_ioctl_siwgenie(
-	IN	RTMP_ADAPTER			*pAd,
-	IN	VOID					*pData,
-	IN	ULONG					Data)
-{
-#ifdef WPA_SUPPLICANT_SUPPORT
-	ULONG length = (ULONG)Data;
-
-
-	if (pAd->StaCfg.wpa_supplicant_info.WpaSupplicantUP != WPA_SUPPLICANT_DISABLE)
-	{
-		DBGPRINT(RT_DEBUG_TRACE ,("===> rt_ioctl_siwgenie\n"));
-		pAd->StaCfg.wpa_supplicant_info.bRSN_IE_FromWpaSupplicant = FALSE;
-		if ((length > 0) && (pData == NULL))
-		{
-			return NDIS_STATUS_FAILURE;
-		}
-		else if (length)
-		{
-			if (pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe)
-			{
-				os_free_mem(NULL, pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe);
-				pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe = NULL;
-			}
-			os_alloc_mem(NULL, (UCHAR **)&pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe, length);
-			if (pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe)
-			{
-				pAd->StaCfg.wpa_supplicant_info.WpaAssocIeLen = length;
-				NdisMoveMemory(pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe, pData, pAd->StaCfg.wpa_supplicant_info.WpaAssocIeLen);
-				pAd->StaCfg.wpa_supplicant_info.bRSN_IE_FromWpaSupplicant = TRUE;
-			}
-			else
-				pAd->StaCfg.wpa_supplicant_info.WpaAssocIeLen = 0;
-		}
-	}
-#endif /* WPA_SUPPLICANT_SUPPORT */
-
-	return NDIS_STATUS_SUCCESS;
-}
-
-
 /*
 ========================================================================
 Routine Description:
@@ -13342,96 +13281,6 @@ RtmpIoctl_rt_ioctl_giwgenie(RTMP_ADAPTER *pAd, VOID *pData, ULONG Data)
 
 	return NDIS_STATUS_SUCCESS;
 }
-
-
-/*
-========================================================================
-Routine Description:
-	Handler for CMD_RTPRIV_IOCTL_STA_SIOCSIWPMKSA.
-
-Arguments:
-	pAd				- WLAN control block pointer
-	*pData			- the communication data pointer
-	Data			- the communication data
-
-Return Value:
-	NDIS_STATUS_SUCCESS or NDIS_STATUS_FAILURE
-
-Note:
-========================================================================
-*/
-static INT
-RtmpIoctl_rt_ioctl_siwpmksa(
-	IN	RTMP_ADAPTER			*pAd,
-	IN	VOID					*pData,
-	IN	ULONG					Data)
-{
-	RT_CMD_STA_IOCTL_PMA_SA *pIoctlPmaSa = (RT_CMD_STA_IOCTL_PMA_SA *)pData;
-	INT	CachedIdx = 0, idx = 0;
-
-
-	switch(pIoctlPmaSa->Cmd)
-	{
-		case RT_CMD_STA_IOCTL_PMA_SA_FLUSH:
-			NdisZeroMemory(pAd->StaCfg.SavedPMK, sizeof(BSSID_INFO)*PMKID_NO);
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_FLUSH\n"));
-			break;
-		case RT_CMD_STA_IOCTL_PMA_SA_REMOVE:
-			for (CachedIdx = 0; CachedIdx < pAd->StaCfg.SavedPMKNum; CachedIdx++)
-			{
-		        /* compare the BSSID */
-		        if (NdisEqualMemory(pIoctlPmaSa->pBssid, pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN))
-		        {
-		        	NdisZeroMemory(pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN);
-					NdisZeroMemory(pAd->StaCfg.SavedPMK[CachedIdx].PMKID, 16);
-					for (idx = CachedIdx; idx < (pAd->StaCfg.SavedPMKNum - 1); idx++)
-					{
-						NdisMoveMemory(&pAd->StaCfg.SavedPMK[idx].BSSID[0], &pAd->StaCfg.SavedPMK[idx+1].BSSID[0], MAC_ADDR_LEN);
-						NdisMoveMemory(&pAd->StaCfg.SavedPMK[idx].PMKID[0], &pAd->StaCfg.SavedPMK[idx+1].PMKID[0], 16);
-					}
-					pAd->StaCfg.SavedPMKNum--;
-			        break;
-		        }
-	        }
-
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_REMOVE\n"));
-			break;
-		case RT_CMD_STA_IOCTL_PMA_SA_ADD:
-			for (CachedIdx = 0; CachedIdx < pAd->StaCfg.SavedPMKNum; CachedIdx++)
-			{
-		        /* compare the BSSID */
-		        if (NdisEqualMemory(pIoctlPmaSa->pBssid, pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN))
-			        break;
-	        }
-
-	        /* Found, replace it */
-	        if (CachedIdx < PMKID_NO)
-	        {
-		        DBGPRINT(RT_DEBUG_OFF, ("Update PMKID, idx = %d\n", CachedIdx));
-		        NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].BSSID[0], pIoctlPmaSa->pBssid, MAC_ADDR_LEN);
-				NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].PMKID[0], pIoctlPmaSa->pPmkid, 16);
-		        pAd->StaCfg.SavedPMKNum++;
-	        }
-	        /* Not found, replace the last one */
-	        else
-	        {
-		        /* Randomly replace one */
-		        CachedIdx = (pIoctlPmaSa->pBssid[5] % PMKID_NO);
-		        DBGPRINT(RT_DEBUG_OFF, ("Update PMKID, idx = %d\n", CachedIdx));
-		        NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].BSSID[0], pIoctlPmaSa->pBssid, MAC_ADDR_LEN);
-				NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].PMKID[0], pIoctlPmaSa->pPmkid, 16);
-	        }
-
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_ADD\n"));
-			break;
-		default:
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - Unknow Command!!\n"));
-			break;
-	}
-
-	return NDIS_STATUS_SUCCESS;
-}
-
 
 /*
 ========================================================================

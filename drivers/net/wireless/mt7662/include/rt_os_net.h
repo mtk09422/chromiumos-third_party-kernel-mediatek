@@ -264,7 +264,6 @@ int rt_ioctl_siwscan(struct net_device *dev,
 			struct iw_request_info *info,
 			union iwreq_data *wreq, char *extra);
 
-
 VOID RT28xx_MBSS_Init(VOID *pAd, PNET_DEV main_dev_p);
 INT MBSS_VirtualIF_Open(PNET_DEV dev_p);
 INT MBSS_VirtualIF_Close(PNET_DEV dev_p);
@@ -325,6 +324,23 @@ VOID RTMP_CFG80211_VirtualIF_Init(VOID *pAd, CHAR *pIfName, UINT32 DevType);
 VOID RTMP_CFG80211_VirtualIF_Remove(VOID *pAd,PNET_DEV dev_p, UINT32 DevType);
 VOID RTMP_CFG80211_AllVirtualIF_Remove(VOID *pAdSrc);
 #endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
+
+#else /* RT_CFG80211_P2P_SUPPORT */
+static inline BOOLEAN RTMP_CFG80211_VIF_P2P_GO_ON(IN VOID *pAdSrc)
+{
+	return FALSE;
+}
+
+static inline BOOLEAN RTMP_CFG80211_VIF_P2P_CLI_ON(IN VOID *pAdSrc)
+{
+	return FALSE;
+}
+
+static inline BOOLEAN RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(IN VOID *pAdSrc)
+{
+	return FALSE;
+}
+
 #endif /* RT_CFG80211_P2P_SUPPORT */
 
 #ifdef RT_CFG80211_ANDROID_PRIV_LIB_SUPPORT
@@ -477,9 +493,6 @@ INT rt_android_private_command_entry(
 #define RTMP_DRIVER_80211_SCAN_EXTRA_IE_SET(__pAd)				\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_EXTRA_IES_SET,  0, NULL, 0)
 
-#define RTMP_DRIVER_80211_GEN_IE_SET(__pAd, __pData, __Len)    \
-    RTMP_STA_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_STA_SIOCSIWGENIE, 0, __pData, __Len, 0)
-
 #define RTMP_DRIVER_80211_STA_KEY_ADD(__pAd, __pKeyInfo)					\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_STA_KEY_ADD, 0, __pKeyInfo, 0)
 
@@ -497,17 +510,9 @@ INT rt_android_private_command_entry(
 #define RTMP_DRIVER_80211_STA_LEAVE(__pAd, __ifType)								\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_STA_LEAVE, 0, NULL, __ifType)
 
-#define RTMP_DRIVER_80211_STA_GET(__pAd, __pStaInfo)					\
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_STA_GET, 0, __pStaInfo, 0)
-
 #define RTMP_DRIVER_80211_CONNECT(__pAd, __pConnInfo, __devType)					\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_CONNECT_TO, 0, __pConnInfo, __devType)
 
-#define RTMP_DRIVER_80211_IBSS_JOIN(__pAd, __pInfo)						\
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_IBSS_JOIN, 0, __pInfo, 0)
-
-#define RTMP_DRIVER_80211_PMKID_CTRL(__pAd, __pPmkidInfo)				\
-	RTMP_STA_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_STA_SIOCSIWPMKSA, 0, __pPmkidInfo, 0, 0)
 #ifdef CFG_TDLS_SUPPORT
 /* new TDLS */
 #define RTMP_DRIVER_80211_STA_TDLS_INSERT_DELETE_PENTRY(__pAd, __peerAddr, __entryOP)					\
@@ -573,12 +578,6 @@ INT rt_android_private_command_entry(
 #define RTMP_DRIVER_80211_AP_ASSOC_RSP(__pAd, __pFrame, __Len) \
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_AP_ASSOC_RSP_EXTRA_IE, 0, __pFrame, __Len)
 
-#define RTMP_DRIVER_80211_AP_MLME_PORT_SECURED(__pAd, __pMac, __Reg) \
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_PORT_SECURED,  0, __pMac, __Reg)
-
-#define RTMP_DRIVER_80211_AP_STA_DEL(__pAd, __pMac) \
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_AP_STA_DEL, 0, __pMac, 0)
-
 /* P2P Part */
 #define RTMP_DRIVER_80211_ACTION_FRAME_REG(__pAd, __devPtr, __Reg) \
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_ACTION_FRAME_REG, 0, __devPtr, __Reg)
@@ -603,9 +602,6 @@ INT rt_android_private_command_entry(
 
 #define RTMP_DRIVER_80211_P2P_CHANNEL_RESTORE(__pAd)				\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_CHANNEL_RESTORE,  0, NULL, 0)
-
-#define RTMP_DRIVER_80211_P2PCLI_ASSSOC_IE_SET(__pAd, __pFrame, __Len)                       \
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_P2PCLI_ASSSOC_IE_SET, 0, __pFrame, __Len)
 
 #define RTMP_DRIVER_80211_P2P_CLIENT_KEY_ADD(__pAd, __pKeyInfo)					\
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_P2P_CLIENT_KEY_ADD, 0, __pKeyInfo, 0)

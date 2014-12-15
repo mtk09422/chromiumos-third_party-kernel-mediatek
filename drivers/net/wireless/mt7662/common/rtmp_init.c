@@ -4762,7 +4762,8 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 			apcli_entry->wpa_supplicant_info.pWpaAssocIe=NULL;
 			apcli_entry->wpa_supplicant_info.WpaAssocIeLen=0;
 			apcli_entry->SavedPMKNum=0;
-			RTMPZeroMemory(apcli_entry->SavedPMK, (PMKID_NO * sizeof(BSSID_INFO)));
+			RTMPZeroMemory(apcli_entry->SavedPMK,
+				       sizeof(apcli_entry->SavedPMK));
 #endif/*WPA_SUPPLICANT_SUPPORT*/
 			apcli_entry->bBlockAssoc=FALSE;
 			apcli_entry->MicErrCnt=0;

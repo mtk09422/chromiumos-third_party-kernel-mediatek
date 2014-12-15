@@ -662,8 +662,8 @@ int rt28xx_open(VOID *dev)
 #endif /* CONFIG_STA_SUPPORT */
 
 
+#ifdef CONFIG_WIRELESS_EXT
 #if WIRELESS_EXT >= 12
-/*	if (RT_DEV_PRIV_FLAGS_GET(net_dev) == INT_MAIN) */
 	if (RTMP_DRIVER_MAIN_INF_CHECK(pAd, RT_DEV_PRIV_FLAGS_GET(net_dev)) == NDIS_STATUS_SUCCESS)
 	{
 #ifdef CONFIG_APSTA_MIXED_SUPPORT
@@ -676,6 +676,7 @@ int rt28xx_open(VOID *dev)
 #endif /* CONFIG_STA_SUPPORT */
 	}
 #endif /* WIRELESS_EXT >= 12 */
+#endif /* CONFIG_WIRELESS_EXT */
 
 	/*
 		Request interrupt service routine for PCI device

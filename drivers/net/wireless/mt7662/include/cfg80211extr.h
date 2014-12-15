@@ -156,7 +156,6 @@ VOID CFG80211_Scaning(
 VOID CFG80211_ScanEnd(VOID *pAdCB, BOOLEAN FlgIsAborted);
 
 /* Connect Releated */
-BOOLEAN CFG80211DRV_OpsJoinIbss(VOID *pAdOrg, VOID *pData);
 BOOLEAN CFG80211DRV_OpsLeave(VOID *pAdOrg, UINT8	 IfType);
 BOOLEAN CFG80211DRV_Connect(VOID *pAdOrg, VOID *pData);
 VOID CFG80211_P2pClientConnectResultInform(
@@ -177,13 +176,10 @@ VOID CFG80211_LostP2pGoInform(VOID *pAdCB);
 #endif /*RT_CFG80211_P2P_CONCURRENT_DEVICE*/
 VOID CFG80211_LostApInform(VOID *pAdCB);
 
-INT CFG80211_StaPortSecured(
-    VOID                         *pAdCB,
-    UCHAR                        *pMac,
-    UINT    					  flag);
+INT CFG80211_StaPortSecured(RTMP_ADAPTER *pAd, const UCHAR *mac, UINT flag);
 
 /* AP Related*/
-INT CFG80211_ApStaDel(VOID *pAdCB, UCHAR *pMac);
+INT CFG80211_ApStaDel(RTMP_ADAPTER *pAd, const UCHAR *mac);
 
 VOID CFG80211_UpdateBeacon(
    VOID                           *pAdOrg,
@@ -197,9 +193,8 @@ INT CFG80211_ApStaDelSendEvent(PRTMP_ADAPTER pAd, const PUCHAR mac_addr);
 
 
 /* Information Releated */
-BOOLEAN CFG80211DRV_StaGet(
-	VOID						*pAdOrg,
-	VOID						*pData);
+BOOLEAN CFG80211DRV_StaGet(RTMP_ADAPTER *pAd, const u8 *mac,
+			   CMD_IOCTL_80211_STA_INFO *sta);
 
 VOID CFG80211DRV_SurveyGet(
 	VOID						*pAdOrg,
@@ -306,18 +301,11 @@ VOID CFG80211_RFKillStatusUpdate(
 #endif /* RFKILL_HW_SUPPORT */
 
 /* P2P Related */
-VOID CFG80211DRV_SetP2pCliAssocIe(
-	VOID						*pAdOrg,
-	VOID						*pData,
-	UINT                         ie_len);
+VOID CFG80211DRV_SetP2pCliAssocIe(RTMP_ADAPTER *pAdOrg, const u8 *pData,
+				  size_t ie_len);
+VOID CFG80211DRV_P2pClientKeyAdd(VOID *pAdOrg, VOID *pData);
 
-VOID CFG80211DRV_P2pClientKeyAdd(
-	VOID						*pAdOrg,
-	VOID						*pData);
-
-BOOLEAN CFG80211DRV_P2pClientConnect(
-	VOID						*pAdOrg,
-	VOID						*pData);
+BOOLEAN CFG80211DRV_P2pClientConnect(VOID *pAdOrg, VOID *pData);
 
 #ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
 BOOLEAN CFG80211_checkScanResInKernelCache(
@@ -478,9 +466,9 @@ int cfg_tdls_send_CH_SW_SETUP(RTMP_ADAPTER *ad,UCHAR cmd,UINT8 basech,UINT8 offc
 
 #endif /*CFG_TDLS_SUPPORT*/
 
-BOOLEAN CFG80211DRV_OpsVifAdd(
-        VOID                                            *pAdOrg,
-        VOID                                            *pData);
+#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
+BOOLEAN CFG80211DRV_OpsVifAdd(VOID *pAdOrg, VOID *pData);
+#endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 #endif /* RT_CFG80211_SUPPORT */
 

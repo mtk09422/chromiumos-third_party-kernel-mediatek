@@ -481,6 +481,15 @@ VOID CFG80211_ParseBeaconIE(RTMP_ADAPTER *pAd, MULTISSID_STRUCT *pMbss, struct w
 
 #endif /* CONFIG_AP_SUPPORT */
 
+INT CFG80211_SetTxNdev(RTMP_ADAPTER *pAd, PNET_DEV pNetdev)
+{
+	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
+
+	pCfg80211_ctrl->TxNdev = pNetdev;
+
+	return TRUE;
+}
+
 #if 0
 static
 PCFG80211_TX_PACKET CFG80211_TxMgmtFrameSearch(RTMP_ADAPTER *pAd, USHORT Sequence)

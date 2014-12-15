@@ -237,10 +237,8 @@ BOOLEAN CFG80211_HandleP2pMgmtFrame(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk, UCHAR OpM
 {
 	RXWI_STRUC *pRxWI = pRxBlk->pRxWI;
 	PHEADER_802_11 pHeader = pRxBlk->pHeader;
-	PNET_DEV pNetDev = NULL;
 	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
 	UINT32 freq;
-	BOOLEAN res = FALSE;
 
 	if ((pHeader->FC.SubType == SUBTYPE_PROBE_REQ) ||
 	 	 ((pHeader->FC.SubType == SUBTYPE_ACTION) &&
@@ -253,6 +251,9 @@ BOOLEAN CFG80211_HandleP2pMgmtFrame(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk, UCHAR OpM
 			/* Check the P2P_GO exist in the VIF List */
 			if (pCfg80211_ctrl->Cfg80211VifDevSet.vifDevList.size > 0)
 			{
+				PNET_DEV pNetDev = NULL;
+				BOOLEAN res = FALSE;
+
 				if ((pNetDev = RTMP_CFG80211_FindVifEntry_ByType(pAd, RT_CMD_80211_IFTYPE_P2P_GO)) != NULL)
 				{
 					DBGPRINT(RT_DEBUG_INFO, ("VIF STA GO RtmpOsCFG80211RxMgmt OK!! TYPE = %d, freq = %d, %02x:%02x:%02x:%02x:%02x:%02x\n",

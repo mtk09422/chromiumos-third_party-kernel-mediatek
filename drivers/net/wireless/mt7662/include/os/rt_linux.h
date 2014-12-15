@@ -858,8 +858,10 @@ do{                                   \
 #define ASSERT(x)
 #endif /* DBG */
 
-void hex_dump(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen);
-void hex_dump2(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen);
+void hex_dump(char *str, const unsigned char *pSrcBufVA,
+	      unsigned int SrcBufLen);
+void hex_dump2(char *str, const unsigned char *pSrcBufVA,
+	       unsigned int SrcBufLen);
 
 
 /*********************************************************************************************************

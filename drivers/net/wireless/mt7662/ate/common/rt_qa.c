@@ -968,16 +968,25 @@ static  INT DO_RACFG_CMD_E2PROM_READ_ALL(
 }
 
 
-static  INT DO_RACFG_CMD_E2PROM_WRITE_ALL(
-	IN	PRTMP_ADAPTER	pAd,
-	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
-	IN  struct ate_racfghdr *pRaCfg)
+static INT DO_RACFG_CMD_E2PROM_WRITE_ALL(IN PRTMP_ADAPTER pAd,
+					 IN RTMP_IOCTL_INPUT_STRUCT * wrq,
+					 IN struct ate_racfghdr *pRaCfg)
 {
-	USHORT buffer[EEPROM_SIZE >> 1];
+	USHORT *buffer = NULL;
 
-	NdisZeroMemory((UCHAR *)buffer, EEPROM_SIZE);
-	memcpy_exs(pAd, (UCHAR *)buffer, (UCHAR *)&pRaCfg->status, EEPROM_SIZE);
-	rt_ee_write_all(pAd,(USHORT *)buffer);
+	os_alloc_mem(NULL, (UCHAR **) &buffer,
+		     (EEPROM_SIZE >> 1) * sizeof(USHORT));
+
+	if (buffer == NULL) {
+		DBGPRINT_ERR(("%s - Error for allocate size %zd\n", __func__,
+			      (EEPROM_SIZE >> 1) * sizeof(USHORT)));
+		return NDIS_STATUS_FAILURE;
+	}
+	NdisZeroMemory((UCHAR *) buffer, EEPROM_SIZE);
+	memcpy_exs(pAd, (UCHAR *) buffer, (UCHAR *) &pRaCfg->status,
+		   EEPROM_SIZE);
+	rt_ee_write_all(pAd, (USHORT *) buffer);
+	os_free_mem(NULL, buffer);
 
 	ResponseToGUI(pRaCfg, wrq, sizeof(pRaCfg->status), NDIS_STATUS_SUCCESS);
 

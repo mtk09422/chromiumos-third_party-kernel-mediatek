@@ -4378,7 +4378,9 @@ VOID RtmpEnqueueNullFrame(
 		}
 #endif /* CONFIG_STA_SUPPORT */
 
+#ifdef CONFIG_AP_SUPPORT
 body:
+#endif /* CONFIG_AP_SUPPORT */
 		pNullFr->FC.Type = FC_TYPE_DATA;
 
 		if (bQosNull)
@@ -4647,7 +4649,6 @@ VOID dev_rx_mgmt_frm(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk)
 	HEADER_802_11 *pHeader = pRxBlk->pHeader;
 	PNDIS_PACKET pRxPacket = pRxBlk->pRxPacket;
 	INT op_mode = pRxBlk->OpMode;
-	BOOLEAN 	bPassTheBcastPkt = FALSE;
 #ifdef APCLI_SUPPORT
 #ifdef APCLI_CERT_SUPPORT
 	PAPCLI_STRUCT pApCliEntry = NULL;
@@ -4699,8 +4700,8 @@ VOID dev_rx_mgmt_frm(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk)
 			if ((pHeader->FC.SubType != SUBTYPE_BEACON) && (pHeader->FC.SubType != SUBTYPE_PROBE_REQ))
 			{
 
-				if (pHeader->FC.SubType == SUBTYPE_ACTION)
-				{
+				if (pHeader->FC.SubType == SUBTYPE_ACTION) {
+					BOOLEAN bPassTheBcastPkt = FALSE;
 #ifdef WMM_ACM_SUPPORT
 					if (ACMP_IsBwAnnounceActionFrame(pAd, (VOID *)pHeader) == ACM_RTN_OK)
 					{

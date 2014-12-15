@@ -929,17 +929,17 @@ void mt76x2_tx_pwr_gain(RTMP_ADAPTER *ad, u8 channel, u8 bw)
 static void mt76x2_switch_channel(RTMP_ADAPTER *ad, u8 channel, BOOLEAN scan)
 {
 	unsigned int latch_band, band, bw, tx_rx_setting;
-	UINT32 ret,value, value1, restore_value, loop = 0;
+	UINT32 ret, value, value1, restore_value, loop = 0;
 	UINT16 e2p_value;
 	UCHAR bbp_ch_idx;
 	BOOLEAN band_change = FALSE;
 	UINT32 RegValue = 0;
 	UINT32 eLNA_gain_from_e2p = 0;
 
-#ifdef RT_CFG80211_SUPPORT
+#if defined(RT_CFG80211_SUPPORT) && defined(RT_CFG80211_P2P_SUPPORT)
 	BCN_TIME_CFG_STRUC csr;
 	INT32 BeaconEnabled = 0;
-#endif
+#endif /* endif */
 
 
 #ifdef RTMP_MAC_USB
@@ -5350,8 +5350,47 @@ void periodic_monitor_rssi_adjust_vga(RTMP_ADAPTER *pAd)
 #endif /* CONFIG_STA_SUPPORT */
 #endif /* HOST_DYNAMIC_VGA_SUPPORT */
 
+void update_rssi_for_channel_model(RTMP_ADAPTER *pAd)
+{
+	INT32 rx0_rssi = 0, rx1_rssi = 0;
+
+	if (ATE_ON(pAd)) {
+		rx0_rssi = (CHAR)(pAd->ate.LastRssi0);
+		rx1_rssi = (CHAR)(pAd->ate.LastRssi1);
+	} else {
+#ifdef CONFIG_STA_SUPPORT
+		IF_DEV_CONFIG_OPMODE_ON_STA(pAd) {
+			rx0_rssi = (CHAR) (pAd->StaCfg.RssiSample.LastRssi0);
+			rx1_rssi = (CHAR) (pAd->StaCfg.RssiSample.LastRssi1);
+		}
+#endif				/* CONFIG_STA_SUPPORT */
 #ifdef CONFIG_AP_SUPPORT
-void dynamic_ed_cca_threshold_adjust(RTMP_ADAPTER * pAd)
+		IF_DEV_CONFIG_OPMODE_ON_AP(pAd) {
+			rx0_rssi = (CHAR) (pAd->ApCfg.RssiSample.LastRssi0);
+			rx1_rssi = (CHAR) (pAd->ApCfg.RssiSample.LastRssi1);
+		}
+#endif				/* CONFIG_AP_SUPPORT */
+	}
+
+	DBGPRINT(RT_DEBUG_INFO, ("%s:: rx0_rssi(%d), rx1_rssi(%d)\n",
+				 __func__, rx0_rssi, rx1_rssi));
+
+	/* RSSI_DUT(n) = RSSI_DUT(n-1)*15/16 + RSSI_R2320_100ms_sample*1/16 */
+	pAd->chipCap.avg_rssi_0 = ((pAd->chipCap.avg_rssi_0) * 15) / 16;
+	pAd->chipCap.avg_rssi_0 += (rx0_rssi << 8) / 16;
+	pAd->chipCap.avg_rssi_1 = ((pAd->chipCap.avg_rssi_1) * 15) / 16;
+	pAd->chipCap.avg_rssi_1 += (rx1_rssi << 8) / 16;
+	pAd->chipCap.avg_rssi_all = pAd->chipCap.avg_rssi_0;
+	pAd->chipCap.avg_rssi_all += pAd->chipCap.avg_rssi_1;
+	pAd->chipCap.avg_rssi_all /= 512;
+
+	DBGPRINT(RT_DEBUG_INFO, ("%s:: update rssi all(%d)\n",
+				 __func__,
+				 pAd->chipCap.avg_rssi_all));
+}
+
+#ifdef CONFIG_AP_SUPPORT
+void dynamic_ed_cca_threshold_adjust(RTMP_ADAPTER *pAd)
 {
 	UINT32 reg_val = 0;
 	CHAR high_gain = 0, mid_gain = 0, low_gain = 0, ulow_gain = 0, lna_gain_mode = 0;
@@ -5392,41 +5431,9 @@ void dynamic_ed_cca_threshold_adjust(RTMP_ADAPTER * pAd)
 	reg_val = (reg_val & 0xFFFF0000) | (z << 8) | z;
 	RTMP_BBP_IO_WRITE32(pAd, AGC1_R2, reg_val);
 
-	DBGPRINT(RT_DEBUG_INFO, ("%s:: lna_gain(%d), vga_gain(%d), lna_gain_mode(%d), y=%d, z=%d, 0x2308=0x%08x\n",
-		__FUNCTION__, lna_gain, vga_gain, lna_gain_mode, y, z, reg_val));
-}
-
-void update_rssi_for_channel_model(RTMP_ADAPTER * pAd)
-{
-	INT32 rx0_rssi = 0, rx1_rssi = 0;
-
-#ifdef CONFIG_STA_SUPPORT
-	IF_DEV_CONFIG_OPMODE_ON_STA(pAd)
-	{
-		rx0_rssi = (CHAR)(pAd->StaCfg.RssiSample.LastRssi0);
-		rx1_rssi = (CHAR)(pAd->StaCfg.RssiSample.LastRssi1);
-	}
-#endif /* CONFIG_STA_SUPPORT */
-#ifdef CONFIG_AP_SUPPORT
-	IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
-	{
-		rx0_rssi = (CHAR)(pAd->ApCfg.RssiSample.LastRssi0);
-		rx1_rssi = (CHAR)(pAd->ApCfg.RssiSample.LastRssi1);
-	}
-#endif /* CONFIG_AP_SUPPORT */
-
-	DBGPRINT(RT_DEBUG_INFO, ("%s:: rx0_rssi(%d), rx1_rssi(%d)\n",
-		__FUNCTION__, rx0_rssi, rx1_rssi));
-
-	/*
-		RSSI_DUT(n) = RSSI_DUT(n-1)*15/16 + RSSI_R2320_100ms_sample*1/16
-	*/
-	pAd->chipCap.avg_rssi_0 = ((pAd->chipCap.avg_rssi_0) * 15)/16 + (rx0_rssi << 8)/16;
-	pAd->chipCap.avg_rssi_1 = ((pAd->chipCap.avg_rssi_1) * 15)/16 + (rx1_rssi << 8)/16;
-	pAd->chipCap.avg_rssi_all = (pAd->chipCap.avg_rssi_0 + pAd->chipCap.avg_rssi_1)/512;
-
-	DBGPRINT(RT_DEBUG_INFO, ("%s:: update rssi all(%d)\n",
-		__FUNCTION__, pAd->chipCap.avg_rssi_all));
+	DBGPRINT(RT_DEBUG_INFO,
+		 ("%s:: lna_gain(%d), vga_gain(%d), lna_gain_mode(%d), y=%d, z=%d, 0x2308=0x%08x\n",
+		  __func__, lna_gain, vga_gain, lna_gain_mode, y, z, reg_val));
 }
 
 void dynamic_cck_mrc(RTMP_ADAPTER * pAd)

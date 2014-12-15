@@ -54,9 +54,10 @@ void mt7612_set_ed_cca(struct _RTMP_ADAPTER *ad, BOOLEAN enable);
 #endif /* ED_MONITOR */
 
 #ifdef DYNAMIC_VGA_SUPPORT
+void update_rssi_for_channel_model(struct _RTMP_ADAPTER *ad);
+
 #ifdef CONFIG_AP_SUPPORT
 void dynamic_ed_cca_threshold_adjust(struct _RTMP_ADAPTER *ad);
-void update_rssi_for_channel_model(struct _RTMP_ADAPTER *ad);
 void dynamic_cck_mrc(struct _RTMP_ADAPTER *ad);
 BOOLEAN dynamic_channel_model_adjust(struct _RTMP_ADAPTER *ad);
 void periodic_monitor_false_cca_adjust_vga(struct _RTMP_ADAPTER *ad);

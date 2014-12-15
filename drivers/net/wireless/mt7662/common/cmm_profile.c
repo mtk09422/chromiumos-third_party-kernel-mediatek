@@ -179,6 +179,7 @@ PSTRING rstrtok(PSTRING s,const PSTRING ct)
 	return (sbegin);
 }
 
+#ifdef CONFIG_AP_SUPPORT
 /**
  * delimitcnt - return the count of a given delimiter in a given string.
  * @s: The string to be searched.
@@ -215,6 +216,7 @@ static INT delimitcnt(PSTRING s,PSTRING ct)
 	}
     return count;
 }
+#endif /* CONFIG_AP_SUPPORT */
 
 /*
   * converts the Internet host address from the standard numbers-and-dots notation
@@ -1756,9 +1758,7 @@ static void rtmp_read_sta_wmm_parms_from_file(IN PRTMP_ADAPTER pAd,
 	PSTRING tmpbuf,
 	const PSTRING buffer)
 {
-	PSTRING					macptr;
-	INT						i=0;
-	BOOLEAN					bWmmEnable = FALSE;
+	BOOLEAN bWmmEnable = FALSE;
 
 	/*WmmCapable*/
 	if(RTMPGetKeyParameter("WmmCapable", tmpbuf, 32, buffer, TRUE))
@@ -1819,10 +1819,11 @@ static void rtmp_read_sta_wmm_parms_from_file(IN PRTMP_ADAPTER pAd,
 			DBGPRINT(RT_DEBUG_TRACE, ("MaxSPLength=%d\n", pAd->CommonCfg.MaxSPLength));
 		}
 
-		/*APSDAC for AC_BE, AC_BK, AC_VI, AC_VO*/
-		if(RTMPGetKeyParameter("APSDAC", tmpbuf, 32, buffer, TRUE))
-		{
-			BOOLEAN apsd_ac[4];
+		/*APSDAC for AC_BE, AC_BK, AC_VI, AC_VO */
+		if (RTMPGetKeyParameter("APSDAC", tmpbuf, 32, buffer, TRUE)) {
+			PSTRING macptr;
+			BOOLEAN apsd_ac[4] = { FALSE };
+			INT i = 0;
 
 			for (i = 0, macptr = rstrtok(tmpbuf,";"); macptr; macptr = rstrtok(NULL,";"), i++)
 			{

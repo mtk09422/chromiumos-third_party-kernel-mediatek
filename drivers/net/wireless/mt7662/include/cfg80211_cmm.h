@@ -194,50 +194,10 @@ enum tdls_entry_op
 };
 #endif /* CFG_TDLS_SUPPORT */
 
-//yiwei debug for P2P 7.1.3
+#define RESTORE_CH_TIME 200
+#define MAX_ROC_TIME 500
+
 #ifdef RT_CFG80211_P2P_SUPPORT
-
-
-
-//yiwei tmp hard code
-
-#define IS_SW_NOA_TIMER(_A) (1)
-
-
-
-
-
-#define P2P_OPPS_BIT		0x80
-
-
-
-/*
-
- *  Macros for bit check
-
-*/
-
-
-
-#define CFG80211_P2P_TEST_BIT(_M, _F)      (((_M) & (_F)) != 0)
-
-
-
-
-
-
-
-#define CFG_P2P_DISABLE	0x00000000
-
-#define CFG_P2P_GO_UP		0x00000001
-
-#define CFG_P2P_CLI_UP		0x00000002
-
-
-
-#define IS_CFG80211_P2P_ABSENCE(_A)	(((_A)->cfg80211_ctrl.bPreKeepSlient) || ((_A)->cfg80211_ctrl.bKeepSlient))
-
-
 typedef	struct	_P2PCLIENT_NOA_SCHEDULE	{
 	BOOLEAN		bValid;
 	BOOLEAN		bInAwake;

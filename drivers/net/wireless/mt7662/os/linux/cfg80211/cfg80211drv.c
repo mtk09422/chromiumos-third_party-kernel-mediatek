@@ -34,12 +34,6 @@ extern INT RtmpIoctl_rt_ioctl_siwauth(
 	IN      VOID                            *pData,
 	IN      ULONG                            Data);
 
-extern INT RtmpIoctl_rt_ioctl_siwauth(
-	IN      RTMP_ADAPTER                    *pAd,
-	IN      VOID                            *pData,
-	IN      ULONG                            Data);
-
-
 INT CFG80211DRV_IoctlHandle(
 	IN	VOID					*pAdSrc,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
@@ -84,18 +78,10 @@ INT CFG80211DRV_IoctlHandle(
 			CFG80211_ScanStatusLockInit(pAd, Data);
 			break;
 
-		case CMD_RTPRIV_IOCTL_80211_IBSS_JOIN:
-			CFG80211DRV_OpsJoinIbss(pAd, pData);
-			break;
-
 		case CMD_RTPRIV_IOCTL_80211_STA_LEAVE:
 			CFG80211DRV_OpsLeave(pAd, Data);
 			break;
 
-		case CMD_RTPRIV_IOCTL_80211_STA_GET:
-			if (CFG80211DRV_StaGet(pAd, pData) != TRUE)
-				return NDIS_STATUS_FAILURE;
-			break;
 #ifdef CFG_TDLS_SUPPORT
 		case CMD_RTPRIV_IOCTL_80211_STA_TDLS_INSERT_PENTRY:
 			CFG80211DRV_StaTdlsInsertDeletepEntry(pAd, pData, Data);
@@ -163,6 +149,7 @@ INT CFG80211DRV_IoctlHandle(
 			CFG80211DRV_OpsScanExtraIesSet(pAd);
 			break;
 
+#ifdef RT_CFG80211_P2P_SUPPORT
 		case CMD_RTPRIV_IOCTL_80211_REMAIN_ON_CHAN_SET:
 			CFG80211DRV_OpsRemainOnChannel(pAd, pData, Data);
 			break;
@@ -170,6 +157,7 @@ INT CFG80211DRV_IoctlHandle(
 		case CMD_RTPRIV_IOCTL_80211_CANCEL_REMAIN_ON_CHAN_SET:
 			CFG80211DRV_OpsCancelRemainOnChannel(pAd, Data);
 			break;
+#endif /* RT_CFG80211_P2P_SUPPORT */
 
 		/* CFG_TODO */
 		case CMD_RTPRIV_IOCTL_80211_MGMT_FRAME_REG:
@@ -238,13 +226,6 @@ INT CFG80211DRV_IoctlHandle(
                         CFG80211_setApDefaultKey(pAd, Data);
                         break;
 
-                case CMD_RTPRIV_IOCTL_80211_PORT_SECURED:
-                        CFG80211_StaPortSecured(pAd, pData, Data);
-                        break;
-
-                case CMD_RTPRIV_IOCTL_80211_AP_STA_DEL:
-                        CFG80211_ApStaDel(pAd, pData);
-                        break;
 #endif /* CONFIG_AP_SUPPORT */
 
 		case CMD_RTPRIV_IOCTL_80211_CHANGE_BSS_PARM:
@@ -294,10 +275,6 @@ INT CFG80211DRV_IoctlHandle(
 
 #endif /* CONFIG_MULTI_CHANNEL */
 #ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
-                case CMD_RTPRIV_IOCTL_80211_P2PCLI_ASSSOC_IE_SET:
-                        CFG80211DRV_SetP2pCliAssocIe(pAd, pData, Data);
-                        break;
-
 		case CMD_RTPRIV_IOCTL_80211_VIF_ADD:
 			if (CFG80211DRV_OpsVifAdd(pAd, pData) != TRUE)
 				return NDIS_STATUS_FAILURE;
@@ -766,24 +743,6 @@ BOOLEAN CFG80211DRV_OpsSetChannel(RTMP_ADAPTER *pAd, VOID *pData)
 	return TRUE;
 }
 
-BOOLEAN CFG80211DRV_OpsJoinIbss(
-	VOID						*pAdOrg,
-	VOID						*pData)
-{
-#ifdef CONFIG_STA_SUPPORT
-	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
-	CMD_RTPRIV_IOCTL_80211_IBSS *pIbssInfo;
-
-
-	pIbssInfo = (CMD_RTPRIV_IOCTL_80211_IBSS *)pData;
-	pAd->StaCfg.bAutoReconnect = TRUE;
-
-	pAd->CommonCfg.BeaconPeriod = pIbssInfo->BeaconInterval;
-	Set_SSID_Proc(pAd, (PSTRING)pIbssInfo->pSsid);
-#endif /* CONFIG_STA_SUPPORT */
-	return TRUE;
-}
-
 BOOLEAN CFG80211DRV_OpsLeave(
 	VOID						*pAdOrg,
 	UINT8						IfType)
@@ -827,16 +786,9 @@ BOOLEAN CFG80211DRV_OpsLeave(
 	return TRUE;
 }
 
-
-BOOLEAN CFG80211DRV_StaGet(
-	VOID						*pAdOrg,
-	VOID						*pData)
+BOOLEAN CFG80211DRV_StaGet(RTMP_ADAPTER *pAd, const u8 *mac,
+			   CMD_IOCTL_80211_STA_INFO *sta)
 {
-	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
-	CMD_RTPRIV_IOCTL_80211_STA *pIbssInfo;
-
-	pIbssInfo = (CMD_RTPRIV_IOCTL_80211_STA *)pData;
-
 #ifdef CONFIG_AP_SUPPORT
 {
 	MAC_TABLE_ENTRY *pEntry;
@@ -844,7 +796,7 @@ BOOLEAN CFG80211DRV_StaGet(
 	UINT32 RSSI;
 
 
-	pEntry = MacTableLookup(pAd, pIbssInfo->MAC);
+	pEntry = MacTableLookup(pAd, mac);
 	if (pEntry == NULL)
 		return FALSE;
 
@@ -860,32 +812,32 @@ BOOLEAN CFG80211DRV_StaGet(
 		(pEntry->HTPhyMode.field.MODE == MODE_HTGREENFIELD))
 	{
 		if (pEntry->HTPhyMode.field.BW)
-			pIbssInfo->TxRateFlags |= RT_CMD_80211_TXRATE_BW_40;
+			sta->TxRateFlags |= RT_CMD_80211_TXRATE_BW_40;
 
 		if (pEntry->HTPhyMode.field.ShortGI)
-			pIbssInfo->TxRateFlags |= RT_CMD_80211_TXRATE_SHORT_GI;
+			sta->TxRateFlags |= RT_CMD_80211_TXRATE_SHORT_GI;
 
-		pIbssInfo->TxRateMCS = pEntry->HTPhyMode.field.MCS;
+		sta->TxRateMCS = pEntry->HTPhyMode.field.MCS;
 	}
 	else
 	{
-		pIbssInfo->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
-		pIbssInfo->TxRateMCS = DataRate*10; /* unit: 100kbps */
+		sta->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
+		sta->TxRateMCS = DataRate*10; /* unit: 100kbps */
 	}
 
 	/* fill signal */
 	RSSI = RTMPAvgRssi(pAd, &pEntry->RssiSample);
-	pIbssInfo->Signal = RSSI;
+	sta->Signal = RSSI;
 
 	/* fill tx count */
-	pIbssInfo->TxPacketCnt = pEntry->OneSecTxNoRetryOkCount +
+	sta->TxPacketCnt = pEntry->OneSecTxNoRetryOkCount +
 						pEntry->OneSecTxRetryOkCount +
 						pEntry->OneSecTxFailCount;
 
 	/* fill inactive time */
-	pIbssInfo->InactiveTime = pEntry->NoDataIdleCount * 1000; /* unit: ms */
-	pIbssInfo->InactiveTime *= MLME_TASK_EXEC_MULTIPLE;
-	pIbssInfo->InactiveTime /= 20;
+	sta->InactiveTime = pEntry->NoDataIdleCount * 1000; /* unit: ms */
+	sta->InactiveTime *= MLME_TASK_EXEC_MULTIPLE;
+	sta->InactiveTime /= 20;
 }
 #endif /* CONFIG_AP_SUPPORT */
 
@@ -916,37 +868,38 @@ BOOLEAN CFG80211DRV_StaGet(
 		(PhyInfo.field.MODE == MODE_HTGREENFIELD))
 	{
 		if (PhyInfo.field.BW)
-			pIbssInfo->TxRateFlags |= RT_CMD_80211_TXRATE_BW_40;
+			sta->TxRateFlags |= RT_CMD_80211_TXRATE_BW_40;
 
 		if (PhyInfo.field.ShortGI)
-			pIbssInfo->TxRateFlags |= RT_CMD_80211_TXRATE_SHORT_GI;
+			sta->TxRateFlags |= RT_CMD_80211_TXRATE_SHORT_GI;
 
-		pIbssInfo->TxRateMCS = PhyInfo.field.MCS;
+		sta->TxRateMCS = PhyInfo.field.MCS;
 	}
 #ifdef DOT11_VHT_AC
 	else if (PhyInfo.field.MODE == MODE_VHT)
 	{
 		/* cfg80211's rato_info structure and rate_info_flags can't support 11ac well in old kernel, we use legacy way to describe the actually vht rate */
-		pIbssInfo->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
-		pIbssInfo->TxRateMCS = (DataRate*10) * ((PhyInfo.field.MCS>>4) + 1); /* unit: 100kbps */
+		sta->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
+		/* unit: 100kbps */
+		sta->TxRateMCS = (DataRate*10) * ((PhyInfo.field.MCS>>4) + 1);
 	}
-#endif
+#endif /* endif */
 	else
 	{
-		pIbssInfo->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
-		pIbssInfo->TxRateMCS = DataRate*10; /* unit: 100kbps */
+		sta->TxRateFlags = RT_CMD_80211_TXRATE_LEGACY;
+		sta->TxRateMCS = DataRate*10; /* unit: 100kbps */
 	}
 
 	/* fill tx/rx packet count */
-	pIbssInfo->tx_packets = pAd->WlanCounters.TransmittedFragmentCount.u.LowPart;
-	pIbssInfo->tx_retries = pAd->WlanCounters.RetryCount.u.LowPart;
-	pIbssInfo->tx_failed = pAd->WlanCounters.FailedCount.u.LowPart;
-	pIbssInfo->rx_packets = pAd->WlanCounters.ReceivedFragmentCount.QuadPart;
+	sta->tx_packets = pAd->WlanCounters.TransmittedFragmentCount.u.LowPart;
+	sta->tx_retries = pAd->WlanCounters.RetryCount.u.LowPart;
+	sta->tx_failed = pAd->WlanCounters.FailedCount.u.LowPart;
+	sta->rx_packets = pAd->WlanCounters.ReceivedFragmentCount.QuadPart;
 
 
 	/* fill signal */
 	RSSI = RTMPAvgRssi(pAd, &pAd->StaCfg.RssiSample);
-	pIbssInfo->Signal = RSSI;
+	sta->Signal = RSSI;
 }
 #endif /* CONFIG_STA_SUPPORT */
 
@@ -1566,26 +1519,14 @@ VOID CFG80211_LostApInform(
 {
 
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdCB;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0))
-	CFG80211_CB *p80211CB = pAd->pCfg80211_CB;
-#endif /* (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0)) */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+
 	DBGPRINT(RT_DEBUG_TRACE, ("80211> CFG80211_LostApInform ==> %d\n",
 					pAd->cfg80211_ctrl.FlgCfg80211Connecting));
-#else
-	DBGPRINT(RT_DEBUG_TRACE, ("80211> CFG80211_LostApInform ==> %d\n",
-					p80211CB->pCfg80211_Wdev->sme_state));
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)) */
 
 	pAd->StaCfg.bAutoReconnect = FALSE;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
-    /* sme_state is removed. need maintain internal state in driver */
-    /* [tmp] FlgCfg80211Connecting = TRUE imply CONNECTING? */
-    if(pAd->cfg80211_ctrl.FlgCfg80211Connecting)
-#else
-	if (p80211CB->pCfg80211_Wdev->sme_state == CFG80211_SME_CONNECTING)
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)) */
-	{
+	/* sme_state is removed. need maintain internal state in driver */
+	/* [tmp] FlgCfg80211Connecting = TRUE imply CONNECTING? */
+	if (pAd->cfg80211_ctrl.FlgCfg80211Connecting) {
 		CFG80211DBG(RT_DEBUG_TRACE, ("%s: Sending connect result (fail) to kernel"
 					" (bssid=%02x:%02x:%02x:%02x:%02x:%02x)\n",
 					__FUNCTION__, pAd->CommonCfg.Bssid[0],pAd->CommonCfg.Bssid[1],
@@ -1594,25 +1535,20 @@ VOID CFG80211_LostApInform(
 
 	   cfg80211_connect_result(pAd->net_dev, pAd->CommonCfg.Bssid, NULL, 0, NULL, 0,
 								   WLAN_STATUS_UNSPECIFIED_FAILURE, GFP_KERNEL);
-	}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
-    else
-#else
-	else if (p80211CB->pCfg80211_Wdev->sme_state == CFG80211_SME_CONNECTED)
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)) */
-	{
+	} else {
 
 #if defined(CONFIG_CUSTOMIZED_DFS) && defined(RT_CFG80211_P2P_SUPPORT)
-        if (RTMP_CFG80211_VIF_P2P_GO_ON(pAd) && pAd->StaCfg.bChannelSwitchCountingDown &&
-           pAd->CommonCfg.ChannelSwitchCount == 0)
-        {
-           cfg80211_disconnected(pAd->net_dev, 0, &(pAd->CommonCfg.NewChannel), 1, GFP_KERNEL);
-           pAd->StaCfg.bChannelSwitchCountingDown = FALSE;
-        }
-        else
-#endif
-
-		   cfg80211_disconnected(pAd->net_dev, 0, NULL, 0, GFP_KERNEL);
+		if (RTMP_CFG80211_VIF_P2P_GO_ON(pAd) &&
+		    pAd->StaCfg.bChannelSwitchCountingDown &&
+		    pAd->CommonCfg.ChannelSwitchCount == 0) {
+			cfg80211_disconnected(pAd->net_dev, 0,
+					      &(pAd->CommonCfg.NewChannel), 1,
+					      GFP_KERNEL);
+			pAd->StaCfg.bChannelSwitchCountingDown = FALSE;
+		} else
+#endif /* endif */
+			cfg80211_disconnected(pAd->net_dev, 0, NULL, 0,
+					      GFP_KERNEL);
 	}
 }
 #endif /*CONFIG_STA_SUPPORT*/

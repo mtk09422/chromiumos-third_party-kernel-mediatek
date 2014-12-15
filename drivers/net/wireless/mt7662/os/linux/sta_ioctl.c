@@ -30,10 +30,11 @@
 
 #define RTMP_MODULE_OS
 
+#include "rt_config.h"
 #include "rtmp_comm.h"
 #include "rt_os_util.h"
 #include "rt_os_net.h"
-/*#include	"rt_config.h" */
+
 #if 0
 #ifdef DOT11R_FT_SUPPORT
 #include	"ft.h"
@@ -66,6 +67,9 @@ extern ULONG RTDebugFunc;
 #endif
 
 extern UCHAR    CipherWpa2Template[];
+
+extern int mt76xx_set_pmk(RTMP_ADAPTER *pAd, const u8 *bssid, const u8 *pmkid);
+extern int mt76xx_del_pmk(RTMP_ADAPTER *pAd, const u8 *bssid);
 
 typedef struct GNU_PACKED _RT_VERSION_INFO{
     UCHAR       DriverVersionW;
@@ -3915,6 +3919,9 @@ rt_ioctl_giwencodeext(struct net_device *dev,
 	return 0;
 }
 
+extern int RtmpIoctl_rt_ioctl_siwgenie(RTMP_ADAPTER *pAd, const u8 *ie,
+				       size_t ie_len);
+
 #ifdef SIOCSIWGENIE
 static int rt_ioctl_siwgenie(struct net_device *dev,
 			  struct iw_request_info *info,
@@ -3925,22 +3932,18 @@ static int rt_ioctl_siwgenie(struct net_device *dev,
 	GET_PAD_FROM_NET_DEV(pAd, dev);
 
 	/*check if the interface is down */
-/*    if(!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_INTERRUPT_IN_USE)) */
-	if (RTMP_DRIVER_IOCTL_SANITY_CHECK(pAd, NULL) != NDIS_STATUS_SUCCESS)
-    {
-       	DBGPRINT(RT_DEBUG_TRACE, ("INFO::Network is down!\n"));
-        return -ENETDOWN;
+	if (RTMP_DRIVER_IOCTL_SANITY_CHECK(pAd, NULL) != NDIS_STATUS_SUCCESS) {
+		DBGPRINT(RT_DEBUG_WARN, ("%s network is down\n", __func__));
+		return -ENETDOWN;
 	}
 #ifdef WPA_SUPPLICANT_SUPPORT
-	if (RTMP_STA_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_STA_SIOCSIWGENIE, 0,
-						extra, wrqu->data.length,
-						RT_DEV_PRIV_FLAGS_GET(dev)) != NDIS_STATUS_SUCCESS)
+	if (RtmpIoctl_rt_ioctl_siwgenie(pAd, extra, wrqu->data.length))
 		return -EINVAL;
 	else
 		return 0;
-#endif /* WPA_SUPPLICANT_SUPPORT */
-
+#else
 	return -EOPNOTSUPP;
+#endif /* WPA_SUPPLICANT_SUPPORT */
 }
 #endif /* SIOCSIWGENIE */
 
@@ -4017,102 +4020,41 @@ static int rt_ioctl_siwpmksa(struct net_device *dev,
 			   union iwreq_data *wrqu,
 			   char *extra)
 {
-	VOID   *pAd = NULL;
-	struct iw_pmksa *pPmksa = (struct iw_pmksa *)wrqu->data.pointer;
-/*	INT	CachedIdx = 0, idx = 0; */
-	RT_CMD_STA_IOCTL_PMA_SA IoctlPmaSa, *pIoctlPmaSa = &IoctlPmaSa;
+	RTMP_ADAPTER *pAd;
+	int err;
+	struct iw_pmksa *pmksa = (struct iw_pmksa *)wrqu->data.pointer;
 
 	GET_PAD_FROM_NET_DEV(pAd, dev);
 
-	/*check if the interface is down */
-/*    if(!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_INTERRUPT_IN_USE)) */
-	if (RTMP_DRIVER_IOCTL_SANITY_CHECK(pAd, NULL) != NDIS_STATUS_SUCCESS)
-    {
-       	DBGPRINT(RT_DEBUG_TRACE, ("INFO::Network is down!\n"));
-        return -ENETDOWN;
-	}
-
-	if (pPmksa == NULL)
+	if (!pmksa || !pAd)
 		return -EINVAL;
 
-	DBGPRINT(RT_DEBUG_TRACE ,("===> rt_ioctl_siwpmksa\n"));
-
-#if 0 /* os abl move */
-	switch(pPmksa->cmd)
-	{
-		case IW_PMKSA_FLUSH:
-			NdisZeroMemory(pAd->StaCfg.SavedPMK, sizeof(BSSID_INFO)*PMKID_NO);
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_FLUSH\n"));
-			break;
-		case IW_PMKSA_REMOVE:
-			for (CachedIdx = 0; CachedIdx < pAd->StaCfg.SavedPMKNum; CachedIdx++)
-			{
-		        /* compare the BSSID */
-		        if (NdisEqualMemory(pPmksa->bssid.sa_data, pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN))
-		        {
-		        	NdisZeroMemory(pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN);
-					NdisZeroMemory(pAd->StaCfg.SavedPMK[CachedIdx].PMKID, 16);
-					for (idx = CachedIdx; idx < (pAd->StaCfg.SavedPMKNum - 1); idx++)
-					{
-						NdisMoveMemory(&pAd->StaCfg.SavedPMK[idx].BSSID[0], &pAd->StaCfg.SavedPMK[idx+1].BSSID[0], MAC_ADDR_LEN);
-						NdisMoveMemory(&pAd->StaCfg.SavedPMK[idx].PMKID[0], &pAd->StaCfg.SavedPMK[idx+1].PMKID[0], 16);
-					}
-					pAd->StaCfg.SavedPMKNum--;
-			        break;
-		        }
-	        }
-
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_REMOVE\n"));
-			break;
-		case IW_PMKSA_ADD:
-			for (CachedIdx = 0; CachedIdx < pAd->StaCfg.SavedPMKNum; CachedIdx++)
-			{
-		        /* compare the BSSID */
-		        if (NdisEqualMemory(pPmksa->bssid.sa_data, pAd->StaCfg.SavedPMK[CachedIdx].BSSID, MAC_ADDR_LEN))
-			        break;
-	        }
-
-	        /* Found, replace it */
-	        if (CachedIdx < PMKID_NO)
-	        {
-		        DBGPRINT(RT_DEBUG_OFF, ("Update PMKID, idx = %d\n", CachedIdx));
-		        NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].BSSID[0], pPmksa->bssid.sa_data, MAC_ADDR_LEN);
-				NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].PMKID[0], pPmksa->pmkid, 16);
-		        pAd->StaCfg.SavedPMKNum++;
-	        }
-	        /* Not found, replace the last one */
-	        else
-	        {
-		        /* Randomly replace one */
-		        CachedIdx = (pPmksa->bssid.sa_data[5] % PMKID_NO);
-		        DBGPRINT(RT_DEBUG_OFF, ("Update PMKID, idx = %d\n", CachedIdx));
-		        NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].BSSID[0], pPmksa->bssid.sa_data, MAC_ADDR_LEN);
-				NdisMoveMemory(&pAd->StaCfg.SavedPMK[CachedIdx].PMKID[0], pPmksa->pmkid, 16);
-	        }
-
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - IW_PMKSA_ADD\n"));
-			break;
-		default:
-			DBGPRINT(RT_DEBUG_TRACE ,("rt_ioctl_siwpmksa - Unknow Command!!\n"));
-			break;
+	/*check if the interface is down */
+	if (RTMP_DRIVER_IOCTL_SANITY_CHECK(pAd, NULL) != NDIS_STATUS_SUCCESS) {
+		DBGPRINT(RT_DEBUG_WARN, ("%s network is down\n", __func__));
+		return -ENETDOWN;
 	}
-#endif /* 0 */
 
-	if (pPmksa->cmd == IW_PMKSA_FLUSH)
-		pIoctlPmaSa->Cmd = RT_CMD_STA_IOCTL_PMA_SA_FLUSH;
-	else if (pPmksa->cmd == IW_PMKSA_REMOVE)
-		pIoctlPmaSa->Cmd = RT_CMD_STA_IOCTL_PMA_SA_REMOVE;
-	else if (pPmksa->cmd == IW_PMKSA_ADD)
-		pIoctlPmaSa->Cmd = RT_CMD_STA_IOCTL_PMA_SA_ADD;
-	else
-		pIoctlPmaSa->Cmd = 0;
-	pIoctlPmaSa->pBssid = (UCHAR *)pPmksa->bssid.sa_data;
-	pIoctlPmaSa->pPmkid = pPmksa->pmkid;
+	DBGPRINT(RT_DEBUG_TRACE, ("===> rt_ioctl_siwpmksa\n"));
 
-	RTMP_STA_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_STA_SIOCSIWPMKSA, 0,
-						pIoctlPmaSa, 0, RT_DEV_PRIV_FLAGS_GET(dev));
+	switch (pmksa->cmd) {
+	case IW_PMKSA_FLUSH:
+		err = mt76xx_del_pmk(pAd, NULL);
+		break;
+	case IW_PMKSA_REMOVE:
+		err = mt76xx_del_pmk(pAd, pmksa->bssid.sa_data);
+		break;
+	case IW_PMKSA_ADD:
+		err = mt76xx_set_pmk(pAd, pmksa->bssid.sa_data, pmksa->pmkid);
+		break;
+	default:
+		DBGPRINT(RT_DEBUG_WARN, ("%s invalid cmd 0x%x\n", __func__,
+					 pmksa->cmd));
+		err = -EINVAL;
+		break;
+	}
 
-	return 0;
+	return err;
 }
 #endif /* #if WIRELESS_EXT > 17 */
 
@@ -4534,13 +4476,14 @@ static const iw_handler rt_priv_handlers[] = {
 
 const struct iw_handler_def rt28xx_iw_handler_def =
 {
-#define	N(a)	(sizeof (a) / sizeof (a[0]))
 	.standard	= (iw_handler *) rt_handler,
 	.num_standard	= sizeof(rt_handler) / sizeof(iw_handler),
-	.private	= (iw_handler *) rt_priv_handlers,
-	.num_private		= N(rt_priv_handlers),
-	.private_args	= (struct iw_priv_args *) privtab,
-	.num_private_args	= N(privtab),
+#ifdef CONFIG_WEXT_PRIV
+	.private = (iw_handler *) rt_priv_handlers,
+	.num_private = ARRAY_SIZE(rt_priv_handlers),
+	.private_args = (struct iw_priv_args *) privtab,
+	.num_private_args = ARRAY_SIZE(privtab),
+#endif /* CONFIG_WEXT_PRIV */
 #if IW_HANDLER_VERSION >= 7
     .get_wireless_stats = rt28xx_get_wireless_stats,
 #endif

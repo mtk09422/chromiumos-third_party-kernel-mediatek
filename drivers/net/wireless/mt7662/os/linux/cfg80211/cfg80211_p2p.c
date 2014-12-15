@@ -30,6 +30,8 @@
 
 UCHAR CFG_WPS_OUI[4] = {0x00, 0x50, 0xf2, 0x04};
 UCHAR CFG_P2POUIBYTE[4] = {0x50, 0x6f, 0x9a, 0x9}; /* spec. 1.14 OUI */
+
+#ifdef RT_CFG80211_P2P_SUPPORT
 DECLARE_TIMER_FUNCTION(CFG80211RemainOnChannelTimeout);
 BUILD_TIMER_FUNCTION(CFG80211RemainOnChannelTimeout);
 
@@ -45,163 +47,126 @@ VOID CFG80211_RemainOnChannelInit(RTMP_ADAPTER	 *pAd)
 	}
 }
 
-VOID CFG80211RemainOnChannelTimeout(
-	PVOID SystemSpecific1, PVOID FunctionContext,
-	PVOID SystemSpecific2, PVOID SystemSpecific3)
+UINT32 CFG80211_GetRestoreChannelTime(RTMP_ADAPTER *pAd)
+{
+	if (INFRA_ON(pAd) ||
+	    RTMP_CFG80211_VIF_P2P_GO_ON(pAd) ||
+	    (RTMP_CFG80211_VIF_P2P_CLI_ON(pAd) &&
+	     RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd))) {
+		return RESTORE_CH_TIME;
+	} else
+		return 0;
+}
+
+VOID CFG80211RemainOnChannelTimeout(PVOID SystemSpecific1,
+				    PVOID FunctionContext,
+				    PVOID SystemSpecific2,
+				    PVOID SystemSpecific3)
 {
 	RTMP_ADAPTER *pAd = (RTMP_ADAPTER *) FunctionContext;
 	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
-#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
-	#define RESTORE_COM_CH_TIME 200
+	UCHAR RestoreChannel = pAd->LatchRfRegs.Channel;
+	UCHAR RestoreWidth = pAd->CommonCfg.BBPCurrentBW;
 	APCLI_STRUCT *pApCliEntry = &pAd->ApCfg.ApCliTab[MAIN_MBSSID];
-#endif
+	BOOLEAN Cancelled;
 
-	DBGPRINT(RT_DEBUG_INFO, ("CFG80211_ROC: RemainOnChannelTimeout\n"));
+	CFG80211DBG(RT_DEBUG_TRACE, ("%s\n", __func__));
 
-#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
-	if (pApCliEntry->Valid &&
-	     	RTMP_CFG80211_VIF_P2P_CLI_ON(pAd) &&
-            	(pAd->LatchRfRegs.Channel != pApCliEntry->MlmeAux.Channel))
-	{
-		/* Extend the ROC_TIME for Common Channel When P2P_CLI on */
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_ROC: ROC_Timeout APCLI_ON Channel: %d\n",
-								pApCliEntry->MlmeAux.Channel));
-
-        	AsicSwitchChannel(pAd, pApCliEntry->MlmeAux.Channel, FALSE);
-        	AsicLockChannel(pAd, pApCliEntry->MlmeAux.Channel);
-
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_NULL: P2P_CLI PWR_ACTIVE ROC_END\n"));
-		CFG80211_P2pClientSendNullFrame(pAd, PWR_ACTIVE);
-#ifdef CONFIG_STA_SUPPORT
-		if (INFRA_ON(pAd))
-		{
-			DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_NULL: CONCURRENT STA PWR_ACTIVE ROC_END\n"));
-			RTMPSendNullFrame(pAd, pAd->CommonCfg.TxRate,
-					  (OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_WMM_INUSED) ? TRUE:FALSE),
-					  pAd->CommonCfg.bAPSDForcePowerSave ? PWR_SAVE : pAd->StaCfg.Psm);
-		}
-#endif /*CONFIG_STA_SUPPORT*/
-		RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer, RESTORE_COM_CH_TIME);
-	}
-#ifdef CONFIG_MULTI_CHANNEL
-
-	else if (INFRA_ON(pAd) &&
-	   	     ((pAd->LatchRfRegs.Channel != pAd->StaCfg.wdev.CentralChannel) && (pAd->StaCfg.wdev.CentralChannel != 0)))
-	{
-		UCHAR ch;
-
-		if (pAd->StaCfg.wdev.bw == HT_BW_40)
-	{
-			bbp_set_bw(pAd, BW_40);
-			AsicSwitchChannel(pAd, pAd->StaCfg.wdev.CentralChannel, FALSE);
-	        	AsicLockChannel(pAd, pAd->StaCfg.wdev.CentralChannel);
-			Enable_Tx2Q(pAd);
-			ch = pAd->StaCfg.wdev.CentralChannel;
-			pAd->CommonCfg.Channel = pAd->StaCfg.wdev.channel;
-			pAd->CommonCfg.CentralChannel = pAd->StaCfg.wdev.CentralChannel;
-		}
-		else
-		{
-			bbp_set_bw(pAd, BW_20);
-			AsicSwitchChannel(pAd, pAd->StaCfg.wdev.channel, FALSE);
-	        	AsicLockChannel(pAd, pAd->StaCfg.wdev.channel);
-			Enable_Tx2Q(pAd);
-			ch = pAd->StaCfg.wdev.channel;
-
-			pAd->CommonCfg.Channel = pAd->StaCfg.wdev.channel;
-			pAd->CommonCfg.CentralChannel = pAd->StaCfg.wdev.channel;
+	/* Restore to infra channel and its bandwidth */
+	if (INFRA_ON(pAd) ||
+	    RTMP_CFG80211_VIF_P2P_GO_ON(pAd) ||
+	    RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd)) {
+		/* For HT@20 */
+		if ((pAd->LatchRfRegs.Channel != pAd->CommonCfg.Channel) ||
+		    (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd) &&
+		     (pAd->LatchRfRegs.Channel !=
+		      pApCliEntry->MlmeAux.Channel))) {
+			RestoreChannel = pAd->CommonCfg.Channel;
+			RestoreWidth = BW_20;
 		}
 
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_ROC: ROC_Timeout INFRA_ON Channel: %d\n",
-									ch));
-#ifdef CONFIG_STA_SUPPORT
+		/* For HT@40 */
+		if ((pAd->CommonCfg.Channel != pAd->CommonCfg.CentralChannel) ||
+		    (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd) &&
+		     (pApCliEntry->MlmeAux.Channel !=
+		      pApCliEntry->MlmeAux.CentralChannel))) {
+			RestoreChannel = pAd->CommonCfg.CentralChannel;
+			RestoreWidth = BW_40;
+		}
+#ifdef DOT11_VHT_AC
+		/* For VHT@80 */
+		if ((RestoreWidth == BW_40)
+		    && (pAd->StaActive.SupportedPhyInfo.vht_bw == VHT_BW_80)) {
+			RestoreChannel = pAd->CommonCfg.vht_cent_ch;
+			RestoreWidth = BW_80;
+		}
+#endif				/* DOT11_VHT_AC */
 
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_NULL: INFRA_ON PWR_ACTIVE ROC_END\n"));
-		RTMPSendNullFrame(pAd, pAd->CommonCfg.TxRate,
-				  (OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_WMM_INUSED) ? TRUE:FALSE),
-				  pAd->CommonCfg.bAPSDForcePowerSave ? PWR_SAVE : pAd->StaCfg.Psm);
-#endif /*CONFIG_STA_SUPPORT*/
-		RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer, RESTORE_COM_CH_TIME);
-	}
-#endif /* CONFIG_MULTI_CHANNEL */
-	else
-#endif /*RT_CFG80211_P2P_CONCURRENT_DEVICE */
-	{
-		/* Restore to infra channel and its bandwidth */
-		if (INFRA_ON(pAd))
-		{
-			if (pAd->LatchRfRegs.Channel != pAd->CommonCfg.CentralChannel)
-			{
-				DBGPRINT(RT_DEBUG_TRACE, ("80211> [%s] Restore to  channel %d -> %d\n", __FUNCTION__,
-					pAd->LatchRfRegs.Channel,
-					pAd->CommonCfg.CentralChannel));
+		/* Switch Channel */
+		if (RestoreChannel != pAd->LatchRfRegs.Channel) {
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("80211> [%s] Restore BW from %d -> %d, Channel %d -> %d\n",
+				  __func__, pAd->CommonCfg.BBPCurrentBW,
+				  RestoreWidth, pAd->LatchRfRegs.Channel,
+				  RestoreChannel));
 
-				AsicSwitchChannel(pAd, pAd->CommonCfg.CentralChannel, FALSE);
-				AsicLockChannel(pAd, pAd->CommonCfg.CentralChannel);
+			bbp_set_bw(pAd, RestoreWidth);
+			AsicSwitchChannel(pAd, RestoreChannel, FALSE);
+			AsicLockChannel(pAd, RestoreChannel);
+
+			if (INFRA_ON(pAd)) {
+				DBGPRINT(RT_DEBUG_TRACE,
+					 ("CONCURRENT STA PWR_ACTIVE ROC_END\n"));
+				RTMPSendNullFrame(pAd, pAd->CommonCfg.TxRate,
+						  (OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_WMM_INUSED) ?
+						   TRUE : FALSE),
+						  pAd->CommonCfg.
+						  bAPSDForcePowerSave ? PWR_SAVE : pAd->StaCfg.Psm);
+				RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer,
+					     CFG80211_GetRestoreChannelTime(pAd));
+				return;
+			}
+
+			if (RTMP_CFG80211_VIF_P2P_GO_ON(pAd)) {
+				/* TODO: NOA? */
+				return;
+			}
+
+			if (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd)) {
+				DBGPRINT(RT_DEBUG_TRACE,
+					 ("CFG80211_ROC: ROC_Timeout APCLI_ON Channel: %d\n",
+					  pApCliEntry->MlmeAux.Channel));
+				CFG80211_P2pClientSendNullFrame(pAd,
+								PWR_ACTIVE);
+				RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer,
+					     CFG80211_GetRestoreChannelTime(pAd));
+				return;
 			}
 		}
-		
-		Enable_Tx2Q(pAd);
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_ROC: RemainOnChannelTimeout -- FINISH\n"));
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-			cfg80211_remain_on_channel_expired(pCfg80211_ctrl->Cfg80211ChanInfo.pWdev, pCfg80211_ctrl->Cfg80211ChanInfo.cookie,
-            	pCfg80211_ctrl->Cfg80211ChanInfo.chan, GFP_ATOMIC);
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34))
-		cfg80211_remain_on_channel_expired( CFG80211_GetEventDevice(pAd),
-			pCfg80211_ctrl->Cfg80211ChanInfo.cookie, pCfg80211_ctrl->Cfg80211ChanInfo.chan,
-        		pCfg80211_ctrl->Cfg80211ChanInfo.ChanType, GFP_ATOMIC);
-#endif /* LINUX_VERSION_CODE 2.6.34 */
-#endif /* LINUX_VERSION_CODE 3.8.0 */
-
-		pCfg80211_ctrl->Cfg80211RocTimerRunning = FALSE;
 	}
 
+	CFG80211DBG(RT_DEBUG_TRACE, ("CFG_ROC: Cfg80211RocTimer Timeout\n"));
+	RTMPCancelTimer(&pAd->cfg80211_ctrl.Cfg80211RocTimer, &Cancelled);
+	pAd->cfg80211_ctrl.Cfg80211RocTimerRunning = FALSE;
+
+	/* Enable_Tx2Q(pAd); */
+
+	/* Report ROC Expired */
+	CFG80211OS_RemainOnChannelExpired(FunctionContext, pCfg80211_ctrl);
 }
 
 /* Set a given time on specific channel to listen action Frame */
 BOOLEAN CFG80211DRV_OpsRemainOnChannel(VOID *pAdOrg, VOID *pData, UINT32 duration)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
-	CMD_RTPRIV_IOCTL_80211_CHAN *pChanInfo;
+	CMD_RTPRIV_IOCTL_80211_CHAN *pChanInfo =
+		(CMD_RTPRIV_IOCTL_80211_CHAN *)pData;
 	BOOLEAN Cancelled;
 	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
-	UCHAR lock_channel;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-    PWIRELESS_DEV pwdev = NULL;
-#endif /* LINUX_VERSION_CODE: 3.6.0 */
-#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
-	APCLI_STRUCT *pApCliEntry = &pAd->ApCfg.ApCliTab[MAIN_MBSSID];
-#endif
-	pChanInfo = (CMD_RTPRIV_IOCTL_80211_CHAN *) pData;
+	UCHAR lock_channel = pChanInfo->ChanId;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-        pwdev = pChanInfo->pWdev;
-#endif /* LINUX_VERSION_CODE: 3.6.0 */
+	CFG80211DBG(RT_DEBUG_TRACE, ("%s\n", __func__));
 
-	CFG80211DBG(RT_DEBUG_INFO, ("%s\n", __FUNCTION__));
-
-#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
-	/* Will be Exit the ApCli Connected Channel so send Null frame on current */
-	if (pApCliEntry->Valid &&
-	    RTMP_CFG80211_VIF_P2P_CLI_ON(pAd) &&
-	        (pApCliEntry->MlmeAux.Channel != pChanInfo->ChanId) &&
-                (pApCliEntry->MlmeAux.Channel == pAd->LatchRfRegs.Channel))
-	{
-        	DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_NULL: APCLI PWR_SAVE ROC_START\n"));
-        	CFG80211_P2pClientSendNullFrame(pAd, PWR_SAVE);
-	}
-
-	if (INFRA_ON(pAd) &&
-		(pAd->CommonCfg.Channel != pChanInfo->ChanId) &&
-		(pAd->CommonCfg.Channel == pAd->LatchRfRegs.Channel))
-	{
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_NULL: STA PWR_SAVE ROC_START\n"));
-		RTMPSendNullFrame(pAd,  pAd->CommonCfg.TxRate, 
-				  (OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_WMM_INUSED) ? TRUE : FALSE),
-				  PWR_SAVE);
-	}
-#endif /*RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 	/* Channel Switch Case:
 	 * 1. P2P_FIND:    [SOCIAL_CH]->[COM_CH]->[ROC_CH]--N_TUs->[ROC_TIMEOUT]
@@ -211,59 +176,86 @@ BOOLEAN CFG80211DRV_OpsRemainOnChannel(VOID *pAdOrg, VOID *pData, UINT32 duratio
 	 *                 Most in GO case.
 	 *
 	 */
-	//lock_channel = CFG80211_getCenCh(pAd, pChanInfo->ChanId);
-	lock_channel = pChanInfo->ChanId;
-	if ((pAd->CommonCfg.BBPCurrentBW != BW_20) && (pAd->CommonCfg.Channel == lock_channel))
-	{
-		printk("80211> ComCH == ROC_CH(20/40)\n");
-		lock_channel = pAd->CommonCfg.CentralChannel;
+	switch (pAd->CommonCfg.BBPCurrentBW) {
+#ifdef DOT11_VHT_AC
+	case BW_80:
+		if ((pChanInfo->ChanId == pAd->CommonCfg.vht_cent_ch) ||
+		    (pChanInfo->ChanId == pAd->CommonCfg.CentralChannel) ||
+		    (pChanInfo->ChanId == pAd->CommonCfg.Channel))
+			lock_channel = pAd->CommonCfg.vht_cent_ch;
+		break;
+#endif				/* DOT11_VHT_AC */
+
+	case BW_40:
+		if ((pChanInfo->ChanId == pAd->CommonCfg.CentralChannel) ||
+		    (pChanInfo->ChanId == pAd->CommonCfg.Channel))
+			lock_channel = pAd->CommonCfg.CentralChannel;
+		break;
+
+	case BW_20:
+	default:
+		if (pChanInfo->ChanId == pAd->CommonCfg.Channel)
+			lock_channel = pAd->CommonCfg.Channel;
+		break;
 	}
 
-	else if (pAd->LatchRfRegs.Channel != lock_channel)
-	{
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_PKT: ROC CHANNEL_LOCK %d\n", pChanInfo->ChanId));
+	/* Switch to Desired Channel */
+	if (lock_channel != pAd->LatchRfRegs.Channel) {
+		CFG80211DBG(RT_DEBUG_TRACE,
+			    ("CFG80211_PKT: ROC CHANNEL_LOCK %d\n",
+			     pChanInfo->ChanId));
 
-/* revert CL#109407 */
-#if 0
-		Disable_Tx2Q(pAd);
+		/* Disable_Tx2Q(pAd); */
 
-		RTMPSendNullFrame(pAd, 
-				  pAd->CommonCfg.TxRate, 
-				  (pAd->CommonCfg.bWmmCapable & pAd->CommonCfg.APEdcaParm.bValid),
-				  pAd->CommonCfg.bAPSDForcePowerSave ? PWR_SAVE : pAd->StaCfg.Psm);
-		OS_WAIT(10);
+		if (INFRA_ON(pAd)) {
+			RTMPSendNullFrame(pAd, pAd->CommonCfg.TxRate,
+					  (pAd->CommonCfg.bWmmCapable &&
+					   pAd->CommonCfg.APEdcaParm.bValid),
+					  pAd->CommonCfg.bAPSDForcePowerSave ?
+						PWR_SAVE : pAd->StaCfg.Psm);
+			OS_WAIT(10);
+		}
+#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
+		if (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd)) {
+			CFG80211DBG(RT_DEBUG_TRACE,
+				    ("CFG80211_NULL: APCLI PWR_SAVE ROC_START\n"));
+			CFG80211_P2pClientSendNullFrame(pAd, PWR_SAVE);
+		}
+#endif				/*RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 		bbp_set_bw(pAd, BW_20);
-#endif
 		AsicSwitchChannel(pAd, lock_channel, FALSE);
 		AsicLockChannel(pAd, lock_channel);
+	} else {
+		DBGPRINT(RT_DEBUG_TRACE,
+			 ("80211> ComCH == ROC_CH (20/40/80)\n"));
 	}
-	else
-	{
-		DBGPRINT(RT_DEBUG_INFO, ("80211> ComCH == ROC_CH \n"));
-	}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-        cfg80211_ready_on_channel(pwdev,  pChanInfo->cookie, pChanInfo->chan, duration, GFP_ATOMIC);
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34))
-	cfg80211_ready_on_channel(CFG80211_GetEventDevice(pAd), pChanInfo->cookie,
-				  pChanInfo->chan, pChanInfo->ChanType, duration, GFP_ATOMIC);
-#endif /* LINUX_VERSION_CODE: 2.6.34 */
-#endif /* LINUX_VERSION_CODE: 3.6.0 */
 
-	NdisCopyMemory(&pCfg80211_ctrl->Cfg80211ChanInfo, pChanInfo, sizeof(CMD_RTPRIV_IOCTL_80211_CHAN));
+	/* Store Chan Info */
+	NdisCopyMemory(&pCfg80211_ctrl->Cfg80211ChanInfo, pChanInfo,
+		       sizeof(CMD_RTPRIV_IOCTL_80211_CHAN));
 
+	/* ROC Timer Init */
 	CFG80211_RemainOnChannelInit(pAd);
 
-	if (pCfg80211_ctrl->Cfg80211RocTimerRunning == TRUE)
-	{
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_ROC : CANCEL Cfg80211RocTimer\n"));
+	if (RTMP_CFG80211_ROC_ON(pAd)) {
+		CFG80211DBG(RT_DEBUG_TRACE, ("%s CANCEL Cfg80211RocTimer\n",
+			    __func__));
 		RTMPCancelTimer(&pCfg80211_ctrl->Cfg80211RocTimer, &Cancelled);
 		pCfg80211_ctrl->Cfg80211RocTimerRunning = FALSE;
 	}
 
-	RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer, duration + 20);
+	/* In case of ROC is not for listen state */
+	if (duration < MAX_ROC_TIME)
+		RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer, duration);
+	else
+		RTMPSetTimer(&pCfg80211_ctrl->Cfg80211RocTimer,
+			     (duration - CFG80211_GetRestoreChannelTime(pAd)));
+
 	pCfg80211_ctrl->Cfg80211RocTimerRunning = TRUE;
+
+	/* Report ROC Ready */
+	CFG80211OS_ReadyOnChannel(pAdOrg, pChanInfo, duration);
 
 	return TRUE;
 }
@@ -272,56 +264,87 @@ BOOLEAN CFG80211DRV_OpsCancelRemainOnChannel(VOID *pAdOrg, UINT32 cookie)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
 	BOOLEAN Cancelled;
-	CFG80211DBG(RT_DEBUG_TRACE, ("%s\n", __FUNCTION__));
+	UCHAR RestoreChannel = pAd->LatchRfRegs.Channel;
+	UCHAR RestoreWidth = pAd->CommonCfg.BBPCurrentBW;
+	CFG80211_CTRL *pCfg80211_ctrl = &pAd->cfg80211_ctrl;
+	APCLI_STRUCT *pApCliEntry = &pAd->ApCfg.ApCliTab[MAIN_MBSSID];
 
-	if (pAd->cfg80211_ctrl.Cfg80211RocTimerRunning == TRUE)
-	{
-		DBGPRINT(RT_DEBUG_TRACE, ("CFG_ROC : CANCEL Cfg80211RocTimer\n"));
-		RTMPCancelTimer(&pAd->cfg80211_ctrl.Cfg80211RocTimer, &Cancelled);
-		pAd->cfg80211_ctrl.Cfg80211RocTimerRunning = FALSE;
+	CFG80211DBG(RT_DEBUG_TRACE, ("%s\n", __func__));
 
-		/* Cancel ROC will check if other link exists, then switch to target channel.
-		   If no other link exists, we will not do channel switch.
-		 */
-		if (INFRA_ON(pAd) || RTMP_CFG80211_VIF_P2P_GO_ON(pAd)
-			|| (RTMP_CFG80211_VIF_P2P_CLI_ON(pAd) &&
-				pAd->ApCfg.ApCliTab[MAIN_MBSSID].CtrlCurrState == APCLI_CTRL_CONNECTED))
-		{
-		if (pAd->CommonCfg.Channel != pAd->LatchRfRegs.Channel)
-		{
-			if((pAd->CommonCfg.Channel != pAd->CommonCfg.CentralChannel))
-			{
-				bbp_set_bw(pAd, BW_40);
-				AsicSwitchChannel(pAd, pAd->CommonCfg.CentralChannel, FALSE);
-				AsicLockChannel(pAd, pAd->CommonCfg.CentralChannel);
-			}
-			else
-			{
-				bbp_set_bw(pAd, BW_20);
-				AsicSwitchChannel(pAd, pAd->CommonCfg.Channel, FALSE);
-				AsicLockChannel(pAd, pAd->CommonCfg.Channel);
-			}
+	if (!RTMP_CFG80211_ROC_ON(pAd)) {
+		CFG80211DBG(RT_DEBUG_TRACE, ("%s: No running ROC\n", __func__));
+		return TRUE;
+	}
+
+	/* Check if other link exists, or do not channel switch */
+	if (INFRA_ON(pAd) ||
+	    (RTMP_CFG80211_VIF_P2P_GO_ON(pAd)
+	     && OPSTATUS_TEST_FLAG(pAd, fOP_AP_STATUS_MEDIA_STATE_CONNECTED)) ||
+	    RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd)) {
+		/* For HT@20 */
+		if ((pAd->LatchRfRegs.Channel != pAd->CommonCfg.Channel) ||
+		    (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd) &&
+		     (pAd->LatchRfRegs.Channel !=
+		      pApCliEntry->MlmeAux.Channel))) {
+			RestoreChannel = pAd->CommonCfg.Channel;
+			RestoreWidth = BW_20;
 		}
-	}
-		else
-			CFG80211DBG(RT_DEBUG_TRACE, ("%s: No other link exists, DO NOT switch channel\n", __FUNCTION__));
 
-		/* Make sure cancal ROC without ch switch shall also enable TxQ */
-		Enable_Tx2Q(pAd);
-	}
+		/* For HT@40 */
+		if ((pAd->CommonCfg.Channel != pAd->CommonCfg.CentralChannel) ||
+		    (RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(pAd)
+		     && (pApCliEntry->MlmeAux.Channel != 
+			 pApCliEntry->MlmeAux.CentralChannel))) {
+			RestoreChannel = pAd->CommonCfg.CentralChannel;
+			RestoreWidth = BW_40;
+		}
+#ifdef DOT11_VHT_AC
+		/* VHT@80 */
+		if ((RestoreWidth == BW_40)
+		    && (pAd->StaActive.SupportedPhyInfo.vht_bw == VHT_BW_80)) {
+			RestoreChannel = pAd->CommonCfg.vht_cent_ch;
+			RestoreWidth = BW_80;
+		}
+#endif				/* DOT11_VHT_AC */
+
+		if (RestoreChannel != pAd->LatchRfRegs.Channel) {
+			CFG80211DBG(RT_DEBUG_TRACE,
+				    ("80211> [%s] Restore BW from %d -> %d, Channel %d -> %d\n",
+				     __func__, pAd->CommonCfg.BBPCurrentBW,
+				     RestoreWidth, pAd->LatchRfRegs.Channel,
+				     RestoreChannel));
+
+			bbp_set_bw(pAd, RestoreWidth);
+			AsicSwitchChannel(pAd, RestoreChannel, FALSE);
+			AsicLockChannel(pAd, RestoreChannel);
+		} else
+			CFG80211DBG(RT_DEBUG_TRACE,
+				    ("80211> [%s] No need to change current CH: %d & BW: %d\n",
+				     __func__, pAd->CommonCfg.BBPCurrentBW,
+				     pAd->LatchRfRegs.Channel));
+	} else
+		CFG80211DBG(RT_DEBUG_TRACE,
+			    ("%s: No other link exists, DO NOT switch channel\n",
+			     __func__));
+
+
+	CFG80211DBG(RT_DEBUG_TRACE, ("CFG_ROC : CANCEL Cfg80211RocTimer\n"));
+	RTMPCancelTimer(&pAd->cfg80211_ctrl.Cfg80211RocTimer, &Cancelled);
+	pAd->cfg80211_ctrl.Cfg80211RocTimerRunning = FALSE;
 
 	return TRUE;
 }
+#endif /* RT_CFG80211_P2P_SUPPORT */
 
 INT CFG80211_setPowerMgmt(VOID *pAdCB, UINT Enable)
 {
-	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdCB;
-
-	DBGPRINT(RT_DEBUG_TRACE, ("@@@ %s: %d\n", __FUNCTION__, Enable));
-
 #ifdef RT_CFG80211_P2P_SUPPORT
+	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER) pAdCB;
+
 	pAd->cfg80211_ctrl.bP2pCliPmEnable = Enable;
 #endif /* RT_CFG80211_P2P_SUPPORT */
+
+	DBGPRINT(RT_DEBUG_TRACE, ("@@@ %s: %d\n", __func__, Enable));
 
 	return 0;
 }
@@ -366,7 +389,8 @@ VOID CFG80211_P2PMakeFakeNoATlv(PRTMP_ADAPTER pAd, ULONG StartTime, PUCHAR pOutB
 }
 
 
-BOOLEAN	CFG80211_P2pAdjustSwNoATimer(PRTMP_ADAPTER pAd, ULONG CurrentTimeStamp, ULONG NextTimePoint) 
+BOOLEAN CFG80211_P2pAdjustSwNoATimer(PRTMP_ADAPTER pAd, ULONG CurrentTimeStamp,
+				     ULONG NextTimePoint)
 {
 	PCFG80211_CTRL pP2PCtrl = &pAd->cfg80211_ctrl;
 	ULONG AwakeDuration, NewStartTime;
@@ -408,7 +432,7 @@ BOOLEAN	CFG80211_P2pAdjustSwNoATimer(PRTMP_ADAPTER pAd, ULONG CurrentTimeStamp, 
 	}
 }
 
-VOID CFG80211_P2pGPTimeOutHandle(PRTMP_ADAPTER pAd) 
+VOID CFG80211_P2pGPTimeOutHandle(PRTMP_ADAPTER pAd)
 {
 	PCFG80211_CTRL pP2PCtrl = &pAd->cfg80211_ctrl;
 	MAC_TABLE_ENTRY *pEntry=NULL;
@@ -1313,7 +1337,8 @@ VOID CFG80211DRV_P2pClientKeyAdd(VOID *pAdOrg, VOID *pData)
 	}
 }
 
-VOID CFG80211DRV_SetP2pCliAssocIe(VOID *pAdOrg, VOID *pData, UINT ie_len)
+VOID CFG80211DRV_SetP2pCliAssocIe(RTMP_ADAPTER *pAdOrg, const u8 *pData,
+				  size_t ie_len)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
 	APCLI_STRUCT *apcli_entry;
@@ -1329,13 +1354,16 @@ VOID CFG80211DRV_SetP2pCliAssocIe(VOID *pAdOrg, VOID *pData, UINT ie_len)
 			apcli_entry->wpa_supplicant_info.pWpaAssocIe = NULL;
 		}
 
-		os_alloc_mem(NULL, (UCHAR **)&apcli_entry->wpa_supplicant_info.pWpaAssocIe, ie_len);
+		os_alloc_mem(NULL,
+			     (UCHAR **)&apcli_entry->wpa_supplicant_info.pWpaAssocIe,
+			     ie_len);
 		if (apcli_entry->wpa_supplicant_info.pWpaAssocIe)
 		{
 			apcli_entry->wpa_supplicant_info.WpaAssocIeLen = ie_len;
-			NdisMoveMemory(apcli_entry->wpa_supplicant_info.pWpaAssocIe, pData, apcli_entry->wpa_supplicant_info.WpaAssocIeLen);
-		}
-		else
+			NdisMoveMemory(apcli_entry->wpa_supplicant_info.pWpaAssocIe,
+				       pData,
+				       apcli_entry->wpa_supplicant_info.WpaAssocIeLen);
+		} else
 			apcli_entry->wpa_supplicant_info.WpaAssocIeLen = 0;
 	}
 	else
@@ -1505,5 +1533,53 @@ VOID CFG80211_LostP2pGoInform(VOID *pAdCB)
 }
 #endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
 #endif /* RT_CFG80211_P2P_SUPPORT */
-#endif /* RT_CFG80211_SUPPORT */
 
+/* GeK: [todo] merge with CFG80211DRV_SetP2pCliAssocIe() */
+/* ========================================================================
+Routine Description:
+	Handler for SIOCSIWGENIE and cfg80211_ops.connect()
+
+Arguments:
+	pAd				- WLAN control block pointer
+	*pData			- the communication data pointer
+	Data			- the communication data
+
+Return Value:
+	NDIS_STATUS_SUCCESS or NDIS_STATUS_FAILURE
+
+Note:
+========================================================================
+*/
+int RtmpIoctl_rt_ioctl_siwgenie(RTMP_ADAPTER *pAd, const u8 *ie, size_t ie_len)
+{
+#ifdef WPA_SUPPLICANT_SUPPORT
+	if (unlikely(!ie_len || !ie))
+		return NDIS_STATUS_FAILURE;
+
+	if (pAd->StaCfg.wpa_supplicant_info.WpaSupplicantUP ==
+	    WPA_SUPPLICANT_DISABLE)
+		return NDIS_STATUS_SUCCESS;
+
+	DBGPRINT(RT_DEBUG_TRACE, ("===> rt_ioctl_siwgenie\n"));
+	pAd->StaCfg.wpa_supplicant_info.bRSN_IE_FromWpaSupplicant = FALSE;
+	if (pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe) {
+		os_free_mem(NULL, pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe);
+		pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe = NULL;
+	}
+
+	os_alloc_mem(NULL,
+		     (UCHAR **) &pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe,
+		     ie_len);
+	if (pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe) {
+		pAd->StaCfg.wpa_supplicant_info.WpaAssocIeLen = ie_len;
+		NdisMoveMemory(pAd->StaCfg.wpa_supplicant_info.pWpaAssocIe, ie,
+			       ie_len);
+		pAd->StaCfg.wpa_supplicant_info.bRSN_IE_FromWpaSupplicant = TRUE;
+	} else
+		pAd->StaCfg.wpa_supplicant_info.WpaAssocIeLen = 0;
+#endif				/* WPA_SUPPLICANT_SUPPORT */
+
+	return NDIS_STATUS_SUCCESS;
+}
+
+#endif /* RT_CFG80211_SUPPORT */

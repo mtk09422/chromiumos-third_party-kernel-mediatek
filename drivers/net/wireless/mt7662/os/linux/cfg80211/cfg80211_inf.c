@@ -42,10 +42,12 @@ extern INT ApCliAllowToSendPacket(
 
 BOOLEAN CFG80211DRV_OpsChgVirtualInf(RTMP_ADAPTER *pAd, VOID *pData)
 {
-	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
 	CMD_RTPRIV_IOCTL_80211_VIF_PARM *pVifParm = (CMD_RTPRIV_IOCTL_80211_VIF_PARM *)pData;
-	UINT newType= pVifParm->newIfType;
-    UINT oldType= pVifParm->oldIfType;
+	UINT newType = pVifParm->newIfType;
+#ifdef RT_CFG80211_P2P_SUPPORT
+	PCFG80211_CTRL pCfg80211_ctrl = &pAd->cfg80211_ctrl;
+	UINT oldType = pVifParm->oldIfType;
+#endif /* RT_CFG80211_P2P_SUPPORT */
 
 #ifdef RT_CFG80211_P2P_STATIC_CONCURRENT_DEVICE
 	APCLI_STRUCT	*pApCliEntry;
@@ -322,8 +324,14 @@ BOOLEAN RTMP_CFG80211_VIF_P2P_CLI_ON(VOID *pAdSrc)
 
 	return FALSE;
 }
-#endif /* RT_CFG80211_P2P_SUPPORT */
 
+BOOLEAN RTMP_CFG80211_VIF_P2P_CLI_CONNECTED(VOID *pAdSrc)
+{
+	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER) pAdSrc;
+	return pAd->ApCfg.ApCliTab[MAIN_MBSSID].CtrlCurrState == APCLI_CTRL_CONNECTED;
+}
+
+#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
 BOOLEAN CFG80211DRV_OpsVifAdd(VOID *pAdOrg, VOID *pData)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdOrg;
@@ -338,13 +346,20 @@ BOOLEAN CFG80211DRV_OpsVifAdd(VOID *pAdOrg, VOID *pData)
 	RTMP_CFG80211_VirtualIF_Init(pAd, pVifInfo->vifName, pVifInfo->vifType);
 	return TRUE;
 }
-/*
+#endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
+#endif				/* RT_CFG80211_P2P_SUPPORT */
+
 BOOLEAN RTMP_CFG80211_VIF_ON(VOID *pAdSrc)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdSrc;
 	return pAd->cfg80211_ctrl.Cfg80211VifDevSet.isGoingOn;
 }
-*/
+
+BOOLEAN RTMP_CFG80211_ROC_ON(VOID *pAdSrc)
+{
+	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER) pAdSrc;
+	return pAd->cfg80211_ctrl.Cfg80211RocTimerRunning;
+}
 
 static
 PCFG80211_VIF_DEV RTMP_CFG80211_FindVifEntry_ByMac(VOID *pAdSrc, PNET_DEV pNewNetDev)
@@ -496,10 +511,10 @@ VOID RTMP_CFG80211_VirtualIF_CancelP2pClient(VOID *pAdSrc)
 }
 #endif /* RT_CFG80211_P2P_SUPPORT */
 
+#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
 static INT CFG80211_VirtualIF_Open(PNET_DEV dev_p)
 {
 	VOID *pAdSrc = RTMP_OS_NETDEV_GET_PRIV(dev_p);
-	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdSrc;
 	ASSERT(pAdSrc);
 
 	DBGPRINT(RT_DEBUG_TRACE, ("%s: ===> %d,%s\n", __FUNCTION__, dev_p->ifindex,
@@ -512,8 +527,8 @@ static INT CFG80211_VirtualIF_Open(PNET_DEV dev_p)
 	RT_MOD_INC_USE_COUNT();
 
 #ifdef RT_CFG80211_P2P_SUPPORT
-	if (dev_p->ieee80211_ptr->iftype == RT_CMD_80211_IFTYPE_P2P_CLIENT)
-	{
+	if (dev_p->ieee80211_ptr->iftype == RT_CMD_80211_IFTYPE_P2P_CLIENT) {
+		PRTMP_ADAPTER pAd = (PRTMP_ADAPTER) pAdSrc;
 		DBGPRINT(RT_DEBUG_TRACE, ("CFG80211_VirtualIF_Open\n"));
 		pAd->flg_apcli_init = TRUE;
 		ApCli_Open(pAd, dev_p);
@@ -842,6 +857,7 @@ VOID RTMP_CFG80211_VirtualIF_Init(
 
 	DBGPRINT(RT_DEBUG_TRACE, ("%s <---\n", __FUNCTION__));
 }
+#endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 VOID RTMP_CFG80211_VirtualIF_Remove(
 	IN  VOID 				 *pAdSrc,
@@ -850,8 +866,6 @@ VOID RTMP_CFG80211_VirtualIF_Remove(
 {
 
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdSrc;
-	BOOLEAN isGoOn = FALSE;
-	struct wifi_dev *wdev;
 
 	if (dev_p)
 	{
@@ -859,10 +873,8 @@ VOID RTMP_CFG80211_VirtualIF_Remove(
                 RTMP_OS_NETDEV_STOP_QUEUE(dev_p);
 #ifdef RT_CFG80211_P2P_SUPPORT
 		pAd->cfg80211_ctrl.Cfg80211VifDevSet.isGoingOn = FALSE;
-		isGoOn = RTMP_CFG80211_VIF_P2P_GO_ON(pAd);
 
-		if (isGoOn)
-		{
+		if (RTMP_CFG80211_VIF_P2P_GO_ON(pAd)) {
 #ifdef CONFIG_MULTI_CHANNEL
 			PMULTISSID_STRUCT pMbss = &pAd->ApCfg.MBSSID[MAIN_MBSSID];
 			struct wifi_dev *pwdev = &pMbss->wdev;
@@ -903,9 +915,8 @@ VOID RTMP_CFG80211_VirtualIF_Remove(
 			pAd->cfg80211_ctrl.isCfgInApMode = RT_CMD_80211_IFTYPE_STATION;
 			RtmpOSNetDevDetach(dev_p);
 			pAd->ApCfg.MBSSID[MAIN_MBSSID].MSSIDDev = NULL;
-		}
-		else if (pAd->flg_apcli_init)
-		{
+		} else if (pAd->flg_apcli_init) {
+			struct wifi_dev *wdev;
 			wdev = &pAd->ApCfg.ApCliTab[MAIN_MBSSID].wdev;
 
 #ifdef CONFIG_MULTI_CHANNEL

@@ -800,15 +800,12 @@ VOID RTMPSetIndividualHT(RTMP_ADAPTER *pAd, UCHAR apidx)
 */
 VOID RTMPDisableDesiredHtInfo(RTMP_ADAPTER *pAd)
 {
-	struct wifi_dev *wdev;
-
 #ifdef CONFIG_AP_SUPPORT
-	UINT8 idx = 0;
+	IF_DEV_CONFIG_OPMODE_ON_AP(pAd) {
+		struct wifi_dev *wdev;
+		UINT8 idx;
 
-	IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
-	{
-		for (idx = 0; idx < pAd->ApCfg.BssidNum; idx++)
-		{
+		for (idx = 0; idx < pAd->ApCfg.BssidNum; idx++) {
 			wdev = &pAd->ApCfg.MBSSID[idx].wdev;
 			RTMPZeroMemory(&wdev->DesiredHtPhyInfo, sizeof(RT_PHY_INFO));
 		}
@@ -831,7 +828,8 @@ VOID RTMPDisableDesiredHtInfo(RTMP_ADAPTER *pAd)
 	IF_DEV_CONFIG_OPMODE_ON_STA(pAd)
 	{
 #ifdef P2P_SUPPORT
-		UINT8 idx = 0;
+		struct wifi_dev *wdev;
+		UINT8 idx;
 
 		for (idx = 0; idx < pAd->ApCfg.BssidNum; idx++)
 		{

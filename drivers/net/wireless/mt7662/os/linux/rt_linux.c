@@ -714,10 +714,8 @@ PNDIS_PACKET duplicate_pkt(
 		MEM_DBG_PKT_ALLOC_INC(skb);
 
 		skb_reserve(skb, 2);
-		NdisMoveMemory(skb->tail, pHeader802_3, HdrLen);
-		skb_put(skb, HdrLen);
-		NdisMoveMemory(skb->tail, pData, DataSize);
-		skb_put(skb, DataSize);
+		memcpy(skb_put(skb, HdrLen), pHeader802_3, HdrLen);
+		memcpy(skb_put(skb, DataSize), pData, DataSize);
 		skb->dev = pNetDev;
 		pPacket = OSPKT_TO_RTPKT(skb);
 	}
@@ -803,13 +801,12 @@ PNDIS_PACKET duplicate_pkt_with_VLAN(
 		/* copy header (maybe +VLAN tag) */
 		VLAN_Size = VLAN_8023_Header_Copy(VLAN_VID, VLAN_Priority,
 						  pHeader802_3, HdrLen,
-						  skb->tail, FromWhichBSSID,
-						  TPID);
+						  skb_tail_pointer(skb),
+						  FromWhichBSSID, TPID);
 		skb_put(skb, HdrLen + VLAN_Size);
 
 		/* copy data body */
-		NdisMoveMemory(skb->tail, pData, DataSize);
-		skb_put(skb, DataSize);
+		memcpy(skb_put(skb, DataSize), pData, DataSize);
 		skb->dev = pNetDev;	/*get_netdev_from_bssid(pAd, FromWhichBSSID); */
 		pPacket = OSPKT_TO_RTPKT(skb);
 	}
@@ -1004,10 +1001,10 @@ void wlan_802_11_to_802_3_packet(
 }
 
 
-void hex_dump(char *str, UCHAR *pSrcBufVA, UINT SrcBufLen)
+void hex_dump(char *str, const unsigned char *pSrcBufVA, UINT SrcBufLen)
 {
 #ifdef DBG
-	unsigned char *pt;
+	const unsigned char *pt;
 	int x;
 
 	if (RTDebugLevel < RT_DEBUG_TRACE)
@@ -1018,7 +1015,7 @@ void hex_dump(char *str, UCHAR *pSrcBufVA, UINT SrcBufLen)
 	for (x = 0; x < SrcBufLen; x++) {
 		if (x % 16 == 0)
 			printk("0x%04x : ", x);
-		printk("%02x ", ((unsigned char)pt[x]));
+		printk("%02x ", pt[x]);
 		if (x % 16 == 15)
 			printk("\n");
 	}
@@ -1026,10 +1023,10 @@ void hex_dump(char *str, UCHAR *pSrcBufVA, UINT SrcBufLen)
 #endif /* DBG */
 }
 
-void hex_dump2(char *str, UCHAR *pSrcBufVA, UINT SrcBufLen)
+void hex_dump2(char *str, const unsigned char *pSrcBufVA, UINT SrcBufLen)
 {
 #ifdef DBG
-	unsigned char *pt;
+	const unsigned char *pt;
 	int x;
 
 //	if (RTDebugLevel < RT_DEBUG_TRACE)
@@ -1040,7 +1037,7 @@ void hex_dump2(char *str, UCHAR *pSrcBufVA, UINT SrcBufLen)
 	for (x = 0; x < SrcBufLen; x++) {
 		if (x % 16 == 0)
 			DBGPRINT(RT_DEBUG_TRACE,("0x%04x : ", x));
-		DBGPRINT(RT_DEBUG_TRACE,("%02x ", ((unsigned char)pt[x])));
+		DBGPRINT(RT_DEBUG_TRACE, ("%02x ", pt[x]));
 		if (x % 16 == 15)
 			DBGPRINT(RT_DEBUG_TRACE,("\n"));
 	}
@@ -2030,23 +2027,21 @@ int RtmpOSNetDevAttach(
 		pNetDev->get_wireless_stats = pDevOpHook->get_wstats;
 #endif
 
-#ifdef CONFIG_STA_SUPPORT
+#ifdef CONFIG_WIRELESS_EXT
 #if WIRELESS_EXT >= 12
+#ifdef CONFIG_STA_SUPPORT
 		if (OpMode == OPMODE_STA) {
-/*			pNetDev->wireless_handlers = &rt28xx_iw_handler_def; */
 			pNetDev->wireless_handlers = pDevOpHook->iw_handler;
 		}
-#endif /*WIRELESS_EXT >= 12 */
 #endif /* CONFIG_STA_SUPPORT */
 
 #ifdef CONFIG_APSTA_MIXED_SUPPORT
-#if WIRELESS_EXT >= 12
 		if (OpMode == OPMODE_AP) {
-/*			pNetDev->wireless_handlers = &rt28xx_ap_iw_handler_def; */
 			pNetDev->wireless_handlers = pDevOpHook->iw_handler;
 		}
-#endif /*WIRELESS_EXT >= 12 */
 #endif /* CONFIG_APSTA_MIXED_SUPPORT */
+#endif /*WIRELESS_EXT >= 12 */
+#endif /* CONFIG_WIRELESS_EXT */
 
 		/* copy the net device mac address to the net_device structure. */
 		NdisMoveMemory(pNetDev->dev_addr, &pDevOpHook->devAddr[0],

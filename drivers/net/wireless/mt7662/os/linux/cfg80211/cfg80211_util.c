@@ -1471,4 +1471,25 @@ INT32 CFG80211OS_UpdateRegRuleByRegionIdx(
     return 0;
 }
 
+INT32 CFG80211OS_ReadyOnChannel(IN VOID *pAdOrg, IN VOID *pChInfo,
+				IN UINT32 duration)
+{
+	CMD_RTPRIV_IOCTL_80211_CHAN *pChanInfo = pChInfo;
+
+	cfg80211_ready_on_channel(pChanInfo->pWdev, pChanInfo->cookie,
+				  pChanInfo->chan, duration, GFP_ATOMIC);
+	return 0;
+}
+
+INT32 CFG80211OS_RemainOnChannelExpired(IN VOID *pAdOrg, IN VOID *pCtrl)
+{
+	PCFG80211_CTRL pCfg80211_ctrl = (CFG80211_CTRL *) pCtrl;
+
+	cfg80211_remain_on_channel_expired(pCfg80211_ctrl->Cfg80211ChanInfo.pWdev,
+					   pCfg80211_ctrl->Cfg80211ChanInfo.cookie,
+					   pCfg80211_ctrl->Cfg80211ChanInfo.chan,
+					   GFP_ATOMIC);
+	return 0;
+}
+
 #endif /* RT_CFG80211_SUPPORT */

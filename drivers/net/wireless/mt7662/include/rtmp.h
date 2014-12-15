@@ -5281,6 +5281,7 @@ typedef struct _CFG80211_CONTROL
 	UCHAR *pTxStatusBuf;		  /* TxMgmt Packet buffer content */
 	UINT32 TxStatusBufLen;		  /* TxMgmt Packet buffer Length */
 	BOOLEAN TxStatusInUsed;
+	PNET_DEV TxNdev;
 	LIST_HEADER cfg80211TxPacketList;
 
 	/* P2P Releated*/
@@ -12189,7 +12190,7 @@ UCHAR dot11_max_sup_rate(INT SupRateLen, UCHAR *SupRate, INT ExtRateLen, UCHAR *
 VOID mgmt_tb_set_mcast_entry(RTMP_ADAPTER *pAd);
 VOID set_entry_phy_cfg(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry);
 VOID MacTableReset(RTMP_ADAPTER *pAd);
-MAC_TABLE_ENTRY *MacTableLookup(RTMP_ADAPTER *pAd, UCHAR *pAddr);
+MAC_TABLE_ENTRY *MacTableLookup(RTMP_ADAPTER *pAd, const UCHAR *pAddr);
 BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr);
 MAC_TABLE_ENTRY *MacTableInsertEntry(
     IN RTMP_ADAPTER *pAd,

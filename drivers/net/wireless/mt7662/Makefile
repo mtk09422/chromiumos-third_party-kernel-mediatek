@@ -34,13 +34,13 @@ ccflags-y += -DDOT11N_DRAFT3
 ccflags-y += -DSTATS_COUNT_SUPPORT 
 ccflags-y += -DRT_CFG80211_SUPPORT 
 ccflags-y += -DWPA_SUPPLICANT_SUPPORT 
-ccflags-y += -DRT_CFG80211_P2P_SUPPORT 
-ccflags-y += -DUAPSD_SUPPORT 
-ccflags-y += -DMBSS_SUPPORT 
-ccflags-y += -DAP_SCAN_SUPPORT 
-ccflags-y += -DCONFIG_AP_SUPPORT 
-ccflags-y += -DAPCLI_SUPPORT 
-ccflags-y += -DRT_CFG80211_P2P_CONCURRENT_DEVICE 
+#ccflags-y += -DRT_CFG80211_P2P_SUPPORT
+#ccflags-y += -DUAPSD_SUPPORT
+#ccflags-y += -DMBSS_SUPPORT
+#ccflags-y += -DAP_SCAN_SUPPORT
+#ccflags-y += -DCONFIG_AP_SUPPORT
+#ccflags-y += -DAPCLI_SUPPORT
+#ccflags-y += -DRT_CFG80211_P2P_CONCURRENT_DEVICE
 ccflags-y += -DPROFILE_PATH_DYNAMIC 
 ccflags-y += -DACTIVE_CHANNEL_SCAN_SUPPORT 
 ccflags-y += -DRELEASE_EXCLUDE 
@@ -66,7 +66,7 @@ ccflags-y += -DNEW_RATE_ADAPT_SUPPORT
 ccflags-y += -DFIFO_EXT_SUPPORT 
 ccflags-y += -DMT7662 
 ccflags-y += -DMT7612  
-ccflags-y += -DRT_CFG80211_P2P_STATIC_CONCURRENT_DEVICE
+#ccflags-y += -DRT_CFG80211_P2P_STATIC_CONCURRENT_DEVICE
 ccflags-y += -DRALINK_ATE -DCONFIG_RT2880_ATE_CMD_NEW -DRALINK_QA
 #ccflags-y += -DFW_LOAD_FROM_BIN
 ccflags-y += -DTXBF_SUPPORT -DVHT_TXBF_SUPPORT
@@ -219,13 +219,14 @@ CFG80211_OBJS := $(CFG80211_DIR)cfg80211.o \
                  $(CFG80211_DIR)cfg80211drv.o
 
 OS_OBJS := $(OS_DIR)sta_ioctl.o \
-           $(OS_DIR)ap_ioctl.o \
            $(OS_DIR)rt_profile.o \
            $(OS_DIR)rt_usb.o \
            $(OS_DIR)usb_main_dev.o \
            $(OS_DIR)rt_linux.o \
            $(OS_DIR)rt_usb_util.o \
            $(OS_DIR)rt_main_dev.o
+
+#OS_OBJS += $(OS_DIR)ap_ioctl.o
     
 PHY_OBJS := $(PHY_DIR)phy.o \
             $(PHY_DIR)rf.o \
@@ -256,7 +257,7 @@ ATE_OBJS := $(ATE_DIR)/chips/mt76x2_ate.o \
 	    $(ATE_DIR)/common/rt_ate.o \
 	    $(ATE_DIR)/common/rt_qa.o
 
-$(MODULE_NAME)-objs  += $(AP_OBJS)
+#$(MODULE_NAME)-objs  += $(AP_OBJS)
 $(MODULE_NAME)-objs  += $(CHIP_OBJS)
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(MAC_OBJS)

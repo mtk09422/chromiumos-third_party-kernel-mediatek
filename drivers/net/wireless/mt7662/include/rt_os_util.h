@@ -468,10 +468,6 @@ VOID RtmpOsAtomicDec(RTMP_OS_ATOMIC *pAtomic);
 VOID RtmpOsAtomicInterlockedExchange(RTMP_OS_ATOMIC *pAtomicSrc, LONG Value);
 
 /* OS Utility */
-void hex_dump(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen);
-void hex_dump2(char *str, unsigned char *pSrcBufVA, unsigned int SrcBufLen);
-
-
 typedef VOID (*RTMP_OS_SEND_WLAN_EVENT)(
 	IN	VOID					*pAdSrc,
 	IN	USHORT					Event_flag,
@@ -912,6 +908,10 @@ INT32 CFG80211OS_UpdateRegRuleByRegionIdx(
     IN VOID *pCB,
     IN VOID *pChDesc2G,
     IN VOID *pChDesc5G);
+INT32 CFG80211OS_ReadyOnChannel(IN VOID *pAdOrg, IN VOID *pChInfo,
+				IN UINT32 duration);
+
+INT32 CFG80211OS_RemainOnChannelExpired(IN VOID *pAdOrg, IN VOID *pCtrl);
 #endif /* RT_CFG80211_SUPPORT */
 
 
