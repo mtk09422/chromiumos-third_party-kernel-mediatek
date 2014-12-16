@@ -1,0 +1,16 @@
+########################################################################### ###
+#@Copyright     Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+#@License       Strictly Confidential.
+### ###########################################################################
+
+config POWERVR_ROGUE
+	tristate "PowerVR Rogue"
+	depends on HAS_IOMEM
+	depends on DRM
+	select DRM_KMS_HELPER
+	select POWERVR_DRMPDP
+	help
+	  Driver for PowerVR Rogue graphics hardware.
+
+	  Say Y here if your SoC contains a PowerVR Rogue GPU. For more
+	  information, see <http://www.imgtec.com/powervr/>.
