@@ -1385,6 +1385,13 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 		msdc_cmd_done(host, MSDC_INT_CMDTMO, mrq, cmd);
 		return false;
 	}
+
+	if (mmc_resp_type(cmd) == MMC_RSP_R1B || cmd->data) {
+		/* R1B or with data, should check SDCBUSY */
+		while (sdc_is_busy())
+			cpu_relax();
+
+	}
 	return true;
 }
 
