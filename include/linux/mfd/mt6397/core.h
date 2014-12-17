@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014 MediaTek Inc.
- * Author: Flora.Fu <flora.fu@mediatek.com>
+ * Author: Flora Fu <flora.fu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -64,10 +64,7 @@ enum PMIC_INT_STATUS {
 };
 
 struct mt6397_chip {
-	/* Device */
 	struct device *dev;
-
-	/* Control interface */
 	struct regmap *regmap;
 	struct irq_domain *irq_domain;
 	struct mutex irqlock;
@@ -77,4 +74,3 @@ struct mt6397_chip {
 };
 
 #endif /* __MFD_MT6397_CORE_H__ */
-
