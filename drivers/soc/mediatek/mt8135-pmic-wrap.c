@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014 MediaTek Inc.
- * Author: Flora.Fu <flora.fu@mediatek.com>
+ * Author: Flora Fu <flora.fu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,44 +16,44 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
-#include <linux/module.h>
-#include <linux/mfd/mt6397/registers.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
+#include <linux/mfd/mt6397/registers.h>
+#include <linux/soc/mediatek/mtk-pmic-wrap.h>
 #include "mt8135-pmic-wrap.h"
-#include "mtk-pmic-wrap.h"
 
 /* macro for wrapper status */
-#define PWRAP_GET_WACS0_WDATA(x)    (((x) >> 0) & 0x0000ffff)
-#define PWRAP_GET_WACS0_ADR(x)      (((x) >> 16) & 0x00007fff)
-#define PWRAP_GET_WACS0_WRITE(x)    (((x) >> 31) & 0x00000001)
-#define PWRAP_GET_WACS0_RDATA(x)    (((x) >> 0) & 0x0000ffff)
-#define PWRAP_GET_WACS0_FSM(x)      (((x) >> 16) & 0x00000007)
-#define PWRAP_STATE_SYNC_IDLE0      (1 << 20)
-#define PWRAP_STATE_INIT_DONE0      (1 << 21)
+#define PWRAP_GET_WACS0_WDATA(x)	(((x) >> 0) & 0x0000ffff)
+#define PWRAP_GET_WACS0_ADR(x)		(((x) >> 16) & 0x00007fff)
+#define PWRAP_GET_WACS0_WRITE(x)	(((x) >> 31) & 0x00000001)
+#define PWRAP_GET_WACS0_RDATA(x)	(((x) >> 0) & 0x0000ffff)
+#define PWRAP_GET_WACS0_FSM(x)		(((x) >> 16) & 0x00000007)
+#define PWRAP_STATE_SYNC_IDLE0		(1 << 20)
+#define PWRAP_STATE_INIT_DONE0		(1 << 21)
 
 /* macro for WACS FSM */
-#define PWRAP_WACS_FSM_IDLE         0x00
-#define PWRAP_WACS_FSM_REQ          0x02
-#define PWRAP_WACS_FSM_WFDLE        0x04
-#define PWRAP_WACS_FSM_WFVLDCLR     0x06
-#define PWRAP_WACS_INIT_DONE        0x01
-#define PWRAP_WACS_WACS_SYNC_IDLE   0x01
+#define PWRAP_WACS_FSM_IDLE		0x00
+#define PWRAP_WACS_FSM_REQ		0x02
+#define PWRAP_WACS_FSM_WFDLE		0x04
+#define PWRAP_WACS_FSM_WFVLDCLR		0x06
+#define PWRAP_WACS_INIT_DONE		0x01
+#define PWRAP_WACS_WACS_SYNC_IDLE	0x01
 
 /* macro for device wrapper default value */
-#define PWRAP_DEW_READ_TEST_VAL     0x5aa5
-#define PWRAP_DEW_WRITE_TEST_VAL    0xa55a
+#define PWRAP_DEW_READ_TEST_VAL		0x5aa5
+#define PWRAP_DEW_WRITE_TEST_VAL	0xa55a
 
 /* macro for manual command */
-#define PWRAP_OP_WR                 0x1
-#define PWRAP_OP_RD                 0x0
-#define PWRAP_OP_CSH                0x0
-#define PWRAP_OP_CSL                0x1
-#define PWRAP_OP_OUTS               0x8
-#define PWRAP_OP_OUTD               0x9
-#define PWRAP_OP_OUTQ               0xA
+#define PWRAP_OP_WR			0x1
+#define PWRAP_OP_RD			0x0
+#define PWRAP_OP_CSH			0x0
+#define PWRAP_OP_CSL			0x1
+#define PWRAP_OP_OUTS			0x8
+#define PWRAP_OP_OUTD			0x9
+#define PWRAP_OP_OUTQ			0xA
 
 static bool is_fsm_idle(u32 x)
 {
@@ -685,7 +685,6 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 		return ret;
 
 	return 0;
-
 }
 
 static int pwrap_iomap_init(struct platform_device *pdev)
@@ -779,10 +778,9 @@ static int pwrap_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 
 	wrp = devm_kzalloc(dev, sizeof(struct pmic_wrapper), GFP_KERNEL);
-	if (!wrp) {
-		dev_err(dev, "Error: No memory\n");
+	if (!wrp)
 		return -ENOMEM;
-	}
+
 	platform_set_drvdata(pdev, wrp);
 
 	ret = pwrap_iomap_init(pdev);
@@ -834,7 +832,6 @@ MODULE_DEVICE_TABLE(of, of_pwrap_match_tbl);
 static struct platform_driver pwrap_drv = {
 	.driver = {
 		.name = "mt8135-pwrap",
-		.owner = THIS_MODULE,
 		.of_match_table = of_match_ptr(of_pwrap_match_tbl),
 	},
 	.probe = pwrap_probe,

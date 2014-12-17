@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014 MediaTek Inc.
- * Author: Flora.Fu <flora.fu@mediatek.com>
+ * Author: Flora Fu <flora.fu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,14 +16,14 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
-#include <linux/module.h>
-#include <linux/mfd/mt6397/registers.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
+#include <linux/mfd/mt6397/registers.h>
+#include <linux/soc/mediatek/mtk-pmic-wrap.h>
 #include "mt8173-pmic-wrap.h"
-#include "mtk-pmic-wrap.h"
 
 /* macro for wrapper status */
 #define PWRAP_GET_WACS0_WDATA(x)    (((x) >> 0) & 0x0000ffff)
