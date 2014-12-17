@@ -18,7 +18,7 @@ include $(rogue_basedir)/config_kernel.mk
 obj-$(CONFIG_DRM_MEDIATEK_ROGUE) += $(DISPLAY_CONTROLLER).o
 
 ccflags-y += \
- -include $(KERNEL_DIR)/$(rogue_basedir)/config_kernel.h \
+ -include ../../../$(rogue_basedir)/config_kernel.h \
  -I$(rogue_basedir) \
  -I$(dc_basedir)
 

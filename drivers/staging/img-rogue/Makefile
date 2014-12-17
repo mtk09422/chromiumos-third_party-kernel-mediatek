@@ -8,7 +8,7 @@ include $(img_basedir)/config_kernel.mk
 obj-$(CONFIG_POWERVR_ROGUE) += pvrsrvkm.o
 
 ccflags-y += \
- -include $(KERNEL_DIR)/$(img_basedir)/config_kernel.h \
+ -include config_kernel.h \
  -I$(img_basedir) \
  -I$(img_basedir)/km \
  -D__linux__
