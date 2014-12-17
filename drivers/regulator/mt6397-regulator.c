@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014 MediaTek Inc.
- * Author: Flora.Fu <flora.fu@mediatek.com>
+ * Author: Flora Fu <flora.fu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -12,125 +12,93 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/init.h>
-#include <linux/err.h>
 #include <linux/module.h>
 #include <linux/of.h>
-#include <linux/regmap.h>
 #include <linux/platform_device.h>
-#include <linux/regulator/driver.h>
-#include <linux/regulator/machine.h>
-#include <linux/regulator/of_regulator.h>
-#include <linux/regulator/mt6397-regulator.h>
+#include <linux/regmap.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/mfd/mt6397/registers.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/machine.h>
+#include <linux/regulator/mt6397-regulator.h>
+#include <linux/regulator/of_regulator.h>
 
-struct mt6397_buck_conf {
-	unsigned int vosel_reg;
-	unsigned int voselon_reg;
-	unsigned int nivosel_reg;
-	unsigned int vosel_mask;
-};
-
-struct mt6397_ldo_conf {
-	unsigned int is_fixed;
-	unsigned int vosel_reg;
-	unsigned int vosel_mask;
-	unsigned int vosel_shift;
-};
-
+/*
+ * MT6397 regulators' information
+ *
+ * @desc: standard fields of regulator description.
+ * @qi: Mask for query enable signal status of regulators
+ * @vselon_reg: Register sections for hardware control mode of bucks
+ * @vselctrl_reg: Register for controlling the buck control mode.
+ * @vselctrl_mask: Mask for query buck's voltage control mode.
+ */
 struct mt6397_regulator_info {
 	struct regulator_desc desc;
-	struct mt6397_buck_conf buck_conf;
-	struct mt6397_ldo_conf ldo_conf;
-	unsigned int qi;
-	unsigned int qi_mask;
+	u32 qi;
+	u32 vselon_reg;
+	u32 vselctrl_reg;
+	u32 vselctrl_mask;
 };
 
-struct mt6397_regulator_data {
-	int id;
-	const char *name;
-	struct regulator_init_data *initdata;
-	struct device_node *reg_node;
-};
-
-struct mt6397_regulator_priv {
-	struct mt6397_regulator_data *regulators;
-	unsigned int num_regulators;
-};
-
-#define MT6397_BUCK(vreg, min, max, step, volt_ranges,		\
-		enreg, vosel, voselon, nivosel)			\
-[MT6397_ID_##vreg] = {						\
-	.desc = {						\
-		.name = #vreg,					\
-		.ops = &mt6397_volt_range_ops,			\
-		.type = REGULATOR_VOLTAGE,			\
-		.id = MT6397_ID_##vreg,				\
-		.owner = THIS_MODULE,				\
-		.n_voltages	= (max - min)/step + 1,		\
-		.linear_ranges = volt_ranges,			\
-		.n_linear_ranges = ARRAY_SIZE(volt_ranges),	\
-		.enable_reg = enreg,				\
-		.enable_mask = BIT(0),				\
-	},							\
-	.qi = enreg,						\
-	.qi_mask = BIT(13),					\
-	.buck_conf = {						\
-		.vosel_reg = vosel,				\
-		.voselon_reg = voselon,				\
-		.nivosel_reg = nivosel,				\
-		.vosel_mask = 0x7f,				\
-	},							\
+#define MT6397_BUCK(match, vreg, min, max, step, volt_ranges, enreg,	\
+		vosel, vosel_mask, voselon, vosel_ctrl)			\
+[MT6397_ID_##vreg] = {							\
+	.desc = {							\
+		.name = #vreg,						\
+		.of_match = of_match_ptr(match),			\
+		.ops = &mt6397_volt_range_ops,				\
+		.type = REGULATOR_VOLTAGE,				\
+		.id = MT6397_ID_##vreg,					\
+		.owner = THIS_MODULE,					\
+		.n_voltages = (max - min)/step + 1,			\
+		.linear_ranges = volt_ranges,				\
+		.n_linear_ranges = ARRAY_SIZE(volt_ranges),		\
+		.vsel_reg = vosel,					\
+		.vsel_mask = vosel_mask,				\
+		.enable_reg = enreg,					\
+		.enable_mask = BIT(0),					\
+	},								\
+	.qi = BIT(13),							\
+	.vselon_reg = voselon,						\
+	.vselctrl_reg = vosel_ctrl,					\
+	.vselctrl_mask = BIT(1),					\
 }
 
-#define MT6397_BUCK_TABLE(vreg, buck_volt_table,		\
-		enreg, vosel, voselon, nivosel)			\
-[MT6397_ID_##vreg] = {						\
-	.desc = {						\
-		.name = #vreg,					\
-		.ops = &mt6397_volt_table_ops,			\
-		.type = REGULATOR_VOLTAGE,			\
-		.id = MT6397_ID_##vreg,				\
-		.owner = THIS_MODULE,				\
-		.n_voltages = 1,				\
-		.volt_table = buck_volt_table,			\
-		.enable_reg = enreg,				\
-		.enable_mask = BIT(0),				\
-	},							\
-	.qi = enreg,						\
-	.qi_mask = BIT(13),					\
-	.buck_conf = {						\
-		.vosel_reg = vosel,				\
-		.voselon_reg = voselon,				\
-		.nivosel_reg = nivosel,				\
-		.vosel_mask = 0x1f,				\
-	},							\
+#define MT6397_LDO(match, vreg, ldo_volt_table, enreg, enbit, vosel,	\
+		vosel_mask)						\
+[MT6397_ID_##vreg] = {							\
+	.desc = {							\
+		.name = #vreg,						\
+		.of_match = of_match_ptr(match),			\
+		.ops = &mt6397_volt_table_ops,				\
+		.type = REGULATOR_VOLTAGE,				\
+		.id = MT6397_ID_##vreg,					\
+		.owner = THIS_MODULE,					\
+		.n_voltages = ARRAY_SIZE(ldo_volt_table),		\
+		.volt_table = ldo_volt_table,				\
+		.vsel_reg = vosel,					\
+		.vsel_mask = vosel_mask,				\
+		.enable_reg = enreg,					\
+		.enable_mask = BIT(enbit),				\
+	},								\
+	.qi = BIT(15),							\
 }
 
-#define MT6397_LDO(vreg, ldo_volt_table,			\
-		enreg, enbit, fixed, vosel, _vosel_mask,	\
-		_vosel_shift)					\
-[MT6397_ID_##vreg] = {						\
-	.desc = {						\
-		.name = #vreg,					\
-		.ops = &mt6397_volt_table_ops,			\
-		.type = REGULATOR_VOLTAGE,			\
-		.id = MT6397_ID_##vreg,				\
-		.owner = THIS_MODULE,				\
-		.n_voltages = ARRAY_SIZE(ldo_volt_table),	\
-		.volt_table = ldo_volt_table,			\
-		.enable_reg = enreg,				\
-		.enable_mask = BIT(enbit),			\
-	},							\
-	.qi = enreg,						\
-	.qi_mask = BIT(15),					\
-	.ldo_conf = {						\
-		.is_fixed = fixed,				\
-		.vosel_reg = vosel,				\
-		.vosel_mask = _vosel_mask,			\
-		.vosel_shift = _vosel_shift,			\
-	},							\
+#define MT6397_REG_FIXED(match, vreg, enreg, enbit, volt)		\
+[MT6397_ID_##vreg] = {							\
+	.desc = {							\
+		.name = #vreg,						\
+		.of_match = of_match_ptr(match),			\
+		.ops = &mt6397_volt_fixed_ops,				\
+		.type = REGULATOR_VOLTAGE,				\
+		.id = MT6397_ID_##vreg,					\
+		.owner = THIS_MODULE,					\
+		.n_voltages = 1,					\
+		.enable_reg = enreg,					\
+		.enable_mask = BIT(enbit),				\
+		.min_uV = volt,						\
+	},								\
+	.qi = BIT(15),							\
 }
 
 static const struct regulator_linear_range buck_volt_range1[] = {
@@ -141,324 +109,180 @@ static const struct regulator_linear_range buck_volt_range2[] = {
 	REGULATOR_LINEAR_RANGE(800000, 0, 0x7f, 6250),
 };
 
-static const unsigned int fixed_1800000_voltage[] = {
-	1800000,
+static const struct regulator_linear_range buck_volt_range3[] = {
+	REGULATOR_LINEAR_RANGE(1500000, 0, 0x1f, 20000),
 };
 
-static const unsigned int fixed_2800000_voltage[] = {
-	2800000,
-};
-
-static const unsigned int fixed_3300000_voltage[] = {
-	3300000,
-};
-
-static const unsigned int ldo_volt_table1[] = {
+static const u32 ldo_volt_table1[] = {
 	1500000, 1800000, 2500000, 2800000,
 };
 
-static const unsigned int ldo_volt_table2[] = {
+static const u32 ldo_volt_table2[] = {
 	1800000, 3300000,
 };
 
-static const unsigned int ldo_volt_table3[] = {
+static const u32 ldo_volt_table3[] = {
 	3000000, 3300000,
 };
 
-static const unsigned int ldo_volt_table4[] = {
+static const u32 ldo_volt_table4[] = {
 	1220000, 1300000, 1500000, 1800000, 2500000, 2800000, 3000000, 3300000,
 };
 
-static const unsigned int ldo_volt_table5[] = {
+static const u32 ldo_volt_table5[] = {
 	1200000, 1300000, 1500000, 1800000, 2500000, 2800000, 3000000, 3300000,
 };
 
-static const unsigned int ldo_volt_table5_v2[] = {
+static const u32 ldo_volt_table5_v2[] = {
 	1200000, 1000000, 1500000, 1800000, 2500000, 2800000, 3000000, 3300000,
 };
 
-static const unsigned int ldo_volt_table6[] = {
+static const u32 ldo_volt_table6[] = {
 	1200000, 1300000, 1500000, 1800000, 2500000, 2800000, 3000000, 2000000,
 };
 
-static const unsigned int ldo_volt_table7[] = {
+static const u32 ldo_volt_table7[] = {
 	1300000, 1500000, 1800000, 2000000, 2500000, 2800000, 3000000, 3300000,
 };
 
-static int mt6397_buck_set_voltage_sel(struct regulator_dev *rdev, unsigned sel)
+static int mt6397_get_status(struct regulator_dev *rdev)
 {
 	int ret;
-	unsigned int vosel;
-	unsigned int voselon;
-	unsigned int vosel_mask;
+	u32 regval;
 	struct mt6397_regulator_info *info = rdev_get_drvdata(rdev);
 
-	vosel = info->buck_conf.vosel_reg;
-	voselon = info->buck_conf.voselon_reg;
-	vosel_mask = info->buck_conf.vosel_mask;
-
-	ret = regmap_update_bits(rdev->regmap, vosel, vosel_mask, sel);
+	ret = regmap_read(rdev->regmap, info->desc.enable_reg, &regval);
 	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to update vosel: %d\n", ret);
+		dev_err(&rdev->dev, "Failed to get enable reg: %d\n", ret);
 		return ret;
 	}
 
-	ret = regmap_update_bits(rdev->regmap, voselon, vosel_mask, sel);
-	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to update vosel_on: %d\n", ret);
-		return ret;
-	}
-	return 0;
-}
-
-static int mt6397_buck_get_voltage_sel(struct regulator_dev *rdev)
-{
-	int ret;
-	unsigned int nivosel;
-	unsigned int vosel_mask;
-	unsigned int regval;
-	struct mt6397_regulator_info *info = rdev_get_drvdata(rdev);
-
-	nivosel = info->buck_conf.nivosel_reg;
-	vosel_mask = info->buck_conf.vosel_mask;
-
-	ret = regmap_read(rdev->regmap, nivosel, &regval);
-	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to get vosel: %d\n", ret);
-		return ret;
-	}
-
-	regval &= vosel_mask;
-	regval >>= ffs(vosel_mask) - 1;
-
-	return regval;
-}
-
-
-static int mt6397_ldo_set_voltage_sel(struct regulator_dev *rdev, unsigned sel)
-{
-	int ret;
-	unsigned int is_fixed;
-	unsigned int vosel;
-	unsigned int vosel_mask;
-	unsigned int vosel_shift;
-
-	struct mt6397_regulator_info *info = rdev_get_drvdata(rdev);
-
-	is_fixed = info->ldo_conf.is_fixed;
-	vosel = info->ldo_conf.vosel_reg;
-	vosel_mask = info->ldo_conf.vosel_mask;
-	vosel_shift = info->ldo_conf.vosel_shift;
-
-	if (is_fixed)
-		return 0;
-
-	sel <<= vosel_shift;
-	ret = regmap_update_bits(rdev->regmap, vosel, vosel_mask, sel);
-	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to update vosel: %d\n", ret);
-		return ret;
-	}
-
-	return 0;
-}
-
-static int mt6397_ldo_get_voltage_sel(struct regulator_dev *rdev)
-{
-	int ret;
-	unsigned int vosel;
-	unsigned int vosel_mask;
-	unsigned int regval;
-	struct mt6397_regulator_info *info = rdev_get_drvdata(rdev);
-
-	vosel = info->ldo_conf.vosel_reg;
-	vosel_mask = info->ldo_conf.vosel_mask;
-
-	ret = regmap_read(rdev->regmap, vosel, &regval);
-	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to get vosel: %d\n", ret);
-		return ret;
-	}
-
-	regval &= vosel_mask;
-	regval >>= ffs(vosel_mask) - 1;
-
-	return regval;
-}
-
-static int mt6397_regulator_is_enabled(struct regulator_dev *rdev)
-{
-	int ret;
-	unsigned int regaddr;
-	unsigned int regmask;
-	unsigned int regval;
-	struct mt6397_regulator_info *info = rdev_get_drvdata(rdev);
-
-	regaddr = info->qi;
-	regmask = info->qi_mask;
-
-	ret = regmap_read(rdev->regmap, regaddr, &regval);
-	if (ret != 0) {
-		dev_err(&rdev->dev, "Failed to get vosel: %d\n", ret);
-		return ret;
-	}
-
-	return (regval & info->qi_mask) ? 1 : 0;
+	return (regval & info->qi) ? REGULATOR_STATUS_ON : REGULATOR_STATUS_OFF;
 }
 
 static struct regulator_ops mt6397_volt_range_ops = {
 	.list_voltage = regulator_list_voltage_linear_range,
 	.map_voltage = regulator_map_voltage_linear_range,
-	.set_voltage_sel = mt6397_buck_set_voltage_sel,
-	.get_voltage_sel = mt6397_buck_get_voltage_sel,
+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
 	.set_voltage_time_sel = regulator_set_voltage_time_sel,
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
-	.is_enabled = mt6397_regulator_is_enabled,
+	.is_enabled = regulator_is_enabled_regmap,
+	.get_status = mt6397_get_status,
 };
 
 static struct regulator_ops mt6397_volt_table_ops = {
 	.list_voltage = regulator_list_voltage_table,
 	.map_voltage = regulator_map_voltage_iterate,
-	.set_voltage_sel = mt6397_ldo_set_voltage_sel,
-	.get_voltage_sel = mt6397_ldo_get_voltage_sel,
+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
 	.set_voltage_time_sel = regulator_set_voltage_time_sel,
 	.enable = regulator_enable_regmap,
 	.disable = regulator_disable_regmap,
-	.is_enabled = mt6397_regulator_is_enabled,
+	.is_enabled = regulator_is_enabled_regmap,
+	.get_status = mt6397_get_status,
+};
+
+static struct regulator_ops mt6397_volt_fixed_ops = {
+	.list_voltage = regulator_list_voltage_linear,
+	.enable = regulator_enable_regmap,
+	.disable = regulator_disable_regmap,
+	.is_enabled = regulator_is_enabled_regmap,
+	.get_status = mt6397_get_status,
 };
 
 /* The array is indexed by id(MT6397_ID_XXX) */
 static struct mt6397_regulator_info mt6397_regulators[] = {
-	MT6397_BUCK(VPCA15, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VCA15_CON7, MT6397_VCA15_CON9,
-		MT6397_VCA15_CON10, MT6397_VCA15_CON12),
-	MT6397_BUCK(VPCA7, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VPCA7_CON7, MT6397_VPCA7_CON9,
-		MT6397_VPCA7_CON10, MT6397_VPCA7_CON12),
-	MT6397_BUCK(VSRAMCA15, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VSRMCA15_CON7, MT6397_VSRMCA15_CON9,
-		MT6397_VSRMCA15_CON10, MT6397_VSRMCA15_CON12),
-	MT6397_BUCK(VSRAMCA7, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VSRMCA7_CON7, MT6397_VSRMCA7_CON9,
-		MT6397_VSRMCA7_CON10, MT6397_VSRMCA7_CON12),
-	MT6397_BUCK(VCORE, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VCORE_CON7, MT6397_VCORE_CON9,
-		MT6397_VCORE_CON10, MT6397_VCORE_CON12),
-	MT6397_BUCK(VGPU, 700000, 1493750, 6250, buck_volt_range1,
-		MT6397_VGPU_CON7, MT6397_VGPU_CON9,
-		MT6397_VGPU_CON10, MT6397_VCORE_CON12),
-	MT6397_BUCK(VDRM, 800000, 1593750, 6250, buck_volt_range2,
-		MT6397_VDRM_CON7, MT6397_VDRM_CON9,
-		MT6397_VDRM_CON10, MT6397_VDRM_CON12),
-	MT6397_BUCK_TABLE(VIO18, fixed_1800000_voltage,
-		MT6397_VIO18_CON7, MT6397_VIO18_CON9,
-		MT6397_VIO18_CON10, MT6397_VIO18_CON12),
-	MT6397_LDO(VTCXO, fixed_2800000_voltage,
-		MT6397_ANALDO_CON0, 10, 1, 0, 0, 0),
-	MT6397_LDO(VA28, fixed_2800000_voltage,
-		MT6397_ANALDO_CON1, 14, 1, 0, 0, 0),
-	MT6397_LDO(VCAMA, ldo_volt_table1,
-		MT6397_ANALDO_CON2, 15, 0, MT6397_ANALDO_CON6, 0xC0, 6),
-	MT6397_LDO(VIO28, fixed_2800000_voltage,
-		MT6397_DIGLDO_CON0, 14, 1, 0, 0, 0),
-	MT6397_LDO(USB, fixed_3300000_voltage,
-		MT6397_DIGLDO_CON1, 14, 1, 0, 0, 0),
-	MT6397_LDO(VMC, ldo_volt_table2,
-		MT6397_DIGLDO_CON2, 12, 0, MT6397_DIGLDO_CON29, 0x10, 4),
-	MT6397_LDO(VMCH, ldo_volt_table3,
-		MT6397_DIGLDO_CON3, 14, 0, MT6397_DIGLDO_CON17, 0x80, 7),
-	MT6397_LDO(VEMC3V3, ldo_volt_table3,
-		MT6397_DIGLDO_CON4, 14, 0, MT6397_DIGLDO_CON18, 0x10, 4),
-	MT6397_LDO(VCAMD, ldo_volt_table4,
-		MT6397_DIGLDO_CON5, 15, 0, MT6397_DIGLDO_CON19, 0xE0, 5),
-	MT6397_LDO(VCAMIO, ldo_volt_table5,
-		MT6397_DIGLDO_CON6, 15, 0, MT6397_DIGLDO_CON20, 0xE0, 5),
-	MT6397_LDO(VCAMAF, ldo_volt_table5,
-		MT6397_DIGLDO_CON7, 15, 0, MT6397_DIGLDO_CON21, 0xE0, 5),
-	MT6397_LDO(VGP4, ldo_volt_table5,
-		MT6397_DIGLDO_CON8, 15, 0, MT6397_DIGLDO_CON22, 0xE0, 5),
-	MT6397_LDO(VGP5, ldo_volt_table6,
-		MT6397_DIGLDO_CON9, 15, 0, MT6397_DIGLDO_CON23, 0xE0, 5),
-	MT6397_LDO(VGP6, ldo_volt_table5,
-		MT6397_DIGLDO_CON10, 15, 0, MT6397_DIGLDO_CON33, 0xE0, 5),
-	MT6397_LDO(VIBR, ldo_volt_table7,
-		MT6397_DIGLDO_CON24, 15, 0, MT6397_DIGLDO_CON25, 0xE00, 9),
+	MT6397_BUCK("buck_vpca15", VPCA15, 700000, 1493750, 6250,
+		buck_volt_range1, MT6397_VCA15_CON7, MT6397_VCA15_CON9, 0x7f,
+		MT6397_VCA15_CON10, MT6397_VCA15_CON5),
+	MT6397_BUCK("buck_vpca7", VPCA7, 700000, 1493750, 6250,
+		buck_volt_range1, MT6397_VPCA7_CON7, MT6397_VPCA7_CON9, 0x7f,
+		MT6397_VPCA7_CON10, MT6397_VPCA7_CON5),
+	MT6397_BUCK("buck_vsramca15", VSRAMCA15, 700000, 1493750, 6250,
+		buck_volt_range1, MT6397_VSRMCA15_CON7, MT6397_VSRMCA15_CON9,
+		0x7f, MT6397_VSRMCA15_CON10, MT6397_VSRMCA15_CON5),
+	MT6397_BUCK("buck_vsramca7", VSRAMCA7, 700000, 1493750, 6250,
+		buck_volt_range1, MT6397_VSRMCA7_CON7, MT6397_VSRMCA7_CON9,
+		0x7f, MT6397_VSRMCA7_CON10, MT6397_VSRMCA7_CON5),
+	MT6397_BUCK("buck_vcore", VCORE, 700000, 1493750, 6250,
+		buck_volt_range1, MT6397_VCORE_CON7, MT6397_VCORE_CON9, 0x7f,
+		MT6397_VCORE_CON10, MT6397_VCORE_CON5),
+	MT6397_BUCK("buck_vgpu", VGPU, 700000, 1493750, 6250, buck_volt_range1,
+		MT6397_VGPU_CON7, MT6397_VGPU_CON9, 0x7f,
+		MT6397_VGPU_CON10, MT6397_VGPU_CON5),
+	MT6397_BUCK("buck_vdrm", VDRM, 800000, 1593750, 6250, buck_volt_range2,
+		MT6397_VDRM_CON7, MT6397_VDRM_CON9, 0x7f,
+		MT6397_VDRM_CON10, MT6397_VDRM_CON5),
+	MT6397_BUCK("buck_vio18", VIO18, 1500000, 2120000, 20000,
+		buck_volt_range3, MT6397_VIO18_CON7, MT6397_VIO18_CON9, 0x1f,
+		MT6397_VIO18_CON10, MT6397_VIO18_CON5),
+	MT6397_REG_FIXED("ldo_vtcxo", VTCXO, MT6397_ANALDO_CON0, 10, 2800000),
+	MT6397_REG_FIXED("ldo_va28", VA28, MT6397_ANALDO_CON1, 14, 2800000),
+	MT6397_LDO("ldo_vcama", VCAMA, ldo_volt_table1,
+		MT6397_ANALDO_CON2, 15, MT6397_ANALDO_CON6, 0xC0),
+	MT6397_REG_FIXED("ldo_vio28", VIO28, MT6397_DIGLDO_CON0, 14, 2800000),
+	MT6397_REG_FIXED("ldo_vusb", VUSB, MT6397_DIGLDO_CON1, 14, 3300000),
+	MT6397_LDO("ldo_vmc", VMC, ldo_volt_table2,
+		MT6397_DIGLDO_CON2, 12, MT6397_DIGLDO_CON29, 0x10),
+	MT6397_LDO("ldo_vmch", VMCH, ldo_volt_table3,
+		MT6397_DIGLDO_CON3, 14, MT6397_DIGLDO_CON17, 0x80),
+	MT6397_LDO("ldo_vemc3v3", VEMC3V3, ldo_volt_table3,
+		MT6397_DIGLDO_CON4, 14, MT6397_DIGLDO_CON18, 0x10),
+	MT6397_LDO("ldo_vgp1", VGP1, ldo_volt_table4,
+		MT6397_DIGLDO_CON5, 15, MT6397_DIGLDO_CON19, 0xE0),
+	MT6397_LDO("ldo_vgp2", VGP2, ldo_volt_table5,
+		MT6397_DIGLDO_CON6, 15, MT6397_DIGLDO_CON20, 0xE0),
+	MT6397_LDO("ldo_vgp3", VGP3, ldo_volt_table5,
+		MT6397_DIGLDO_CON7, 15, MT6397_DIGLDO_CON21, 0xE0),
+	MT6397_LDO("ldo_vgp4", VGP4, ldo_volt_table5,
+		MT6397_DIGLDO_CON8, 15, MT6397_DIGLDO_CON22, 0xE0),
+	MT6397_LDO("ldo_vgp5", VGP5, ldo_volt_table6,
+		MT6397_DIGLDO_CON9, 15, MT6397_DIGLDO_CON23, 0xE0),
+	MT6397_LDO("ldo_vgp6", VGP6, ldo_volt_table5,
+		MT6397_DIGLDO_CON10, 15, MT6397_DIGLDO_CON33, 0xE0),
+	MT6397_LDO("ldo_vibr", VIBR, ldo_volt_table7,
+		MT6397_DIGLDO_CON24, 15, MT6397_DIGLDO_CON25, 0xE00),
 };
 
-#define MT6397_REGULATOR_OF_MATCH(_name, _id)			\
-[MT6397_ID_##_id] = {						\
-	.name = #_name,						\
-	.driver_data = &mt6397_regulators[MT6397_ID_##_id],	\
-}
-
-static struct of_regulator_match mt6397_regulator_matches[] = {
-	MT6397_REGULATOR_OF_MATCH(buck_vpca15, VPCA15),
-	MT6397_REGULATOR_OF_MATCH(buck_vpca7, VPCA7),
-	MT6397_REGULATOR_OF_MATCH(buck_vsramca15, VSRAMCA15),
-	MT6397_REGULATOR_OF_MATCH(buck_vsramca7, VSRAMCA7),
-	MT6397_REGULATOR_OF_MATCH(buck_vcore, VCORE),
-	MT6397_REGULATOR_OF_MATCH(buck_vgpu, VGPU),
-	MT6397_REGULATOR_OF_MATCH(buck_vdrm, VDRM),
-	MT6397_REGULATOR_OF_MATCH(buck_vio18, VIO18),
-	MT6397_REGULATOR_OF_MATCH(ldo_vtcxo, VTCXO),
-	MT6397_REGULATOR_OF_MATCH(ldo_va28, VA28),
-	MT6397_REGULATOR_OF_MATCH(ldo_vcama, VCAMA),
-	MT6397_REGULATOR_OF_MATCH(ldo_vio28, VIO28),
-	MT6397_REGULATOR_OF_MATCH(ldo_usb, USB),
-	MT6397_REGULATOR_OF_MATCH(ldo_vmc, VMC),
-	MT6397_REGULATOR_OF_MATCH(ldo_vmch, VMCH),
-	MT6397_REGULATOR_OF_MATCH(ldo_vemc3v3, VEMC3V3),
-	MT6397_REGULATOR_OF_MATCH(ldo_vcamd, VCAMD),
-	MT6397_REGULATOR_OF_MATCH(ldo_vcamio, VCAMIO),
-	MT6397_REGULATOR_OF_MATCH(ldo_vcamaf, VCAMAF),
-	MT6397_REGULATOR_OF_MATCH(ldo_vgp4, VGP4),
-	MT6397_REGULATOR_OF_MATCH(ldo_vgp5, VGP5),
-	MT6397_REGULATOR_OF_MATCH(ldo_vgp6, VGP6),
-	MT6397_REGULATOR_OF_MATCH(ldo_vibr, VIBR),
-};
-
-static int mt6397_regulator_dt_init(struct platform_device *pdev,
-			struct mt6397_regulator_priv *priv)
+static int mt6397_set_buck_vosel_reg(struct platform_device *pdev)
 {
 	struct mt6397_chip *mt6397 = dev_get_drvdata(pdev->dev.parent);
-	struct device_node *np, *regulators;
-	struct mt6397_regulator_data *rdata;
-	int matched, i, j, ret;
-	unsigned int reg_value;
+	int i;
+	u32 regval;
 
-	if (!priv) {
-		dev_err(&pdev->dev, "regulator private data missing\n");
-		return -EINVAL;
+	for (i = 0; i < MT6397_MAX_REGULATOR; i++) {
+		if (mt6397_regulators[i].vselctrl_reg) {
+			if (regmap_read(mt6397->regmap,
+				mt6397_regulators[i].vselctrl_reg,
+				&regval) < 0) {
+				dev_err(&pdev->dev,
+					"Failed to read buck ctrl\n");
+				return -EIO;
+			}
+
+			if (regval & mt6397_regulators[i].vselctrl_mask) {
+				mt6397_regulators[i].desc.vsel_reg =
+				mt6397_regulators[i].vselon_reg;
+			}
+		}
 	}
 
-	np = of_node_get(pdev->dev.parent->of_node);
-	if (!np)
-		return -EINVAL;
+	return 0;
+}
 
-	regulators = of_get_child_by_name(np, "regulators");
-	if (!regulators) {
-		dev_err(&pdev->dev, "regulators node not found\n");
-		ret = -EINVAL;
-		goto out;
-	}
-	of_node_put(np);
-	matched = of_regulator_match(&pdev->dev, regulators,
-				mt6397_regulator_matches,
-				ARRAY_SIZE(mt6397_regulator_matches));
-	of_node_put(regulators);
-	if (matched < 0) {
-		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n",
-			matched);
-		return matched;
-	}
+static int mt6397_regulator_probe(struct platform_device *pdev)
+{
+	struct mt6397_chip *mt6397 = dev_get_drvdata(pdev->dev.parent);
+	struct regulator_config config = {};
+	struct regulator_dev *rdev;
+	int i;
+	u32 reg_value, version;
 
-	priv->num_regulators = matched;
-	priv->regulators = devm_kzalloc(&pdev->dev,
-			(sizeof(struct mt6397_regulator_data) *
-			ARRAY_SIZE(mt6397_regulator_matches)), GFP_KERNEL);
-	if (!priv->regulators)
-		return -ENOMEM;
+	/* Query buck controller to select activated voltage register part */
+	if (mt6397_set_buck_vosel_reg(pdev))
+		return -EIO;
 
 	/* Read PMIC chip revision to update constraints and voltage table */
 	if (regmap_read(mt6397->regmap, MT6397_CID, &reg_value) < 0) {
@@ -467,59 +291,25 @@ static int mt6397_regulator_dt_init(struct platform_device *pdev,
 	}
 	dev_info(&pdev->dev, "Chip ID = 0x%x\n", reg_value);
 
-	if ((reg_value & 0xFF) == MT6397_REGULATOR_ID91) {
-		j = MT6397_ID_VCAMIO;
-		mt6397_regulator_matches[j].init_data->constraints.min_uV =
-		1000000;
-		mt6397_regulators[j].desc.volt_table = ldo_volt_table5_v2;
+	version = (reg_value & 0xFF);
+	switch (version) {
+	case MT6397_REGULATOR_ID91:
+		mt6397_regulators[MT6397_ID_VGP2].desc.volt_table =
+		ldo_volt_table5_v2;
+		break;
+	default:
+		break;
 	}
 
-	rdata = priv->regulators;
-	for (i = 0; i < ARRAY_SIZE(mt6397_regulator_matches); i++) {
-		rdata->id = i;
-		rdata->name = mt6397_regulator_matches[i].name;
-		rdata->initdata = mt6397_regulator_matches[i].init_data;
-		rdata->reg_node = mt6397_regulator_matches[i].of_node;
-		rdata++;
-	}
-	return 0;
-
-out:
-	of_node_put(np);
-	return ret;
-}
-
-static int mt6397_regulator_probe(struct platform_device *pdev)
-{
-	struct mt6397_chip *mt6397 = dev_get_drvdata(pdev->dev.parent);
-	int ret, i, id, size;
-	struct regulator_config config = {};
-	struct regulator_dev *rdev;
-	struct mt6397_regulator_priv *priv;
-
-	size = sizeof(struct mt6397_regulator_priv);
-	priv = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-	if (!priv)
-		return -ENOMEM;
-
-	platform_set_drvdata(pdev, priv);
-	ret = mt6397_regulator_dt_init(pdev, priv);
-	if (ret)
-		return ret;
-
-	for (i = 0; i < MT6397_ID_RG_MAX; i++) {
-		id = priv->regulators[i].id;
+	for (i = 0; i < MT6397_MAX_REGULATOR; i++) {
 		config.dev = &pdev->dev;
-		config.init_data = priv->regulators[i].initdata;
-		config.of_node = priv->regulators[i].reg_node;
-		config.driver_data = mt6397_regulator_matches[i].driver_data;
+		config.driver_data = &mt6397_regulators[i];
 		config.regmap = mt6397->regmap;
-
 		rdev = devm_regulator_register(&pdev->dev,
 				&mt6397_regulators[i].desc, &config);
 		if (IS_ERR(rdev)) {
 			dev_err(&pdev->dev, "failed to register %s\n",
-				mt6397_regulators[id].desc.name);
+				mt6397_regulators[i].desc.name);
 			return PTR_ERR(rdev);
 		}
 	}
@@ -527,25 +317,14 @@ static int mt6397_regulator_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct platform_device_id mt6397_regulator_id[] = {
-	{"mt6397-regulator", 0},
-	{ },
-};
-
 static struct platform_driver mt6397_regulator_driver = {
-	.driver	= {
+	.driver = {
 		.name = "mt6397-regulator",
-		.owner = THIS_MODULE,
 	},
 	.probe = mt6397_regulator_probe,
-	.id_table = mt6397_regulator_id,
 };
 
-static int __init mt6397_regulator_init(void)
-{
-	return platform_driver_register(&mt6397_regulator_driver);
-}
-subsys_initcall(mt6397_regulator_init);
+module_platform_driver(mt6397_regulator_driver);
 
 MODULE_AUTHOR("Flora Fu <flora.fu@mediatek.com>");
 MODULE_DESCRIPTION("Regulator Driver for MediaTek MT6397 PMIC");

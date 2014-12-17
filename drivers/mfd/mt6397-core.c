@@ -27,7 +27,7 @@ static struct mfd_cell mt6397_devs[] = {
 	},
 	{
 		.name = "mt6397-regulator",
-		.id = -1,
+		.of_compatible = "mediatek,mt6397-regulator",
 	},
 	{
 		.name = "mt6397-codec",
