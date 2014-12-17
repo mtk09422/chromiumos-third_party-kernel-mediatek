@@ -1859,7 +1859,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 {
 	if (MSDC_EMMC == host->host_func) {
 		host->power_control = msdc_emmc_power;
-	} else if (MSDC_SD == host->host_func) {
+	} else {
 		host->power_control = msdc_sd_power;
 		host->power_switch = msdc_sd_power_switch;
 	}
