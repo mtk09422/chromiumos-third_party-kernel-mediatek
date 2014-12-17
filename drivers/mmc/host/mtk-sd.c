@@ -38,11 +38,6 @@
 #define MSDC_AUTOCMD19          (0x0003)
 
 /*--------------------------------------------------------------------------*/
-/* Common Macro                                                             */
-/*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)                 (host->base + OFFSET_##x)
-
-/*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
 /*--------------------------------------------------------------------------*/
 #define MSDC_FIFO_SZ            (128)
@@ -136,68 +131,67 @@ enum {
 /*--------------------------------------------------------------------------*/
 
 /* common register */
-#define MSDC_CFG                REG_ADDR(MSDC_CFG)
-#define MSDC_IOCON              REG_ADDR(MSDC_IOCON)
-#define MSDC_PS                 REG_ADDR(MSDC_PS)
-#define MSDC_INT                REG_ADDR(MSDC_INT)
-#define MSDC_INTEN              REG_ADDR(MSDC_INTEN)
-#define MSDC_FIFOCS             REG_ADDR(MSDC_FIFOCS)
-#define MSDC_TXDATA             REG_ADDR(MSDC_TXDATA)
-#define MSDC_RXDATA             REG_ADDR(MSDC_RXDATA)
-#define MSDC_PATCH_BIT0         REG_ADDR(MSDC_PATCH_BIT)
+#define MSDC_CFG(x)             ((x) + OFFSET_MSDC_CFG)
+#define MSDC_IOCON(x)           ((x) + OFFSET_MSDC_IOCON)
+#define MSDC_PS(x)              ((x) + OFFSET_MSDC_PS)
+#define MSDC_INT(x)             ((x) + OFFSET_MSDC_INT)
+#define MSDC_INTEN(x)           ((x) + OFFSET_MSDC_INTEN)
+#define MSDC_FIFOCS(x)          ((x) + OFFSET_MSDC_FIFOCS)
+#define MSDC_TXDATA(x)          ((x) + OFFSET_MSDC_TXDATA)
+#define MSDC_RXDATA(x)          ((x) + OFFSET_MSDC_RXDATA)
 
 /* sdmmc register */
-#define SDC_CFG                 REG_ADDR(SDC_CFG)
-#define SDC_CMD                 REG_ADDR(SDC_CMD)
-#define SDC_ARG                 REG_ADDR(SDC_ARG)
-#define SDC_STS                 REG_ADDR(SDC_STS)
-#define SDC_RESP0               REG_ADDR(SDC_RESP0)
-#define SDC_RESP1               REG_ADDR(SDC_RESP1)
-#define SDC_RESP2               REG_ADDR(SDC_RESP2)
-#define SDC_RESP3               REG_ADDR(SDC_RESP3)
-#define SDC_BLK_NUM             REG_ADDR(SDC_BLK_NUM)
-#define SDC_CSTS                REG_ADDR(SDC_CSTS)
-#define SDC_CSTS_EN             REG_ADDR(SDC_CSTS_EN)
-#define SDC_DCRC_STS            REG_ADDR(SDC_DCRC_STS)
+#define SDC_CFG(x)              ((x) + OFFSET_SDC_CFG)
+#define SDC_CMD(x)              ((x) + OFFSET_SDC_CMD)
+#define SDC_ARG(x)              ((x) + OFFSET_SDC_ARG)
+#define SDC_STS(x)              ((x) + OFFSET_SDC_STS)
+#define SDC_RESP0(x)            ((x) + OFFSET_SDC_RESP0)
+#define SDC_RESP1(x)            ((x) + OFFSET_SDC_RESP1)
+#define SDC_RESP2(x)            ((x) + OFFSET_SDC_RESP2)
+#define SDC_RESP3(x)            ((x) + OFFSET_SDC_RESP3)
+#define SDC_BLK_NUM(x)          ((x) + OFFSET_SDC_BLK_NUM)
+#define SDC_CSTS(x)             ((x) + OFFSET_SDC_CSTS)
+#define SDC_CSTS_EN(x)          ((x) + OFFSET_SDC_CSTS_EN)
+#define SDC_DCRC_STS(x)         ((x) + OFFSET_SDC_DCRC_STS)
 
 /* emmc register*/
-#define EMMC_CFG0               REG_ADDR(EMMC_CFG0)
-#define EMMC_CFG1               REG_ADDR(EMMC_CFG1)
-#define EMMC_STS                REG_ADDR(EMMC_STS)
-#define EMMC_IOCON              REG_ADDR(EMMC_IOCON)
+#define EMMC_CFG0(x)            ((x) + OFFSET_EMMC_CFG0)
+#define EMMC_CFG1(x)            ((x) + OFFSET_EMMC_CFG1)
+#define EMMC_STS(x)             ((x) + OFFSET_EMMC_STS)
+#define EMMC_IOCON(x)           ((x) + OFFSET_EMMC_IOCON)
 
 /* auto command register */
-#define SDC_ACMD_RESP           REG_ADDR(SDC_ACMD_RESP)
-#define SDC_ACMD19_TRG          REG_ADDR(SDC_ACMD19_TRG)
-#define SDC_ACMD19_STS          REG_ADDR(SDC_ACMD19_STS)
+#define SDC_ACMD_RESP(x)        ((x) + OFFSET_SDC_ACMD_RESP)
+#define SDC_ACMD19_TRG(x)       ((x) + OFFSET_SDC_ACMD19_TRG)
+#define SDC_ACMD19_STS(x)       ((x) + OFFSET_SDC_ACMD19_STS)
 
 /* dma register */
-#define MSDC_DMA_SA             REG_ADDR(MSDC_DMA_SA)
-#define MSDC_DMA_CA             REG_ADDR(MSDC_DMA_CA)
-#define MSDC_DMA_CTRL           REG_ADDR(MSDC_DMA_CTRL)
-#define MSDC_DMA_CFG            REG_ADDR(MSDC_DMA_CFG)
-#define MSDC_DMA_LEN            REG_ADDR(MSDC_DMA_LEN)
+#define MSDC_DMA_SA(x)          ((x) + OFFSET_MSDC_DMA_SA)
+#define MSDC_DMA_CA(x)          ((x) + OFFSET_MSDC_DMA_CA)
+#define MSDC_DMA_CTRL(x)        ((x) + OFFSET_MSDC_DMA_CTRL)
+#define MSDC_DMA_CFG(x)         ((x) + OFFSET_MSDC_DMA_CFG)
+#define MSDC_DMA_LEN(x)         ((x) + OFFSET_MSDC_DMA_LEN)
 
 /* pad ctrl register */
-#define MSDC_PAD_CTL0           REG_ADDR(MSDC_PAD_CTL0)
-#define MSDC_PAD_CTL1           REG_ADDR(MSDC_PAD_CTL1)
-#define MSDC_PAD_CTL2           REG_ADDR(MSDC_PAD_CTL2)
+#define MSDC_PAD_CTL0(x)        ((x) + OFFSET_MSDC_PAD_CTL0)
+#define MSDC_PAD_CTL1(x)        ((x) + OFFSET_MSDC_PAD_CTL1)
+#define MSDC_PAD_CTL2(x)        ((x) + OFFSET_MSDC_PAD_CTL2)
 
 /* data read delay */
-#define MSDC_DAT_RDDLY0         REG_ADDR(MSDC_DAT_RDDLY0)
-#define MSDC_DAT_RDDLY1         REG_ADDR(MSDC_DAT_RDDLY1)
+#define MSDC_DAT_RDDLY0(x)      ((x) + OFFSET_MSDC_DAT_RDDLY0)
+#define MSDC_DAT_RDDLY1(x)      ((x) + OFFSET_MSDC_DAT_RDDLY1)
 
 /* debug register */
-#define MSDC_DBG_SEL            REG_ADDR(MSDC_DBG_SEL)
-#define MSDC_DBG_OUT            REG_ADDR(MSDC_DBG_OUT)
+#define MSDC_DBG_SEL(x)         ((x) + OFFSET_MSDC_DBG_SEL)
+#define MSDC_DBG_OUT(x)         ((x) + OFFSET_MSDC_DBG_OUT)
 
 /* misc register */
-#define MSDC_PATCH_BIT          REG_ADDR(MSDC_PATCH_BIT)
-#define MSDC_PATCH_BIT1         REG_ADDR(MSDC_PATCH_BIT1)
-#define MSDC_PAD_TUNE           REG_ADDR(MSDC_PAD_TUNE)
-#define MSDC_HW_DBG             REG_ADDR(MSDC_HW_DBG)
-#define MSDC_VERSION            REG_ADDR(MSDC_VERSION)
-#define MSDC_ECO_VER            REG_ADDR(MSDC_ECO_VER)	/* ECO Version */
+#define MSDC_PATCH_BIT0(x)      ((x) + OFFSET_MSDC_PATCH_BIT)
+#define MSDC_PATCH_BIT1(x)      ((x) + OFFSET_MSDC_PATCH_BIT1)
+#define MSDC_PAD_TUNE(x)        ((x) + OFFSET_MSDC_PAD_TUNE)
+#define MSDC_HW_DBG(x)          ((x) + OFFSET_MSDC_HW_DBG)
+#define MSDC_VERSION(x)         ((x) + OFFSET_MSDC_VERSION)
+#define MSDC_ECO_VER(x)         ((x) + OFFSET_MSDC_ECO_VER)
 
 /*--------------------------------------------------------------------------*/
 /* Register Mask                                                            */
@@ -620,23 +614,23 @@ static void sdr_get_field(void __iomem *reg, u32 field, u32 val)
 #define REQ_STOP_TMO (0x1 << 4)
 #define REQ_CMD_BUSY (0x1 << 5)
 
-#define msdc_txfifocnt()   ((sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
-#define msdc_rxfifocnt()   ((sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_RXCNT) >> 0)
-#define msdc_fifo_write32(v)   sdr_write32(MSDC_TXDATA, (v))
-#define msdc_fifo_write8(v)    sdr_write8(MSDC_TXDATA, (v))
-#define msdc_fifo_read32()   sdr_read32(MSDC_RXDATA)
-#define msdc_fifo_read8()    sdr_read8(MSDC_RXDATA)
+#define msdc_txfifocnt(host) \
+	((sdr_read32(MSDC_FIFOCS(host->base)) & MSDC_FIFOCS_TXCNT) >> 16)
+#define msdc_rxfifocnt(host) \
+	((sdr_read32(MSDC_FIFOCS(host->base)) & MSDC_FIFOCS_RXCNT) >> 0)
 
-#define msdc_dma_on()        sdr_clr_bits(MSDC_CFG, MSDC_CFG_PIO)
-#define msdc_dma_off()       sdr_set_bits(MSDC_CFG, MSDC_CFG_PIO)
+#define msdc_dma_on(host)       sdr_clr_bits(MSDC_CFG(host->base), MSDC_CFG_PIO)
+#define msdc_dma_off(host)      sdr_set_bits(MSDC_CFG(host->base), MSDC_CFG_PIO)
 
-#define sdc_is_busy()          (sdr_read32(SDC_STS) & SDC_STS_SDCBUSY)
-#define sdc_is_cmd_busy()      (sdr_read32(SDC_STS) & SDC_STS_CMDBUSY)
+#define sdc_is_busy(host)    \
+	(sdr_read32(SDC_STS(host->base)) & SDC_STS_SDCBUSY)
+#define sdc_is_cmd_busy(host)  \
+	(sdr_read32(SDC_STS(host->base)) & SDC_STS_CMDBUSY)
 
-#define sdc_send_cmd(cmd, arg) \
+#define sdc_send_cmd(host, cmd, arg) \
 	do { \
-		sdr_write32(SDC_ARG, (arg)); \
-		sdr_write32(SDC_CMD, (cmd)); \
+		sdr_write32(SDC_ARG(host->base), (arg)); \
+		sdr_write32(SDC_CMD(host->base), (cmd)); \
 	} while (0)
 
 #define MSDC_PREPARE_FLAG BIT(0)
@@ -647,26 +641,26 @@ static void msdc_reset_hw(struct msdc_host *host)
 {
 	u32 val;
 
-	sdr_set_bits(MSDC_CFG, MSDC_CFG_RST);
-	while (sdr_read32(MSDC_CFG) & MSDC_CFG_RST)
+	sdr_set_bits(MSDC_CFG(host->base), MSDC_CFG_RST);
+	while (sdr_read32(MSDC_CFG(host->base)) & MSDC_CFG_RST)
 		cpu_relax();
 
-	sdr_set_bits(MSDC_FIFOCS, MSDC_FIFOCS_CLR);
-	while (sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR)
+	sdr_set_bits(MSDC_FIFOCS(host->base), MSDC_FIFOCS_CLR);
+	while (sdr_read32(MSDC_FIFOCS(host->base)) & MSDC_FIFOCS_CLR)
 		cpu_relax();
 
-	val = sdr_read32(MSDC_INT);
-	sdr_write32(MSDC_INT, val);
+	val = sdr_read32(MSDC_INT(host->base));
+	sdr_write32(MSDC_INT(host->base), val);
 }
 
-#define msdc_irq_save(val) \
+#define msdc_irq_save(host, val) \
 	do { \
-		val = sdr_read32(MSDC_INTEN); \
-		sdr_clr_bits(MSDC_INTEN, val); \
+		val = sdr_read32(MSDC_INTEN(host->base)); \
+		sdr_clr_bits(MSDC_INTEN(host->base), val); \
 	} while (0)
 
-#define msdc_irq_restore(val) \
-	sdr_set_bits(MSDC_INTEN, val)
+#define msdc_irq_restore(host, val) \
+	sdr_set_bits(MSDC_INTEN(host->base), val)
 
 #define HOST_MIN_MCLK       (260000)
 
@@ -771,30 +765,31 @@ static inline void msdc_data_ints_enable(struct msdc_host *host)
 {
 	u32 wints = msdc_data_ints_mask(host);
 
-	sdr_set_bits(MSDC_INTEN, wints);
+	sdr_set_bits(MSDC_INTEN(host->base), wints);
 }
 static inline void msdc_data_ints_disable(struct msdc_host *host)
 {
 	u32 wints = msdc_data_ints_mask(host);
 
-	sdr_clr_bits(MSDC_INTEN, wints);
+	sdr_clr_bits(MSDC_INTEN(host->base), wints);
 }
 
 static void msdc_dma_start(struct msdc_host *host)
 {
 	msdc_data_ints_enable(host);
 	mb(); /* wait for pending IO to finish */
-	sdr_set_field(MSDC_DMA_CTRL, MSDC_DMA_CTRL_START, 1);
+	sdr_set_field(MSDC_DMA_CTRL(host->base), MSDC_DMA_CTRL_START, 1);
 
 	dev_dbg(host->dev, "DMA start\n");
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
 {
-	dev_dbg(host->dev, "DMA status: 0x%8X\n", sdr_read32(MSDC_DMA_CFG));
+	dev_dbg(host->dev, "DMA status: 0x%8X\n",
+			sdr_read32(MSDC_DMA_CFG(host->base)));
 
-	sdr_set_field(MSDC_DMA_CTRL, MSDC_DMA_CTRL_STOP, 1);
-	while (sdr_read32(MSDC_DMA_CFG) & MSDC_DMA_CFG_STS)
+	sdr_set_field(MSDC_DMA_CTRL(host->base), MSDC_DMA_CTRL_STOP, 1);
+	while (sdr_read32(MSDC_DMA_CFG(host->base)) & MSDC_DMA_CFG_STS)
 		;
 	mb(); /* wait for pending IO to finish */
 
@@ -883,21 +878,18 @@ static inline void msdc_dma_setup(struct msdc_host *host, struct msdc_dma *dma,
 		dma->used_gpd += 2;
 		dma->used_bd += bdlen;
 
-		sdr_set_field(MSDC_DMA_CFG, MSDC_DMA_CFG_DECSEN, chksum);
-		sdr_set_field(MSDC_DMA_CTRL, MSDC_DMA_CTRL_BRUSTSZ,
+		sdr_set_field(MSDC_DMA_CFG(host->base), MSDC_DMA_CFG_DECSEN,
+				chksum);
+		sdr_set_field(MSDC_DMA_CTRL(host->base), MSDC_DMA_CTRL_BRUSTSZ,
 				dma->burstsz);
-		sdr_set_field(MSDC_DMA_CTRL, MSDC_DMA_CTRL_MODE, 1);
+		sdr_set_field(MSDC_DMA_CTRL(host->base), MSDC_DMA_CTRL_MODE, 1);
 
-		sdr_write32(MSDC_DMA_SA, (u32) dma->gpd_addr);
+		sdr_write32(MSDC_DMA_SA(host->base), (u32) dma->gpd_addr);
 		break;
 
 	default:
 		break;
 	}
-
-	dev_dbg(host->dev, "DMA_CTRL = 0x%x", sdr_read32(MSDC_DMA_CTRL));
-	dev_dbg(host->dev, "DMA_CFG  = 0x%x", sdr_read32(MSDC_DMA_CFG));
-	dev_dbg(host->dev, "DMA_SA   = 0x%x", sdr_read32(MSDC_DMA_SA));
 }
 
 static void msdc_prepare_data(struct msdc_host *host, struct mmc_request *mrq)
@@ -947,13 +939,13 @@ static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 		timeout = (ns + clk_ns - 1) / clk_ns + clks;
 		/* in 1048576 sclk cycle unit */
 		timeout = (timeout + (1 << 20) - 1) >> 20;
-		sdr_get_field(MSDC_CFG, MSDC_CFG_CKMOD, mode);
+		sdr_get_field(MSDC_CFG(host->base), MSDC_CFG_CKMOD, mode);
 		/*DDR mode will double the clk cycles for data timeout */
 		timeout = mode >= 2 ? timeout * 2 : timeout;
 		timeout = timeout > 1 ? timeout - 1 : 0;
 		timeout = timeout > 255 ? 255 : timeout;
 	}
-	sdr_set_field(SDC_CFG, SDC_CFG_DTOC, timeout);
+	sdr_set_field(SDC_CFG(host->base), SDC_CFG_DTOC, timeout);
 }
 
 static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
@@ -971,7 +963,7 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 		return;
 	}
 
-	msdc_irq_save(flags);
+	msdc_irq_save(host, flags);
 
 	if (ddr) { /* may need to modify later */
 		mode = 0x2; /* ddr mode and use divisor */
@@ -998,9 +990,9 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 		}
 	}
 
-	sdr_set_field(MSDC_CFG, MSDC_CFG_CKMOD | MSDC_CFG_CKDIV,
+	sdr_set_field(MSDC_CFG(host->base), MSDC_CFG_CKMOD | MSDC_CFG_CKDIV,
 			(mode << 8) | (div % 0xff));
-	while (!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB))
+	while (!(sdr_read32(MSDC_CFG(host->base)) & MSDC_CFG_CKSTB))
 		cpu_relax();
 
 	host->sclk = sclk;
@@ -1008,7 +1000,7 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 	host->ddr = ddr;
 	/* need because clk changed. */
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
-	msdc_irq_restore(flags);
+	msdc_irq_restore(host, flags);
 
 	dev_dbg(host->dev, "sclk: %d, ddr: %d\n", host->sclk, ddr);
 }
@@ -1024,18 +1016,18 @@ static void msdc_clksrc_on(struct msdc_host *host)
 	 * it will be automatically gated when the bus is idle
 	 * (set MSDC_CFG_CKPDN bit to have it always on)
 	 */
-	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
+	sdr_set_field(MSDC_CFG(host->base), MSDC_CFG_MODE, MSDC_SDMMC);
 
-	sdr_get_field(MSDC_CFG, MSDC_CFG_CKMOD, mode);
-	sdr_get_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
-	while (!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB))
+	sdr_get_field(MSDC_CFG(host->base), MSDC_CFG_CKMOD, mode);
+	sdr_get_field(MSDC_CFG(host->base), MSDC_CFG_CKDIV, div);
+	while (!(sdr_read32(MSDC_CFG(host->base)) & MSDC_CFG_CKSTB))
 		cpu_relax();
 }
 
 static void msdc_clksrc_off(struct msdc_host *host)
 {
 	/* disable SD/MMC/SDIO bus clock */
-	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
+	sdr_set_field(MSDC_CFG(host->base), MSDC_CFG_MODE, MSDC_MS);
 	/* turn off SDHC functional clock */
 	clk_disable(host->src_clk);
 }
@@ -1196,14 +1188,14 @@ static inline u32 msdc_cmd_prepare_raw_cmd(struct msdc_host *host,
 		else
 			rawcmd |= (1 << 11);
 
-		msdc_dma_on();
+		msdc_dma_on(host);
 
 		if (((host->timeout_ns != data->timeout_ns) ||
 		    (host->timeout_clks != data->timeout_clks)))
 			msdc_set_timeout(host, data->timeout_ns,
 					data->timeout_clks);
 
-		sdr_write32(SDC_BLK_NUM, data->blocks);
+		sdr_write32(SDC_BLK_NUM(host->base), data->blocks);
 	}
 	return rawcmd;
 }
@@ -1256,7 +1248,7 @@ static int msdc_auto_cmd_done(struct msdc_host *host, int events,
 {
 	u32 *rsp = &cmd->resp[0];
 
-	rsp[0] = sdr_read32(SDC_ACMD_RESP);
+	rsp[0] = sdr_read32(SDC_ACMD_RESP(host->base));
 
 	if (events & MSDC_INT_ACMDRDY)
 		cmd->error = 0;
@@ -1327,19 +1319,19 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 		if (done)
 			return true;
 
-		sdr_clr_bits(MSDC_INTEN, MSDC_CMD_INTS);
+		sdr_clr_bits(MSDC_INTEN(host->base), MSDC_CMD_INTS);
 
 		switch (host->cmd_rsp) {
 		case RESP_NONE:
 			break;
 		case RESP_R2:
-			rsp[0] = sdr_read32(SDC_RESP3);
-			rsp[1] = sdr_read32(SDC_RESP2);
-			rsp[2] = sdr_read32(SDC_RESP1);
-			rsp[3] = sdr_read32(SDC_RESP0);
+			rsp[0] = sdr_read32(SDC_RESP3(host->base));
+			rsp[1] = sdr_read32(SDC_RESP2(host->base));
+			rsp[2] = sdr_read32(SDC_RESP1(host->base));
+			rsp[3] = sdr_read32(SDC_RESP0(host->base));
 			break;
 		default: /* Response types 1, 3, 4, 5, 6, 7(1b) */
-			rsp[0] = sdr_read32(SDC_RESP0);
+			rsp[0] = sdr_read32(SDC_RESP0(host->base));
 			break;
 		}
 		if (!sbc_error && !(events & MSDC_INT_CMDRDY)) {
@@ -1374,10 +1366,10 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 {
 	unsigned long tmo = jiffies + msecs_to_jiffies(20);
 
-	while (sdc_is_cmd_busy() && time_before(jiffies, tmo))
+	while (sdc_is_cmd_busy(host) && time_before(jiffies, tmo))
 		continue;
 
-	if (sdc_is_cmd_busy()) {
+	if (sdc_is_cmd_busy(host)) {
 		dev_err(host->dev,
 			"CMD bus busy detected: last cmd=%d; arg=%08X\n",
 			host->last_cmd.cmd, host->last_cmd.arg);
@@ -1388,7 +1380,7 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 
 	if (mmc_resp_type(cmd) == MMC_RSP_R1B || cmd->data) {
 		/* R1B or with data, should check SDCBUSY */
-		while (sdc_is_busy())
+		while (sdc_is_busy(host))
 			cpu_relax();
 
 	}
@@ -1414,7 +1406,7 @@ static void msdc_start_command(struct msdc_host *host,
 	if (!msdc_cmd_is_ready(host, mrq, cmd))
 		return;
 
-	if (msdc_txfifocnt() || msdc_rxfifocnt()) {
+	if (msdc_txfifocnt(host) || msdc_rxfifocnt(host)) {
 		dev_err(host->dev, "TX/RX FIFO non-empty before start of IO. Reset\n");
 		msdc_reset_hw(host);
 	}
@@ -1427,8 +1419,8 @@ static void msdc_start_command(struct msdc_host *host,
 			__func__, cmd->opcode, cmd->arg, rawcmd,
 			host->cmd_rsp == RESP_R1B);
 
-	sdr_set_bits(MSDC_INTEN, MSDC_CMD_INTS);
-	sdc_send_cmd(rawcmd, cmd->arg);
+	sdr_set_bits(MSDC_INTEN(host->base), MSDC_CMD_INTS);
+	sdc_send_cmd(host, rawcmd, cmd->arg);
 
 }
 
@@ -1590,7 +1582,7 @@ static bool msdc_data_xfer_done(struct msdc_host *host, u32 events,
 
 static void msdc_set_buswidth(struct msdc_host *host, u32 width)
 {
-	u32 val = sdr_read32(SDC_CFG);
+	u32 val = sdr_read32(SDC_CFG(host->base));
 
 	val &= ~SDC_CFG_BUSWIDTH;
 
@@ -1607,7 +1599,7 @@ static void msdc_set_buswidth(struct msdc_host *host, u32 width)
 		break;
 	}
 
-	sdr_write32(SDC_CFG, val);
+	sdr_write32(SDC_CFG(host->base), val);
 	dev_dbg(host->dev, "Bus Width = %d", width);
 }
 
@@ -1623,11 +1615,12 @@ int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		/* make sure SDC is not busy (TBC) */
 		err = -EPERM;
 
-		while (sdc_is_busy())
+		while (sdc_is_busy(host))
 			cpu_relax();
 
 		/* check if CMD/DATA lines both 0 */
-		if ((sdr_read32(MSDC_PS) & ((1 << 24) | (0xF << 16))) == 0) {
+		if ((sdr_read32(MSDC_PS(host->base))
+					& ((1 << 24) | (0xF << 16))) == 0) {
 
 			if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
 
@@ -1649,12 +1642,12 @@ int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 			/* start to detect volt change
 			   by providing 1.8v signal to card */
-			sdr_set_bits(MSDC_CFG, MSDC_CFG_BV18SDT);
+			sdr_set_bits(MSDC_CFG(host->base), MSDC_CFG_BV18SDT);
 
 			/* wait at max. 1ms */
 			mdelay(1);
 
-			while ((status = sdr_read32(MSDC_CFG))
+			while ((status = sdr_read32(MSDC_CFG(host->base)))
 					& MSDC_CFG_BV18SDT)
 				cpu_relax();
 
@@ -1731,9 +1724,10 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		u32 events, event_mask;
 
 		spin_lock_irqsave(&host->lock, flags);
-		events = sdr_read32(MSDC_INT);
-		event_mask = sdr_read32(MSDC_INTEN);
-		sdr_write32(MSDC_INT, events); /* clear interrupts */
+		events = sdr_read32(MSDC_INT(host->base));
+		event_mask = sdr_read32(MSDC_INTEN(host->base));
+		/* clear interrupts */
+		sdr_write32(MSDC_INT(host->base), events);
 
 		mrq = ACCESS_ONCE(host->mrq);
 		cmd = ACCESS_ONCE(host->cmd);
@@ -1764,34 +1758,36 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 static void msdc_init_hw(struct msdc_host *host)
 {
+	u32 val;
 	/* Configure to MMC/SD mode */
-	sdr_set_field(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
+	sdr_set_field(MSDC_CFG(host->base), MSDC_CFG_MODE, MSDC_SDMMC);
 
 	/* Reset */
 	msdc_reset_hw(host);
 
 	/* Disable card detection */
-	sdr_clr_bits(MSDC_PS, MSDC_PS_CDEN);
+	sdr_clr_bits(MSDC_PS(host->base), MSDC_PS_CDEN);
 
 	/* Disable and clear all interrupts */
-	sdr_clr_bits(MSDC_INTEN, sdr_read32(MSDC_INTEN));
-	sdr_write32(MSDC_INT, sdr_read32(MSDC_INT));
+	val = sdr_read32(MSDC_INTEN(host->base));
+	sdr_clr_bits(MSDC_INTEN(host->base), val);
+	sdr_write32(MSDC_INT(host->base), sdr_read32(MSDC_INT(host->base)));
 
-	sdr_write32(MSDC_PAD_TUNE, 0x00000000);
-	sdr_write32(MSDC_IOCON, 0x00000000);
-	sdr_set_field(MSDC_IOCON, MSDC_IOCON_DDLSEL, 1);
-	sdr_write32(MSDC_PATCH_BIT0, 0x403C004F);
-	sdr_set_field(MSDC_PATCH_BIT0, MSDC_CKGEN_MSDC_DLY_SEL, 1);
-	sdr_write32(MSDC_PATCH_BIT1, 0xFFFF0089);
+	sdr_write32(MSDC_PAD_TUNE(host->base), 0x00000000);
+	sdr_write32(MSDC_IOCON(host->base), 0x00000000);
+	sdr_set_field(MSDC_IOCON(host->base), MSDC_IOCON_DDLSEL, 1);
+	sdr_write32(MSDC_PATCH_BIT0(host->base), 0x403C004F);
+	sdr_set_field(MSDC_PATCH_BIT0(host->base), MSDC_CKGEN_MSDC_DLY_SEL, 1);
+	sdr_write32(MSDC_PATCH_BIT1(host->base), 0xFFFF0089);
 	/* Configure to enable SDIO mode.
 	   it's must otherwise sdio cmd5 failed */
-	sdr_set_bits(SDC_CFG, SDC_CFG_SDIO);
+	sdr_set_bits(SDC_CFG(host->base), SDC_CFG_SDIO);
 
 	/* disable detect SDIO device interupt function */
-	sdr_clr_bits(SDC_CFG, SDC_CFG_SDIOIDE);
+	sdr_clr_bits(SDC_CFG(host->base), SDC_CFG_SDIOIDE);
 
 	/* Configure to default data timeout */
-	sdr_set_field(SDC_CFG, SDC_CFG_DTOC, DEFAULT_DTOC);
+	sdr_set_field(SDC_CFG(host->base), SDC_CFG_DTOC, DEFAULT_DTOC);
 	msdc_set_buswidth(host, MMC_BUS_WIDTH_1);
 
 	dev_dbg(host->dev, "init hardware done!");
@@ -1802,8 +1798,11 @@ static void msdc_deinit_hw(struct msdc_host *host)
 {
 
 	/* Disable and clear all interrupts */
-	sdr_clr_bits(MSDC_INTEN, sdr_read32(MSDC_INTEN));
-	sdr_write32(MSDC_INT, sdr_read32(MSDC_INT));
+	u32 val = sdr_read32(MSDC_INTEN(host->base));
+
+	sdr_clr_bits(MSDC_INTEN(host->base), val);
+	val = sdr_read32(MSDC_INT(host->base));
+	sdr_write32(MSDC_INT(host->base), val);
 
 	clk_disable(host->src_clk);
 	clk_unprepare(host->src_clk);
