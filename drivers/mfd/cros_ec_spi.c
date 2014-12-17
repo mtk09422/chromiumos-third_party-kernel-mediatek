@@ -23,8 +23,6 @@
 #include <linux/slab.h>
 #include <linux/spi/spi.h>
 
-/* For MTK SPI master */
-#include "../spi/spi-mt65xx-master.h"
 /* #define CROS_EC_SPI_DEBUG */
 
 /* The header byte, which follows the preamble */
@@ -161,13 +159,11 @@ static int receive_n_bytes(struct cros_ec_device *ec_dev, u8 *buf, int n)
 		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
 
 #ifdef CROS_EC_SPI_DEBUG
-	dev_info(ec_dev->dev, "receive %d bytes:\n", n);
+	dev_info(ec_dev->dev, "MISO receive %d bytes:\n", n);
 	for (i = 0; i < n; i++)
-		pr_info("%02x", buf[i]);
+		pr_cont("%02x", buf[i]);
 	dev_info(ec_dev->dev, "\n");
 #endif
-
-	msleep(1);		/* Waiting for EC SPI TX ready,  must have a sleep here */
 
 	return ret;
 }
@@ -197,8 +193,8 @@ static int cros_ec_spi_receive_packet(struct cros_ec_device *ec_dev,
 	BUG_ON(EC_MSG_PREAMBLE_COUNT > ec_dev->din_size);
 
 	/* in_len = EC_MSG_PREAMBLE_COUNT; */
-	in_len = need_len + 8;	/*4 for preamble, 4 for EC_SPI_PAST_END. */
-
+	/* Try get all response data within one shot */
+	in_len = need_len + 8; /*4 for preamble, 4 for EC_SPI_PAST_END. */
 
 	/* Receive data until we see the header byte */
 	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
@@ -456,15 +452,14 @@ static int cros_ec_pkt_xfer_spi(struct cros_ec_device *ec_dev,
 	spi_message_add_tail(&trans, &msg);
 
 #ifdef CROS_EC_SPI_DEBUG
-	dev_info(ec_dev->dev, "CMD:0x%08X\n", ec_msg->command);
-	dev_info(ec_dev->dev, "OUT(%d):[%02X %02X %02X %02X]\n", len,
-		 ec_dev->dout[0], ec_dev->dout[1], ec_dev->dout[2],
-		 ec_dev->dout[3]);
+	dev_info(ec_dev->dev, "HostCmd:0x%X\n", ec_msg->command);
+	dev_info(ec_dev->dev, "MOSI(%d):[%02x%02x%02x%02x%02x%02x%02x%02x]\n",
+			len, ec_dev->dout[0], ec_dev->dout[1], ec_dev->dout[2],
+			ec_dev->dout[3], ec_dev->dout[4], ec_dev->dout[5],
+			ec_dev->dout[6], ec_dev->dout[7]);
 #endif
 
 	ret = spi_sync(ec_spi->spi, &msg);
-
-	msleep(1);		/*[Todo] reduce this delay! */
 
 	/* Get the response */
 	if (!ret) {
@@ -490,12 +485,7 @@ static int cros_ec_pkt_xfer_spi(struct cros_ec_device *ec_dev,
 		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
 	}
 
-#if 0				/* Bug here, please fix me! */
 	final_ret = terminate_request(ec_dev);
-#else
-	final_ret = 0;
-#endif
-
 	if (!ret)
 		ret = final_ret;
 	if (ret < 0)
@@ -544,11 +534,10 @@ static int cros_ec_pkt_xfer_spi(struct cros_ec_device *ec_dev,
 
 #ifdef CROS_EC_SPI_DEBUG
 	for (i = 0; i < sizeof(*response); i++)
-		pr_info("%02x", ptr[i]);
-	pr_info("--");
+		pr_cont("%02x", ptr[i]);
 	for (i = 0; i < len; i++)
-		pr_info("%02x", ec_msg->indata[i]);
-	pr_info("\n");
+		pr_cont("%02x", ec_msg->indata[i]);
+	pr_cont("\n");
 #endif
 
 	ret = len;
@@ -718,35 +707,6 @@ static void cros_ec_spi_dt_probe(struct cros_ec_spi *ec_spi, struct device *dev)
 		ec_spi->end_of_msg_delay = val;
 }
 
-/* For MTK SPI driver */
-static struct mt_chip_conf spi_conf_mt6577 = {
-#if 1
-	.setuptime = 4,
-	.holdtime = 4,
-	.high_time = 8,		/* for mt6589, 100000khz/(4+4) = 125000khz */
-	.low_time = 8,
-	.cs_idletime = 4,
-#else
-	.setuptime = 25,
-	.holdtime = 25,
-	.high_time = 50,
-	.low_time = 50,
-	.cs_idletime = 25,
-#endif
-	.cpol = 0,		/* 0, 1 for J-Matrics, 0 for FPC */
-	.cpha = 0,		/* 0, 1 for J-Matrics, 0 for FPC */
-	.rx_mlsb = 1,
-	.tx_mlsb = 1,
-	.tx_endian = 0,		/* 0 for FPC, 1 for J-Matrics */
-	.rx_endian = 0,		/* 0 for FPC, 1 for J-Matrics */
-	.com_mod = DMA_TRANSFER,
-	.pause = 0,
-	.finish_intr = 0,
-	.deassert = 0,
-	.tckdly = 3,
-};
-
-
 static int cros_ec_spi_probe(struct spi_device *spi)
 {
 	struct device *dev = &spi->dev;
@@ -756,9 +716,6 @@ static int cros_ec_spi_probe(struct spi_device *spi)
 
 	spi->bits_per_word = 8;
 	spi->mode = SPI_MODE_0;
-
-	/* For MTK SPI master */
-	spi->controller_data = (void *)&spi_conf_mt6577;
 
 	err = spi_setup(spi);
 	if (err < 0)
