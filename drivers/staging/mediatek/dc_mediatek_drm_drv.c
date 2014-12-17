@@ -14,7 +14,7 @@
 #endif
 #include <pvr_drm_display.h>
 
-#include "mediatek_drm_debugfs.h"
+/*#include "mediatek_drm_debugfs.h"*/
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
