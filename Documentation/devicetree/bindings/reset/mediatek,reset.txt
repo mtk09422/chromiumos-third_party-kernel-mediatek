@@ -1,0 +1,52 @@
+MediaTek SoC Reset Controller
+======================================
+The reset controller driver accesses registers through the syscon regmap. It
+is a child node of syscon.
+
+Required properties:
+- compatible : "mediatek,reset"
+- #reset-cells: 1
+- reg: The register region can be accessed from syscon. The first parameter is
+  reset base address offset. The second parameter is byte width of reset registers.
+
+example:
+infracfg: syscon@10001000 {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "mediatek,mt8135-infracfg", "syscon";
+	reg = <0 0x10001000 0 0x1000>;
+
+	infrarst: reset-controller@30 {
+		#reset-cells = <1>;
+		compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
+		reg = <0x30 0x8>;
+	};
+};
+
+Specifying reset lines connected to IP modules
+==============================================
+
+The reset controller(mtk-reset) manages various reset sources. Those device nodes should
+specify the reset line on the rstc in their resets property, containing a phandle to the
+rstc device node and a RESET_INDEX specifying which module to reset, as described in
+reset.txt.
+
+For MediaTek SoC, RESET_INDEX is reset bit defined in INFRACFG or PERICFG registers.
+
+example:
+pwrap: pwrap@1000f000 {
+	compatible = "mediatek,mt8135-pwrap";
+	reg = <0 0x1000f000 0 0x1000>,
+		<0 0x11017000 0 0x1000>;
+	reg-names = "pwrap-base",
+		"pwrap-bridge-base";
+	resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
+		<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
+	reset-names = "infrarst", "perirst";
+};
+
+Definitions for the supported resets by IC:
+MT8135:
+include/dt-bindings/reset-controller/mt8135-resets.h
+MT8173:
+include/dt-bindings/reset-controller/mt8173-resets.h
