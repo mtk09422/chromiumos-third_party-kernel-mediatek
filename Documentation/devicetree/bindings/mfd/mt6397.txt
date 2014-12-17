@@ -1,7 +1,6 @@
-MediaTek MT6397 multifunction device
+MediaTek MT6397 Multifunction Device Driver
 
 MT6397 is a multifunction device with the following sub modules:
-- PMIC
 - Regulator
 - RTC
 - Audio codec
@@ -9,16 +8,21 @@ MT6397 is a multifunction device with the following sub modules:
 - Clock
 
 It is interfaced to host controller using SPI interface by a proprietary hardware
-called pmic wrapper or pwrap. This document describes the binding for mfd device
-and PMIC sub module.
+called PMIC wrapper or pwrap. MT6397 MFD is a child device of pwrap.
+See the following for pwarp node definitions:
+Documentation/devicetree/bindings/soc/mediatek,mt8135-pwrap.txt
 
-Required properties in pwrap device node.
-- compatible:"mediatek,mt8135-pwrap";
-- interrupts : This pmic wrapper device has an IRQ line connected to the main SoC.
-- reg: Specifies the address of pwrap in AP.
-- resets: reset bit for pwrap
-- clock: clock frequency selection in SPI bus.
-- pmic: Mediatek PMIC used pwrap as its communication protocol.
+This document describes the binding for mfd device and its sub module.
+
+Required properties:
+compatible: "mediatek,mt6397"
+
+Optional properties:
+- codec: Audio codec
+- pinctrl: GPIO in mt6397
+- rtc: RTC
+- clock: clocks in mt6397
+- regulators: regulators in mt6397
 
 Example:
 	pwrap: pwrap@1000f000 {
@@ -31,28 +35,9 @@ Example:
 				<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
 		reset-names = "infra-pwrap-rst",
 				"peri-pwrap-bridge-rst";
-		clocks = <&pmicspi_sel>, <&clk26m> ;
+		clocks = <&pmicspi_sel>, <&clk26m>;
 		clock-names = "pmicspi-sel", "pmicspi-parent";
 
-		pmic {
-			compatible = "mediatek,mt6397";
-	}
-
-MT6397 MFD device should in pwrap device node.
-Optional properties:
-- codec: Audio Codec
-- pinctrl: GPIO in mt6397
-- rtc: RTC
-- clock: clocks in mt6397
-- regulators : The regulators of mt6397
-	regulators {
-		regulator constratints.
-		refer Documentation/devicetree/bindings/regulator/regulator.txt
-	};
-
-Example:
-	pwrap: pwrap@1000f000 {
-		[...]
 		pmic {
 			compatible = "mediatek,mt6397";
 
@@ -66,22 +51,25 @@ Example:
 				gpio-controller;
 			};
 
-			regulators {
+			mt6397regulator: mt6397regulator {
+				compatible = "mediatek,mt6397-regulator";
+
 				mt6397_vpca15_reg: buck_vpca15 {
+					regulator-compatible = "buck_vpca15";
 					regulator-name = "vpca15";
-					regulator-min-microvolt = < 700000>;
-					regulator-max-microvolt = <1493750>;
+					regulator-min-microvolt = < 850000>;
+					regulator-max-microvolt = <1400000>;
+					regulator-ramp-delay = <12500>;
 					regulator-always-on;
-					regulator-boot-on;
 				};
 
-				mt6397_vpca7_reg: buck_vpca7 {
-					regulator-name = "vpca7";
-					regulator-min-microvolt = < 700000>;
-					regulator-max-microvolt = <1493750>;
-					regulator-always-on;
-					regulator-boot-on;
+				mt6397_vgp4_reg: ldo_vgp4 {
+					regulator-compatible = "ldo_vgp4";
+					regulator-name = "vgp4";
+					regulator-min-microvolt = <1200000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-enable-ramp-delay = <218>;
 				};
-			}
-		}
-	}
+			};
+		};
+	};
