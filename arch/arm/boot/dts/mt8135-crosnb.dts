@@ -34,7 +34,8 @@
 				interrupt-parent = <&pio>;
 				interrupts = <153 IRQ_TYPE_LEVEL_LOW>;
 				/* interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>; */
-				google,cros-ec-spi-msg-delay = <2000>;
+				google,cros-ec-spi-msg-delay = <500>;
+				google,cros-ec-spi-pre-delay = <500>;
 
 				keyboard-controller {
 					compatible = "google,cros-ec-keyb";
@@ -407,12 +408,16 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c3_pins_a>;
 	status = "okay";
-        trackpad@15 {
-                compatible = "elan,i2c_touchpad";
-                reg = <0x15>;
-                interrupt-parent = <&pio>;
-                  interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
-                /* nvidia,pmc-wakeup = <&pmc 1 11 2>; */
-                wakeup-source;
-        };
+};
+
+&i2c4 {
+	trackpad@15 {
+		compatible = "elan,i2c_touchpad";
+		reg = <0x15>;
+		interrupt-parent = <&pio>;
+		interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+		/* nvidia,pmc-wakeup = <&pmc 1 11 2>; */
+		reg-vgp6-supply = <&mt6397_vgp6_reg>;
+		wakeup-source;
+	};
 };

@@ -502,8 +502,8 @@
 			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&pericfg PERI_I2C4_CK>, <&pericfg PERI_AP_DMA_CK>;
-			clock-names = "main", "dma";
+			clocks = <&pericfg PERI_I2C4_CK>, <&pericfg PERI_AP_DMA_CK>, <&mt6397clock MT6397_WRPCKPDN_I2C0>;
+			clock-names = "main", "dma", "pmic";
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
@@ -516,8 +516,8 @@
 			interrupts = <GIC_SPI 49 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&pericfg PERI_I2C5_CK>, <&pericfg PERI_AP_DMA_CK>;
-			clock-names = "main", "dma";
+			clocks = <&pericfg PERI_I2C5_CK>, <&pericfg PERI_AP_DMA_CK>, <&mt6397clock MT6397_WRPCKPDN_I2C1>;
+			clock-names = "main", "dma", "pmic";
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};
@@ -530,8 +530,8 @@
 			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <1>;
 			mediatek,have-pmic;
-			clocks = <&pericfg PERI_I2C6_CK>, <&pericfg PERI_AP_DMA_CK>;
-			clock-names = "main", "dma";
+			clocks = <&pericfg PERI_I2C6_CK>, <&pericfg PERI_AP_DMA_CK>, <&mt6397clock MT6397_WRPCKPDN_I2C2>;
+			clock-names = "main", "dma", "pmic";
 			#address-cells = <1>;
 			#size-cells = <0>;
 		};

@@ -28,6 +28,10 @@
 
 #include "elan_i2c.h"
 
+#ifdef CONFIG_REGULATOR_MT6397
+#include <linux/regulator/consumer.h>
+#endif
+
 /* Elan i2c commands */
 #define ETP_I2C_RESET			0x0100
 #define ETP_I2C_WAKE_UP			0x0800
@@ -63,6 +67,10 @@
 #define ETP_I2C_MAIN_MODE_ON		(1 << 9)
 #define ETP_I2C_IAP_REG_L		0x01
 #define ETP_I2C_IAP_REG_H		0x06
+
+#ifdef CONFIG_REGULATOR_MT6397
+int regulator_inited = 0;
+#endif
 
 static int elan_i2c_read_block(struct i2c_client *client,
 			       u16 reg, u8 *val, u16 len)
@@ -126,6 +134,41 @@ static int elan_i2c_initialize(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	int error;
 	u8 val[256];
+
+#ifdef CONFIG_REGULATOR_MT6397
+	struct regulator *vgp6;
+	int ret;
+
+	/* Initial the regulator of touch pad */
+	if (regulator_inited == 0) {
+		vgp6 = devm_regulator_get(dev, "reg-vgp6");
+		if (IS_ERR(vgp6)) {
+			dev_err(dev, "Failed to get LD0 vgp6\n");
+			return PTR_ERR(vgp6);
+		}
+
+		dev_info(dev, "Get LDO success.\n");
+
+		ret = regulator_get_voltage(vgp6);
+		dev_info(dev, "vgp6 voltage = %d", ret);
+
+		ret = regulator_set_voltage(vgp6, 3300000, 3300000);
+		if (ret != 0)
+			dev_err(dev, "Set vgp6 voltage fail (%d)", ret);
+
+		ret = regulator_get_voltage(vgp6);
+		dev_info(dev, "vgp6 voltage = %d", ret);
+
+		ret = regulator_enable(vgp6);
+		if (ret != 0) {
+			dev_err(dev, "Failed to enable vgp6\n");
+			return ret;
+		}
+
+		regulator_inited++;
+	}
+	msleep(100);
+#endif
 
 	error = elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD, ETP_I2C_RESET);
 	if (error) {
