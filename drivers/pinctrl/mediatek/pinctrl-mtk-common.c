@@ -884,7 +884,7 @@ static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 	if (!desc)
 		return -EINVAL;
 
-	return desc->irqnum;
+	return irq_find_mapping(pctl->domain, desc->irqnum);
 }
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
