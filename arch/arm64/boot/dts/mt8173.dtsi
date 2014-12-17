@@ -161,7 +161,8 @@
 						<MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD &pcfg_pull_up>,
 						<MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2 &pcfg_pull_up>,
 						<MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK &pcfg_pull_down>,
-						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>;
+						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3 &pcfg_pull_up>,
+						<MT8173_PIN_132_I2S0_DATA1__FUNC_GPIO132 &pcfg_pull_up>;
 			};
 
 
