@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/reset-controller/mt8173-resets.h>
 #include "mt8173-clocks.dtsi"
 
@@ -134,6 +136,15 @@
 				compatible = "mediatek,mt8173-pericfg-reset", "mediatek,reset";
 				reg = <0x00 0x8>;
 			};
+		};
+
+		pwrap: pwrap@1000D000 {
+			compatible = "mediatek,mt8173-pwrap";
+			reg = <0 0x1000D000 0 0x1000>;
+			reg-names = "pwrap-base";
+			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
+			resets = <&infrarst MT8173_INFRA_PMIC_WRAP_RST>;
+			reset-names = "infra-pwrap-rst";
 		};
 
 		gic: interrupt-controller@10220000 {

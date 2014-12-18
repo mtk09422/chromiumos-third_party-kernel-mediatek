@@ -32,3 +32,9 @@
 
 	chosen { };
 };
+
+&pwrap {
+	pmic {
+		compatible = "mediatek,mt6397";
+	};
+};
