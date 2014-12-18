@@ -23,6 +23,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/serial_8250.h>
 #include <linux/serial_reg.h>
+#include <linux/console.h>
 
 #include "8250.h"
 
@@ -288,6 +289,38 @@ static struct platform_driver mtk8250_platform_driver = {
 	.remove			= mtk8250_remove,
 };
 module_platform_driver(mtk8250_platform_driver);
+
+#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+
+static void __init mtk8250_serial_putc(struct uart_port *port, int c)
+{
+	while ((readl(port->membase + (UART_LSR << 2)) & BOTH_EMPTY) !=
+		BOTH_EMPTY)
+		;
+	writel(c, port->membase + (UART_TX << 2));
+}
+
+static void __init early_mtk8250_write(struct console *console,
+					const char *s, unsigned int count)
+{
+	struct earlycon_device *dev = console->data;
+
+	uart_console_write(&dev->port, s, count, mtk8250_serial_putc);
+}
+
+static int __init early_mtk8250_setup(struct earlycon_device *device,
+					const char *options)
+{
+	if (!device->port.membase)
+		return -ENODEV;
+
+	device->con->write = early_mtk8250_write;
+
+	return 0;
+}
+
+EARLYCON_DECLARE(mtk8250, early_mtk8250_setup);
+OF_EARLYCON_DECLARE(mtk8250, "mediatek,mt6577-uart", early_mtk8250_setup);
 
 MODULE_AUTHOR("Matthias Brugger");
 MODULE_LICENSE("GPL");
