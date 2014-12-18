@@ -10,3 +10,13 @@ config MT8135_PMIC_WRAP
 	  PMIC wrapper is a proprietary hardware in MT8135 to make
 	  communication protocols to access PMIC device.
 	  This driver implement access protocols for MT8135.
+
+config MT8173_PMIC_WRAP
+	tristate "MediaTek MMT8173 PMIC Wrapper Support"
+	depends on ARCH_MEDIATEK
+	select REGMAP
+	help
+	  Say yes here to add support for MediaTek MT8173 PMIC Wrapper.
+	  PMIC wrapper is a proprietary hardware in MT8173 to make
+	  communication protocols to access PMIC device.
+	  This driver implement access protocols for MT8173.
