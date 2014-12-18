@@ -904,6 +904,7 @@ int mtk_dsi_probe(struct drm_device *dev)
 	struct resource *regs;
 	struct device_node *node;*/
 	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
+	struct device *pdev = get_mtk_drm_device(dev);
 	struct mtk_drm_crtc *mtk_crtc;
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[0]);
@@ -937,53 +938,53 @@ int mtk_dsi_probe(struct drm_device *dev)
 
 
 #ifdef CONFIG_DRM_MEDIATEK_IT6151
-	err = mtk_dsi_of_read_u32(dev->dev->of_node,
+	err = mtk_dsi_of_read_u32(pdev->of_node,
 		"mediatek,mipi-tx-burst-freq", &dsi->pll_clk_rate);
 	if (err < 0)
 		return err;
 #endif
 
-	dsi->dsi_disp_clk_cg = devm_clk_get(dev->dev, "dsi_disp_clk_cg");
+	dsi->dsi_disp_clk_cg = devm_clk_get(pdev, "dsi_disp_clk_cg");
 	if (IS_ERR(dsi->dsi_disp_clk_cg)) {
-		dev_err(dev->dev, "cannot get dsi_disp_clk_cg\n");
+		dev_err(pdev, "cannot get dsi_disp_clk_cg\n");
 		return PTR_ERR(dsi->dsi_disp_clk_cg);
 	}
 
 	err = clk_prepare_enable(dsi->dsi_disp_clk_cg);
 	if (err < 0) {
-		dev_err(dev->dev, "cannot enable dsi_disp_clk_cg\n");
+		dev_err(pdev, "cannot enable dsi_disp_clk_cg\n");
 		return err;
 	}
 
-	dsi->dsi_dsi_clk_cg = devm_clk_get(dev->dev, "dsi_dsi_clk_cg");
+	dsi->dsi_dsi_clk_cg = devm_clk_get(pdev, "dsi_dsi_clk_cg");
 	if (IS_ERR(dsi->dsi_dsi_clk_cg)) {
-		dev_err(dev->dev, "cannot get dsi_dsi_clk_cg\n");
+		dev_err(pdev, "cannot get dsi_dsi_clk_cg\n");
 		return PTR_ERR(dsi->dsi_dsi_clk_cg);
 	}
 
 	err = clk_prepare_enable(dsi->dsi_dsi_clk_cg);
 	if (err < 0) {
-		dev_err(dev->dev, "cannot enable low-power clock\n");
+		dev_err(pdev, "cannot enable low-power clock\n");
 		return err;
 	}
 
-	dsi->dsi_div2_clk_cg = devm_clk_get(dev->dev, "dsi_div2_dsi_clk_cg");
+	dsi->dsi_div2_clk_cg = devm_clk_get(pdev, "dsi_div2_dsi_clk_cg");
 	if (IS_ERR(dsi->dsi_div2_clk_cg)) {
-		dev_err(dev->dev, "cannot get dsi_div2_clk_cg\n");
+		dev_err(pdev, "cannot get dsi_div2_clk_cg\n");
 		return PTR_ERR(dsi->dsi_div2_clk_cg);
 	}
 
 
 	err = clk_prepare_enable(dsi->dsi_div2_clk_cg);
 	if (err < 0) {
-		dev_err(dev->dev, "cannot enable parent clock\n");
+		dev_err(pdev, "cannot enable parent clock\n");
 		return err;
 	}
 
 #if 0
 	err = mtk_dsi_setup_clocks(dsi);
 	if (err < 0) {
-		dev_err(&pdev->dev, "cannot setup clocks\n");
+		dev_err(pdev, "cannot setup clocks\n");
 		return err;
 	}
 #endif
@@ -1017,7 +1018,7 @@ int mtk_dsi_probe(struct drm_device *dev)
 	dsi->output.ops = &dsi_ops;
 
 
-	platform_set_drvdata(dev->platformdev, dsi);
+	/*platform_set_drvdata(dev->platformdev, dsi);*/
 
 
 

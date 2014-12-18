@@ -318,6 +318,7 @@
 				regulator-min-microvolt = <1000000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <218>;
+				regulator-always-on;
 			};
 
 			mt6397_vgp3_reg: ldo_vgp3 {
