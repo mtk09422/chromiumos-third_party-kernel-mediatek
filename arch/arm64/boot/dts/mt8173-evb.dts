@@ -35,4 +35,10 @@
 
 &uart0 {
 	status = "okay";
+	};
+
+&pwrap {
+	pmic {
+		compatible = "mediatek,mt6397";
+	};
 };
