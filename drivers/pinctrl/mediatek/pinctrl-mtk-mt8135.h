@@ -683,7 +683,7 @@ static const struct mtk_desc_pin mtk_pins_mt8135[] = {
 	MTK_PIN(
 		PINCTRL_PIN(63, "MSDC1_INSI"),
 		"V18", "mt8135",
-		MTK_EINT_FUNCTION(2, 57),
+		MTK_EINT_FUNCTION(1, 15),
 		MTK_FUNCTION(0, "GPIO63"),
 		MTK_FUNCTION(1, "MSDC1_INSI"),
 		MTK_FUNCTION(2, "EINT57"),
@@ -707,7 +707,7 @@ static const struct mtk_desc_pin mtk_pins_mt8135[] = {
 	MTK_PIN(
 		PINCTRL_PIN(65, "MSDC2_INSI"),
 		"U22", "mt8135",
-		MTK_EINT_FUNCTION(2, 65),
+		MTK_EINT_FUNCTION(1, 14),
 		MTK_FUNCTION(0, "GPIO65"),
 		MTK_FUNCTION(1, "MSDC2_INSI"),
 		MTK_FUNCTION(2, "EINT65"),
