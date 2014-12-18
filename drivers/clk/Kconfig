@@ -49,6 +49,12 @@ config COMMON_CLK_MAX77802
 	---help---
 	  This driver supports Maxim 77802 crystal oscillator clock.
 
+config COMMON_CLK_MT6397
+	tristate "Clock driver for MT6397 MFD"
+	depends on MFD_MT6397
+	---help---
+	  This driver supports mt6397 clocks.
+
 config COMMON_CLK_RK808
 	tristate "Clock driver for RK808"
 	depends on MFD_RK808
