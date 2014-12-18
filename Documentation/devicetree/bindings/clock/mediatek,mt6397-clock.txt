@@ -1,0 +1,33 @@
+Binding for MT6397 clock driver
+
+MT6397 clock is a sub-module of MT6397 multi-function device.
+It contains clocks to support internal functions, such as i2c, audio, etc. It is
+controlled over pmic wrapper.
+More information of MT6397 MFD can be found in bindings/mfd/mt6397.txt file.
+
+Following properties should be presend in main device node of the MFD chip.
+
+Required properties:
+- compatible: "mediatek,mt6397-clk"
+- #clock-cells: it shall be set to 1.
+
+Clocks are defined in dt-bindings/clock/mediatek,mt6397-clks.h
+header and can be used in device tree sources.
+
+Example: clock node of the MFD chip
+	pmic {
+		compatible = "mediatek,mt6397";
+
+		mt6397clock: mt6397clock {
+			compatible = "mediatek,mt6397-clk";
+			#clock-cells = <1>;
+		};
+	};
+
+Example: clock consumer node
+	i2c4: i2c@11011000 {
+		compatible = "mediatek,mt8135-i2c";
+		mediatek,have-pmic;
+		clocks = <&mt6397clock MT6397_WRPCKPDN_I2C0>;
+		clock-names = "pmic";
+	};
