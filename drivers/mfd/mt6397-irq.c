@@ -187,7 +187,7 @@ static struct irq_domain_ops mt6397_irq_domain_ops = {
 
 int mt6397_irq_init(struct mt6397_chip *mt6397)
 {
-	int ret;
+	int ret, i;
 	struct platform_device *pdev = to_platform_device(mt6397->dev);
 
 	mutex_init(&mt6397->irqlock);
@@ -197,8 +197,12 @@ int mt6397_irq_init(struct mt6397_chip *mt6397)
 		return  -EINVAL;
 	}
 	/* Mask individual interrupt sources */
-	mt6397->irq_masks_cur[GRP_INT_CON0] = 0x4200;
+	mt6397->irq_masks_cur[GRP_INT_CON0] = 0x0200;
 	mt6397->irq_masks_cur[GRP_INT_CON1] = 0x0010;
+	for (i = 0; i < MT6397_IRQ_GROUP_NR; i++) {
+		regmap_write(mt6397->regmap,
+			mt6397_mask_reg[i], mt6397->irq_masks_cur[i]);
+	}
 
 	mt6397->irq_domain = irq_domain_add_linear(mt6397->dev->of_node,
 		MT6397_IRQ_NR, &mt6397_irq_domain_ops, mt6397);
