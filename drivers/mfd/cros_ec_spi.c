@@ -66,6 +66,14 @@
   */
 #define EC_SPI_RECOVERY_TIME_NS	(200 * 1000)
 
+
+/*
+ * Time between host spi EC commands was sent & before EC ready to
+ * response data (EC SPI TX ready), let EC have enough time to prepare
+ * response data to the bus. So, add 1 ms sleep for safety.
+ */
+#define EC_SPI_SYNC_DELAY_MS 1
+
 /**
  * struct cros_ec_spi - information about a SPI-connected EC
  *
@@ -461,6 +469,9 @@ static int cros_ec_pkt_xfer_spi(struct cros_ec_device *ec_dev,
 
 	ret = spi_sync(ec_spi->spi, &msg);
 
+	/* Waiting for EC SPI TX ready. */
+	msleep(EC_SPI_SYNC_DELAY_MS);
+
 	/* Get the response */
 	if (!ret) {
 		/* Verify that EC can process command */
@@ -607,7 +618,8 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
 
 	ret = spi_sync(ec_spi->spi, &msg);
 
-	mdelay(1);		/*Waiting for EC SPI TX ready. */
+	/* Waiting for EC SPI TX ready. */
+	msleep(EC_SPI_SYNC_DELAY_MS);
 
 	/* Get the response */
 	if (!ret) {
