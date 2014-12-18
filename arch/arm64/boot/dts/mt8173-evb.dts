@@ -13,6 +13,7 @@
  */
 
 /dts-v1/;
+#include <dt-bindings/clock/mediatek,mt6397-clks.h>
 #include "mt8173.dtsi"
 
 / {
@@ -40,6 +41,11 @@
 &pwrap {
 	pmic {
 		compatible = "mediatek,mt6397";
+
+		mt6397clock: mt6397clock {
+			compatible = "mediatek,mt6397-clk";
+			#clock-cells = <1>;
+		};
 
 		mt6397regulator: mt6397regulator {
 			compatible = "mediatek,mt6397-regulator";
