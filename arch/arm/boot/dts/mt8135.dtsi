@@ -304,7 +304,8 @@
 						<MT8135_PIN_79_MSDC2_CMD__FUNC_MSDC2_CMD &pcfg_pull_up>,
 						<MT8135_PIN_77_MSDC2_DAT2__FUNC_MSDC2_DAT2 &pcfg_pull_up>,
 						<MT8135_PIN_80_MSDC2_CLK__FUNC_MSDC2_CLK &pcfg_pull_down>,
-						<MT8135_PIN_78_MSDC2_DAT3__FUNC_MSDC2_DAT3 &pcfg_pull_up>;
+						<MT8135_PIN_78_MSDC2_DAT3__FUNC_MSDC2_DAT3 &pcfg_pull_up>,
+						<MT8135_PIN_65_MSDC2_INSI__FUNC_MSDC2_INSI &pcfg_pull_up>;
 			};
 
 		pinctrl_mmc0_uhs: mmc0uhs {
@@ -589,6 +590,7 @@
 			io-power-supply = <&mt6397_vmc_reg>;
 			clocks = <&pericfg PERI_MSDC30_1_CK>, <&apmixedsys APMIXED_MSDCPLL>;
 			clock-names = "src_clk", "pll_clk";
+			cd-gpios = <&pio 65 0>;
 			func = "SDCARD";
 		};
 
