@@ -45,15 +45,20 @@
 };
 
 &pwrap {
-	pmic {
+	pmic: mt6397 {
 		compatible = "mediatek,mt6397";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		interrupt-parent = <&pio>;
 		interrupts = <0 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
 
-		rtc:rtc@8000 {
+		rtc: rtc@8000 {
+			compatible = "mediatek,mt6397-rtc";
 			reg = <0x8000 0x3e>;
+			interrupt-parent = <&pmic>;
+			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		mt6397codec: mt6397codec {

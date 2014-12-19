@@ -20,7 +20,10 @@
 #include "mt6397-irq.h"
 
 static const struct mfd_cell mt6397_devs[] = {
-	{ .name = "mt6397-rtc" },
+	{
+		.name = "mt6397-rtc",
+		.of_compatible = "mediatek,mt6397-rtc",
+	},
 	{
 		.name = "mt6397-regulator",
 		.of_compatible = "mediatek,mt6397-regulator",

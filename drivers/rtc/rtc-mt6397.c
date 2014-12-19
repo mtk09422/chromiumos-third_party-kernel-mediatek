@@ -325,7 +325,6 @@ static struct rtc_class_ops mtk_rtc_ops = {
 
 static int mtk_rtc_probe(struct platform_device *pdev)
 {
-	struct mt6397_chip *mt6397_chip = dev_get_drvdata(pdev->dev.parent);
 	struct mt6397_rtc *rtc;
 	int ret = 0;
 
@@ -345,13 +344,13 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "register rtc device failed\n");
 		goto out_rtc;
 	}
-	if (!mt6397_chip->irq_domain)
-		dev_warn(&pdev->dev, "irq domain is NULL\n");
 
-	rtc->irq = irq_create_mapping(mt6397_chip->irq_domain,
-				RG_INT_STATUS_RTC);
-	if (!rtc->irq)
-		dev_warn(&pdev->dev, "Failed to map alarm IRQ\n");
+	rtc->irq = platform_get_irq(pdev, 0);
+	if (rtc->irq < 0) {
+		dev_warn(&pdev->dev, "Failed to get alarm IRQ\n");
+		ret = rtc->irq;
+		goto out_rtc;
+	}
 
 	ret = devm_request_threaded_irq(&pdev->dev, rtc->irq, NULL,
 			rtc_irq_handler_thread,
@@ -384,22 +383,19 @@ static int mtk_rtc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct platform_device_id mt6397_rtc_id[] = {
-	{
-		.name = "mt6397-rtc",
-		.driver_data = 0,
-	},
-	{ },
+static const struct of_device_id mt6397_rtc_of_match[] = {
+	{ .compatible = "mediatek,mt6397-rtc", },
+	{ }
 };
 
 static struct platform_driver mtk_rtc_pdrv = {
 	.driver = {
 		.name = "mt6397-rtc",
 		.owner = THIS_MODULE,
+		.of_match_table = mt6397_rtc_of_match,
 	},
 	.probe	= mtk_rtc_probe,
 	.remove = mtk_rtc_remove,
-	.id_table = mt6397_rtc_id,
 };
 
 static int __init mt6397_rtc_init(void)
