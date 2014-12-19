@@ -17,7 +17,6 @@
 #include <linux/of_irq.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6397/core.h>
-#include <linux/soc/mediatek/mtk-pmic-wrap.h>
 #include "mt6397-irq.h"
 
 static const struct mfd_cell mt6397_devs[] = {
@@ -39,19 +38,20 @@ static int mt6397_probe(struct platform_device *pdev)
 {
 	u32 ret;
 	struct mt6397_chip *mt6397;
-	struct pmic_wrapper *wrp;
 
-	/* mt6397 MFD is child device of soc pmic wrapper. */
-	if (!pdev->dev.parent)
-		return -ENODEV;
-
-	wrp = dev_get_drvdata(pdev->dev.parent);
 	mt6397 = devm_kzalloc(&pdev->dev, sizeof(*mt6397), GFP_KERNEL);
 	if (!mt6397)
 		return -ENOMEM;
 
 	mt6397->dev = &pdev->dev;
-	mt6397->regmap = wrp->regmap;
+	/*
+	 * mt6397 MFD is child device of soc pmic wrapper.
+	 * Regmap is set from its parent.
+	 */
+	mt6397->regmap = dev_get_platdata(&pdev->dev);
+	if (!mt6397->regmap)
+		return -ENODEV;
+
 	platform_set_drvdata(pdev, mt6397);
 
 	mt6397_irq_init(mt6397);

@@ -22,7 +22,6 @@
 #include <linux/regmap.h>
 #include <linux/reset.h>
 #include <linux/mfd/mt6397/registers.h>
-#include <linux/soc/mediatek/mtk-pmic-wrap.h>
 #include "mt8173-pmic-wrap.h"
 
 /* macro for wrapper status */
@@ -57,6 +56,12 @@
 #define PWRAP_OP_OUTS               0x8
 #define PWRAP_OP_OUTD               0x9
 #define PWRAP_OP_OUTQ               0xA
+
+struct pmic_wrapper {
+	struct platform_device *pdev;
+	void __iomem *pwrap_base;
+	struct regmap *regmap;
+};
 
 static bool is_fsm_idle(u32 x)
 {
@@ -751,6 +756,11 @@ const struct regmap_config pwrap_regmap_config = {
 	.reg_write = pwrap_regmap_write,
 };
 
+static struct of_dev_auxdata pwrap_auxdata_lookup[] = {
+	OF_DEV_AUXDATA("mediatek,mt6397", 0, "mt6397", NULL),
+	{},
+};
+
 static int pwrap_probe(struct platform_device *pdev)
 {
 	int ret, irq;
@@ -797,7 +807,8 @@ static int pwrap_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = of_platform_populate(np, NULL, NULL, dev);
+	pwrap_auxdata_lookup[0].platform_data = wrp->regmap;
+	ret = of_platform_populate(np, NULL, pwrap_auxdata_lookup, dev);
 	if (ret) {
 		dev_err(dev, "%s fail to create devices\n", np->full_name);
 		return ret;
