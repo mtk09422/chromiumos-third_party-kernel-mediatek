@@ -145,8 +145,13 @@ menu "Platform selection"
 config ARCH_MEDIATEK
 	bool "Mediatek MT65xx & MT81xx ARMv8 SoC"
 	select ARM_GIC
+	select PINCTRL
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
+
+config MACH_MT8173
+	bool "Mediatek 8173 Soc Supprt"
+	def_bool y if(ARCH_MEDIATEK || ARM64)
 
 config ARCH_THUNDER
 	bool "Cavium Inc. Thunder SoC Family"
