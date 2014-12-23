@@ -1145,39 +1145,9 @@ static struct mtk_gate audio_clks[] __initdata = {
 static void __init init_clk_audiosys(void __iomem *audiosys_base,
 		struct clk_onecell_data *clk_data)
 {
-#if USE_AUDIO_PRE_CLK
-	int i;
-	struct clk *clk;
-	struct clk *pre_clk;
-
-	pr_debug("init audiosys gates:\n");
-
-	pre_clk = __clk_lookup(audio_ck);
-
-	for (i = 0; i < ARRAY_SIZE(audio_clks); i++) {
-		struct mtk_gate *gate = &audio_clks[i];
-
-		clk = mt_clk_register_audio_cg(gate->name,
-				gate->parent_name, pre_clk,
-				audiosys_base + gate->regs->sta_ofs,
-				gate->shift, gate->flags);
-
-		if (IS_ERR(clk)) {
-			pr_err("Failed to register clk %s: %ld\n",
-					gate->name, PTR_ERR(clk));
-			continue;
-		}
-
-		if (clk_data)
-			clk_data->clks[gate->id] = clk;
-
-		pr_debug("gate %3d: %s\n", i, gate->name);
-	}
-#else /* !USE_AUDIO_PRE_CLK */
 	pr_debug("init audiosys gates:\n");
 	init_clk_gates(audiosys_base, audio_clks, ARRAY_SIZE(audio_clks),
 		clk_data);
-#endif /* USE_AUDIO_PRE_CLK */
 }
 
 /*
