@@ -75,25 +75,43 @@ void mtk_crtc_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
 	spin_unlock_irqrestore(&dev->event_lock, flags);
 }
 
+#ifdef PVRDRM
+static int checkvsync;
+#endif
+static int irq_count1;
+static int irq_count2;
+static int irq_count3;
 void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 {
 	struct drm_device *dev = mtk_crtc->base.dev;
+#ifdef PVRDRM
+	unsigned long flags;
+#endif
 /*	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	void __iomem *base = dcrtc->base; */
 
+	irq_count1++;
 #ifdef PVRDRM
+	if (checkvsync)
+		DRM_ERROR("mtk_drm_crtc_irq [%p] [%d] [%d]!\n",
+			mtk_crtc, mtk_crtc->flip_status, irq_count1);
+
+	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->flip_status == MTK_DRM_CRTC_FLIP_STATUS_DONE) {
 		if (mtk_crtc->flip_data) {
 			pvr_drm_flip_done(dev, mtk_crtc->flip_data);
 			mtk_crtc->flip_data = NULL;
 		}
+		mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
+		checkvsync = 0;
 	}
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 #endif
-
-	if (mtk_crtc->event) {
-		drm_handle_vblank(dev, mtk_crtc->event->pipe);
+irq_count2++;
+	drm_handle_vblank(dev, 0);
+	if (mtk_crtc->event)
 		mtk_crtc_finish_page_flip(mtk_crtc);
-	}
+irq_count3++;
 }
 
 #ifdef PVRDRM
@@ -113,7 +131,6 @@ static void mtk_flip_cb(struct drm_gem_object *bo,
 
 	WARN_ON(mtk_crtc->flip_data);
 	mtk_crtc->flip_data = flip_data;
-	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
 
 	/*
 	 * the values related to a buffer of the drm framebuffer
@@ -126,6 +143,8 @@ static void mtk_flip_cb(struct drm_gem_object *bo,
 			fb->pixel_format);
 	else
 		DRM_ERROR("mtk_flip_cb not set hw (NO fb)\n");
+	irq_num = 1;
+	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
 
 #ifdef VSYNC_TIMER
 	if (timer_mtk_crtc == NULL) {
@@ -199,7 +218,7 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	struct mtk_drm_gem_buf *buffer;
 
 	if (!mtk_crtc->cursor_obj) {
-		DRM_ERROR("mtk_drm_crtc_cursor_move no cursor obj[%p]\n", crtc);
+		/* DRM_ERROR("mtk_drm_crtc_cursor_move no obj [%p]\n", crtc); */
 		return 0;
 	}
 
@@ -233,6 +252,29 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	struct drm_framebuffer *old_fb = crtc->primary->fb;
 	unsigned long flags;
 	int ret;
+	static int busy_count;
+
+#ifdef PVRDRM
+	if (mtk_crtc->flip_status != MTK_DRM_CRTC_FLIP_STATUS_NONE) {
+		busy_count++;
+		if (busy_count == 3000) {
+			DRM_ERROR("flip_status wrong [%p][%d]!\n",
+				mtk_crtc, mtk_crtc->flip_status);
+			DRM_ERROR("isr [%d][%d][%d]!\n",
+				irq_count1, irq_count2, irq_count3);
+			checkvsync = 1;
+
+			if (mtk_get_vblank(mtk_crtc->regs) & 0x4) {
+				mtk_clear_vblank(mtk_crtc->regs);
+				DRM_ERROR("workaround %d\n",
+					mtk_get_vblank(mtk_crtc->regs));
+			}
+			busy_count = 0;
+		}
+		return -EBUSY;
+	}
+#endif
+	busy_count = 0;
 
 	if (mtk_crtc->event)
 		return -EBUSY;
@@ -243,14 +285,11 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 		return -EINVAL;
 	}
 
-	spin_lock_irqsave(&dev->event_lock, flags);
-	mtk_crtc->event = event;
-	spin_unlock_irqrestore(&dev->event_lock, flags);
 
 	if (event) {
 		ret = drm_crtc_vblank_get(crtc);
 		if (ret) {
-			DRM_DEBUG("failed to acquire vblank events\n");
+			DRM_ERROR("failed to acquire vblank events\n");
 			return ret;
 		}
 	}
@@ -264,7 +303,10 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	crtc->primary->fb = fb;
 
 #ifdef PVRDRM
+	spin_lock_irqsave(&dev->event_lock, flags);
 	mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_PENDING;
+	spin_unlock_irqrestore(&dev->event_lock, flags);
+
 	ret = pvr_drm_flip_schedule(mtk_fb->gem_obj[0],
 				    mtk_flip_cb,
 				    (void *)crtc);
@@ -291,18 +333,37 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 #endif
 #endif
 
+	spin_lock_irqsave(&dev->event_lock, flags);
+	mtk_crtc->event = event;
+	spin_unlock_irqrestore(&dev->event_lock, flags);
+
 	return ret;
 }
 
 static void mtk_drm_crtc_destroy(struct drm_crtc *crtc)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(crtc->dev);
-	unsigned int nr;
+	/* struct mtk_drm_private *priv = get_mtk_drm_private(crtc->dev);
+	unsigned int nr; */
 
-	for (nr = 0; nr < MAX_CRTC; nr++)
-		priv->crtc[nr] = NULL;
+#ifdef PVRDRM
+	struct drm_device *dev = crtc->dev;
+	unsigned long flags;
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+#endif
+
+	/* for (nr = 0; nr < MAX_CRTC; nr++)
+		priv->crtc[nr] = NULL; */
 
 	drm_crtc_cleanup(crtc);
+#ifdef PVRDRM
+	spin_lock_irqsave(&dev->event_lock, flags);
+	if (mtk_crtc->flip_data) {
+		pvr_drm_flip_done(dev, mtk_crtc->flip_data);
+		mtk_crtc->flip_data = NULL;
+	}
+	mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
+	spin_unlock_irqrestore(&dev->event_lock, flags);
+#endif
 }
 
 static void mtk_drm_crtc_prepare(struct drm_crtc *crtc)

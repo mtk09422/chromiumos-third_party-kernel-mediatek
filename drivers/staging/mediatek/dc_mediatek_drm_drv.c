@@ -72,12 +72,35 @@ static inline void display_buffer_unref(struct pvr_drm_display_buffer *buffer)
 
 
 
+int irq_num;
 static irqreturn_t mtk_drm_irq(int irq, void *data)
 {
 	struct mtk_drm_crtc *mtk_crtc = data;
 
+#ifdef VSYNC_TIMER
 	mtk_clear_vblank(mtk_crtc->regs);
-	mtk_drm_crtc_irq(mtk_crtc);
+#else
+	u32 stat = mtk_get_vblank(mtk_crtc->regs);
+
+	if (stat & 0x4) {
+		mtk_clear_vblank(mtk_crtc->regs);
+		if (irq_num == 1) {
+			irq_num = 2;
+		} else if (irq_num == 2) {
+			mtk_drm_crtc_irq(mtk_crtc);
+			irq_num = 0;
+		}
+	}
+
+	if (stat & 0x18)
+		DRM_ERROR("mtk_drm_irq %d\n", stat);
+
+	stat = mtk_get_vblank(mtk_crtc->regs);
+	if (stat & 0x4) {
+		mtk_clear_vblank(mtk_crtc->regs);
+		DRM_ERROR("clear stat again %d\n", stat);
+	}
+#endif
 
 	return IRQ_HANDLED;
 }

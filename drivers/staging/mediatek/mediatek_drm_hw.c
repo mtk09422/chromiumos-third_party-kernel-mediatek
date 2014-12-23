@@ -20,6 +20,11 @@ void mtk_clear_vblank(void __iomem *disp_base)
 	writel(0x0, disp_base + DISP_REG_RDMA_INT_STATUS);
 }
 
+u32 mtk_get_vblank(void __iomem *disp_base)
+{
+	return readl(disp_base + DISP_REG_RDMA_INT_STATUS);
+}
+
 static void DispConfigMainPathConnection(void __iomem *disp_base)
 {
 	/* OVL output to BLS */

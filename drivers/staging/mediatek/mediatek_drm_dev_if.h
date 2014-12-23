@@ -2,6 +2,9 @@
 #define _MEDIATEK_DRM_DEV_IF_H_
 
 #ifdef PVRDRM
+
+/* #define VSYNC_TIMER */
+
 #include <pvr_drm_display.h>
 
 struct mtk_display_device {

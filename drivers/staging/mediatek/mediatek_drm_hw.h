@@ -519,6 +519,7 @@ struct MTK_DISP_CLKS {
 
 void mtk_enable_vblank(void __iomem *drm_disp_base);
 void mtk_clear_vblank(void __iomem *drm_disp_base);
+u32 mtk_get_vblank(void __iomem *disp_base);
 void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int format);
 void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
