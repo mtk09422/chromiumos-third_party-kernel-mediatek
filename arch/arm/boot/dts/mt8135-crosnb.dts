@@ -422,3 +422,10 @@
 		wakeup-source;
 	};
 };
+
+&i2c5 {
+	thermal@4c {
+		compatible = "ti,tmp432";
+		reg = <0x4c>;
+	};
+};
