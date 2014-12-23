@@ -23,8 +23,6 @@
 
 #include <dt-bindings/clock/mt8173-clk.h>
 
-#define USE_AUDIO_PRE_CLK	0
-
 /*
  * platform clocks
  */
@@ -1397,40 +1395,9 @@ static struct mtk_gate audio_clks[] __initdata = {
 static void __init init_clk_audiosys(void __iomem *audiosys_base,
 		struct clk_onecell_data *clk_data)
 {
-#if USE_AUDIO_PRE_CLK
-	int i;
-	struct clk *clk;
-	struct clk *pre_clk;
-
-	pr_debug("init audiosys gates:\n");
-
-	pre_clk = __clk_lookup(infra_audio);
-
-	for (i = 0; i < ARRAY_SIZE(audio_clks); i++) {
-		struct mtk_gate *gate = &audio_clks[i];
-
-		clk = mt_clk_register_audio_cg(gate->name,
-				gate->parent_name, pre_clk,
-				audiosys_base + gate->regs->sta_ofs,
-				gate->shift, gate->flags);
-
-		if (IS_ERR(clk)) {
-			pr_err("Failed to register clk %s: %ld\n",
-					gate->name, PTR_ERR(clk));
-			continue;
-		}
-
-		if (clk_data)
-			clk_data->clks[gate->id] = clk;
-
-		pr_debug("gate %3d: %s\n", i, gate->name);
-	}
-
-#else /* !USE_AUDIO_PRE_CLK */
 	pr_debug("init audiosys gates:\n");
 	init_clk_gates(audiosys_base, audio_clks, ARRAY_SIZE(audio_clks),
 		clk_data);
-#endif /* USE_AUDIO_PRE_CLK */
 }
 
 /*
@@ -1443,14 +1410,11 @@ static struct clk_onecell_data *alloc_clk_data(unsigned int clk_num)
 	struct clk_onecell_data *clk_data;
 
 	clk_data = kzalloc(sizeof(clk_data), GFP_KERNEL);
-	if (!clk_data) {
-		pr_err("could not allocate clock lookup table\n");
+	if (!clk_data)
 		return NULL;
-	}
 
 	clk_data->clks = kcalloc(clk_num, sizeof(struct clk *), GFP_KERNEL);
 	if (!clk_data->clks) {
-		pr_err("could not allocate clock lookup table\n");
 		kfree(clk_data);
 		return NULL;
 	}

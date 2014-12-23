@@ -657,17 +657,12 @@ static struct clk_onecell_data *alloc_clk_data(unsigned int clk_num)
 	struct clk_onecell_data *clk_data;
 
 	clk_data = kzalloc(sizeof(clk_data), GFP_KERNEL);
-	if (!clk_data) {
-		pr_err("could not allocate clock lookup table\n");
+	if (!clk_data)
 		return NULL;
-	}
 
 	clk_data->clks = kcalloc(clk_num, sizeof(struct clk *), GFP_KERNEL);
-	if (!clk_data->clks) {
-		pr_err("could not allocate clock lookup table\n");
-		kfree(clk_data);
+	if (!clk_data->clks)
 		return NULL;
-	}
 
 	clk_data->clk_num = clk_num;
 
@@ -910,8 +905,8 @@ static int __init debug_init(void)
 
 	if (init)
 		return 0;
-	else
-		++init;
+
+	++init;
 
 	entry = proc_create("test_pg", 0, 0, &test_pg_fops);
 	if (!entry)
