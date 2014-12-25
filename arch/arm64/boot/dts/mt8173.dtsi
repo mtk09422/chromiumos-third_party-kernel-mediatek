@@ -442,7 +442,53 @@
 			clocks = <&perisys PERI_MSDC30_1>, <&apmixedsys APMIXED_MSDCPLL>;
 			clock-names = "src_clk", "pll_clk";
 		};
+
+		mediatek-drm {
+			compatible = "mediatek,mt8173-drm";
+			reg = <0 0x14000000 0 0x120>,	/* CONFIG */
+				<0 0x1400C000 0 0x1000>,	/* OVL0 */
+				<0 0x1400E000 0 0x1000>,	/* RDMA0 */
+				<0 0x14013000 0 0x1000>,	/* COLOR0 */
+				<0 0x14015000 0 0x1000>,	/* AAL */
+				<0 0x1401A000 0 0x1000>,	/* UFOE */
+				<0 0x1401B000 0 0x1000>,	/* DSI0 */
+				<0 0x14020000 0 0x1000>,	/* MUTEX */
+				<0 0x14023000 0 0x1000>,	/* OD */
+				<0 0x14026000 0 0x1000>;	/* LVDS */
+			#interrupts = <0 182 0x8>;	/* RDMA */
+			interrupts = <0 196 0x8>;	/* OD */
+			iommus = <&iommu M4U_PORT_DISP_OVL0>,
+				<&iommu M4U_PORT_DISP_RDMA0>;
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_SMI_COMMON>,
+				<&mmsys MM_SMI_LARB0>,
+				<&mmsys MM_SMI_LARB4>,
+				<&mmsys MM_MUTEX_32K>,
+				<&mmsys MM_DISP_OVL0>,
+				<&mmsys MM_DISP_RDMA0>,
+				<&mmsys MM_DISP_COLOR0>,
+				<&mmsys MM_DISP_AAL>,
+				<&mmsys MM_DISP_UFOE>,
+				<&mmsys MM_DISP_OD>;
+			clock-names = "disp_mtcmos",
+				"smi_common_ck",
+				"smi_larb0_ck",
+				"smi_larb4_ck",
+				"mutex_disp_ck",
+				"ovl0_disp_ck",
+				"rdma0_disp_ck",
+				"color0_disp_ck",
+				"aal_disp_ck",
+				"ufoe_disp_ck",
+				"od_disp_ck";
+			mediatek,width = <800>;
+			mediatek,height = <1280>;
+			mediatek,panel = <&panel>;
+		};
 	};
 
+	panel: panel {
+		compatible = "lg,ld070wx3-sl01";	/* for 800 x 1280 panel */
+	};
 };
 
