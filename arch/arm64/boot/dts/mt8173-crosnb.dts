@@ -153,10 +153,19 @@
 &pwrap {
 	pmic: mt6397 {
 		compatible = "mediatek,mt6397";
+		#address-cells = <1>;
+		#size-cells = <1>;
 		interrupt-parent = <&pio>;
 		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-controller;
 		#interrupt-cells = <2>;
+
+		rtc: rtc@e000 {
+			compatible = "mediatek,mt6397-rtc";
+			reg = <0xe000 0x3e>;
+			interrupt-parent = <&pmic>;
+			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		};
 
 		mt6397clock: mt6397clock {
 			compatible = "mediatek,mt6397-clk";
