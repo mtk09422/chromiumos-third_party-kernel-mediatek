@@ -195,6 +195,117 @@
 			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
+
+			mmc0_pins_default: mmc0default {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+						<MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+						<MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+						<MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+						<MT8135_PIN_4_MSDC0_CMD__FUNC_MSDC0_CMD>,
+						<MT8135_PIN_6_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+						<MT8135_PIN_7_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+						<MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+						<MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
+						<MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB>;
+					bias-pull-up;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_5_MSDC0_CLK__FUNC_MSDC0_CLK>;
+					bias-pull-down;
+				};
+			};
+
+			mmc1_pins_default: mmc1default {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
+						<MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+						<MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD>,
+						<MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+						<MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3>,
+						<MT8135_PIN_63_MSDC1_INSI__FUNC_MSDC1_INSI>;
+					bias-pull-up;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK>;
+					bias-pull-down;
+				};
+			};
+
+			mmc2_pins_default: mmc2default {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_82_MSDC2_DAT0__FUNC_MSDC2_DAT0>,
+						<MT8135_PIN_81_MSDC2_DAT1__FUNC_MSDC2_DAT1>,
+						<MT8135_PIN_79_MSDC2_CMD__FUNC_MSDC2_CMD>,
+						<MT8135_PIN_77_MSDC2_DAT2__FUNC_MSDC2_DAT2>,
+						<MT8135_PIN_78_MSDC2_DAT3__FUNC_MSDC2_DAT3>,
+						<MT8135_PIN_65_MSDC2_INSI__FUNC_MSDC2_INSI>;
+					bias-pull-up;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_80_MSDC2_CLK__FUNC_MSDC2_CLK>;
+					bias-pull-down;
+				};
+			};
+
+			mmc0_pins_uhs: mmc0@0 {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_0_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+					     <MT8135_PIN_1_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+					     <MT8135_PIN_2_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+					     <MT8135_PIN_3_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+					     <MT8135_PIN_4_MSDC0_CMD__FUNC_MSDC0_CMD>,
+					     <MT8135_PIN_6_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+					     <MT8135_PIN_7_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+					     <MT8135_PIN_8_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+					     <MT8135_PIN_9_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
+					     <MT8135_PIN_33_MSDC0_RSTB__FUNC_MSDC0_RSTB>;
+					input-enable;
+					drive-strength = <MTK_DRIVE_6mA>;
+					bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_5_MSDC0_CLK__FUNC_MSDC0_CLK>;
+					drive-strength = <MTK_DRIVE_6mA>;
+					bias-pull-down = <MTK_PUPD_SET_R1R0_01>;
+				};
+			};
+
+			mmc1_pins_uhs: mmc1@0 {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_83_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
+					     <MT8135_PIN_84_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+					     <MT8135_PIN_85_MSDC1_CMD__FUNC_MSDC1_CMD>,
+					     <MT8135_PIN_87_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+					     <MT8135_PIN_88_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+					input-enable;
+					drive-strength = <MTK_DRIVE_8mA>;
+					bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_86_MSDC1_CLK__FUNC_MSDC1_CLK>;
+					drive-strength = <MTK_DRIVE_8mA>;
+					bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+				};
+			};
+
+			mmc2_pins_uhs: mmc2@0 {
+				pins_cmd_dat {
+					pins = <MT8135_PIN_82_MSDC2_DAT0__FUNC_MSDC2_DAT0>,
+					     <MT8135_PIN_81_MSDC2_DAT1__FUNC_MSDC2_DAT1>,
+					     <MT8135_PIN_79_MSDC2_CMD__FUNC_MSDC2_CMD>,
+					     <MT8135_PIN_77_MSDC2_DAT2__FUNC_MSDC2_DAT2>,
+					     <MT8135_PIN_78_MSDC2_DAT3__FUNC_MSDC2_DAT3>;
+					input-enable;
+					drive-strength = <MTK_DRIVE_8mA>;
+					bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+				};
+				pins_clk {
+					pins = <MT8135_PIN_80_MSDC2_CLK__FUNC_MSDC2_CLK>;
+					drive-strength = <MTK_DRIVE_8mA>;
+					bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+				};
+			};
 		};
 
 		uart0: serial@11006000 {
@@ -225,5 +336,34 @@
 			clocks = <&uart_clk>;
 		};
 
+		mmc0: mmc@11230000 {
+			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
+			reg = <0 0x11230000 0 0x108>;
+			interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+			core-power-supply = <&mt6397_vemc_3v3_reg>;
+			io-power-supply = <&mt6397_vio18_reg>;
+			clocks = <&pericfg PERI_MSDC20_1_CK>, <&apmixedsys APMIXED_MSDCPLL>;
+			clock-names = "src_clk", "pll_clk";
+		};
+
+		mmc1: mmc@11240000 {
+			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
+			reg = <0 0x11240000 0 0x108>;
+			interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_LOW>;
+			core-power-supply = <&mt6397_vmch_reg>;
+			io-power-supply = <&mt6397_vmc_reg>;
+			clocks = <&pericfg PERI_MSDC20_2_CK>, <&apmixedsys APMIXED_MSDCPLL>;
+			clock-names = "src_clk", "pll_clk";
+		};
+
+		mmc2: mmc@11250000 {
+			compatible = "mediatek,mt8135-mmc","mediatek,mmc";
+			reg = <0 0x11250000 0 0x108>;
+			interrupts = <GIC_SPI 41 IRQ_TYPE_LEVEL_LOW>;
+			core-power-supply = <&mt6397_vmch_reg>;
+			io-power-supply = <&mt6397_vmc_reg>;
+			clocks = <&pericfg PERI_MSDC30_1_CK>, <&apmixedsys APMIXED_MSDCPLL>;
+			clock-names = "src_clk", "pll_clk";
+		};
 	};
 };
