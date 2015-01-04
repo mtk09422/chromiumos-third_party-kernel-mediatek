@@ -202,14 +202,21 @@
 						<MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
 						<MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>,
 						<MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
-						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>,
-						<MT8173_PIN_132_I2S0_DATA1__FUNC_GPIO132>;
-					bias-pull-up;
+						<MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+					input-enable;
+					drive-strength = <MTK_DRIVE_4mA>;
+					bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
 				};
 
 				pins_clk {
 					pins = <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>;
 					bias-pull-down;
+					drive-strength = <MTK_DRIVE_4mA>;
+				};
+
+				pins_insert {
+					pins= <MT8173_PIN_132_I2S0_DATA1__FUNC_GPIO132>;
+					bias-pull-up;
 				};
 			};
 
