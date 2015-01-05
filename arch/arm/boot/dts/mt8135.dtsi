@@ -313,6 +313,7 @@
 			reg = <0 0x11006000 0 0x400>;
 			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
+			status = "disabled";
 		};
 
 		uart1: serial@11007000 {
@@ -320,6 +321,7 @@
 			reg = <0 0x11007000 0 0x400>;
 			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
+			status = "disabled";
 		};
 
 		uart2: serial@11008000 {
@@ -327,6 +329,7 @@
 			reg = <0 0x11008000 0 0x400>;
 			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
+			status = "disabled";
 		};
 
 		uart3: serial@11009000 {
@@ -334,6 +337,7 @@
 			reg = <0 0x11009000 0 0x400>;
 			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
+			status = "disabled";
 		};
 
 		mmc0: mmc@11230000 {

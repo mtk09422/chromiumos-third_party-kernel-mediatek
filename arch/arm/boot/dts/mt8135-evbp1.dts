@@ -24,6 +24,10 @@
 	};
 };
 
+&uart3 {
+	status = "okay";
+};
+
 &pwrap {
 	pmic: mt6397 {
 		compatible = "mediatek,mt6397";
