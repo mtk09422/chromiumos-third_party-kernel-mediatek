@@ -4,6 +4,9 @@
 
 # When adding new entries keep the list in alphabetical order
 obj-$(CONFIG_BMA180) += bma180.o
+
+obj-$(CONFIG_CROS_EC_ACCEL) += cros_ec_accel.o
+
 obj-$(CONFIG_BMC150_ACCEL) += bmc150-accel.o
 obj-$(CONFIG_HID_SENSOR_ACCEL_3D) += hid-sensor-accel-3d.o
 obj-$(CONFIG_KXCJK1013) += kxcjk-1013.o
