@@ -18,6 +18,7 @@
 #include "skeleton64.dtsi"
 #include "mt8135-clocks.dtsi"
 #include "mt8135-pinfunc.h"
+#include <dt-bindings/iommu/mt8135-iommu-port.h>
 
 / {
 	compatible = "mediatek,mt8135";
@@ -369,5 +370,19 @@
 			clocks = <&pericfg PERI_MSDC30_1_CK>, <&apmixedsys APMIXED_MSDCPLL>;
 			clock-names = "src_clk", "pll_clk";
 		};
+
+		iommu: iommu@10205000 {
+			compatible = "mediatek,mt8135-iommu";
+			reg = <0 0x10205000 0 0x1000>,/*m4u base*/
+			        <0 0x1000e000 0 0x1000>; /*AO*/
+			interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>, /*m4u0 irq*/
+				<GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>; /*m4u1 irq*/
+			clocks = <&infracfg INFRA_M4U_CK>, <&infracfg INFRA_SMI_CK>;
+			clock-names = "m4u", "smi";
+			mtk,iova-size = <0x40000000>;
+			mtk,larb-port-mapping = <1 1 0 1 1>;
+			iommu-cells = <1>;
+		};
+
 	};
 };
