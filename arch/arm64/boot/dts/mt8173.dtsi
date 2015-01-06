@@ -16,6 +16,7 @@
 #include <dt-bindings/reset-controller/mt8173-resets.h>
 #include "mt8173-clocks.dtsi"
 #include "mt8173-pinfunc.h"
+#include <dt-bindings/iommu/mt8173-iommu-port.h>
 
 / {
 	compatible = "mediatek,mt8173";
@@ -418,6 +419,21 @@
 			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&uart_clk>;
 			status = "disabled";
+		};
+
+		iommu: mmsys_iommu@0x10205000 {
+			compatible = "mediatek,mt8173-iommu";
+			reg = <0 0x10205000 0 0x1000>,
+			        <0 0x14021000 0 0x1000>,  /* LARB 0 */
+				<0 0x16010000 0 0x1000>,  /* LARB 1 */
+				<0 0x15001000 0 0x1000>,  /* LARB 2 */
+				<0 0x18001000 0 0x1000>,  /* LARB 3 */
+				<0 0x14027000 0 0x1000>,  /* LARB 4 */
+				<0 0x19001000 0 0x1000>;  /* LARB 5 */
+			interrupts = <0 139 0x8>;
+			clocks = <&infrasys INFRA_M4U>;
+			clock-names = "infra_m4u";
+			iommu-cells = <1>;
 		};
 
 		mmc0: mmc@11230000 {
