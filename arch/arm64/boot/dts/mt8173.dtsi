@@ -216,7 +216,7 @@
 				};
 
 				pins_clk {
-					pins = <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>;
+					pins = <MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK>;
 					bias-pull-down;
 					drive-strength = <MTK_DRIVE_4mA>;
 				};
