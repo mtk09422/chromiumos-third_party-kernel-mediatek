@@ -161,6 +161,8 @@
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 			resets = <&infrarst MT8173_INFRA_PMIC_WRAP_RST>;
 			reset-names = "infra-pwrap-rst";
+			clocks = <&topckgen TOP_PMICSPI_SEL>, <&clk26m> ;
+			clock-names = "pmicspi-sel", "pmicspi-parent";
 		};
 
 		gic: interrupt-controller@10220000 {
