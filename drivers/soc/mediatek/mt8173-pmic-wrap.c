@@ -34,6 +34,8 @@
 #define PWRAP_STATE_SYNC_IDLE0      (1 << 20)
 #define PWRAP_STATE_INIT_DONE0      (1 << 21)
 
+#define PWRAP_CIPHER_DATA_RDY		(1 << 0)
+
 /* macro for WACS FSM */
 #define PWRAP_WACS_FSM_IDLE         0x00
 #define PWRAP_WACS_FSM_REQ          0x02
@@ -86,7 +88,7 @@ static bool is_fsm_idle_and_sync_idle(u32 x)
 
 static bool is_cipher_ready(u32 x)
 {
-	return x == 1;
+	return x & PWRAP_CIPHER_DATA_RDY;
 }
 
 static int wait_for_state_ready(
@@ -204,21 +206,21 @@ static int pwrap_regmap_write(void *context, u32 adr, u32 wdata)
 static int pwrap_reset(struct pmic_wrapper *wrp)
 {
 /*now the follow code will be build fail*/
-/*
- *	int ret;
- *	struct reset_control *rstc_infracfg;
- *	struct device *dev = &wrp->pdev->dev;
- *
- *	rstc_infracfg = devm_reset_control_get(dev, "infra-pwrap-rst");
- *	if (IS_ERR(rstc_infracfg)) {
- *		ret = PTR_ERR(rstc_infracfg);
- *		dev_err(dev, "get pwrap-rst failed=%d\n", ret);
- *		return ret;
- *	}
- *
- *	reset_control_assert(rstc_infracfg);
- *	reset_control_deassert(rstc_infracfg);
- */
+
+	int ret;
+	struct reset_control *rstc_infracfg;
+	struct device *dev = &wrp->pdev->dev;
+
+	rstc_infracfg = devm_reset_control_get(dev, "infra-pwrap-rst");
+	if (IS_ERR(rstc_infracfg)) {
+		ret = PTR_ERR(rstc_infracfg);
+		dev_err(dev, "get pwrap-rst failed=%d\n", ret);
+		return ret;
+	}
+
+	reset_control_assert(rstc_infracfg);
+	reset_control_deassert(rstc_infracfg);
+
 	return 0;
 }
 
