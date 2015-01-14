@@ -17,7 +17,7 @@
 #
 ############################################################################################################
 - partition_index: SYS0
-  partition_name: PRELOADER
+  partition_name: preloader
   file_name: preloader.bin
   is_download: true
   type: SV5_BL_BIN
@@ -122,7 +122,7 @@
   reserve: 0x0
 
 - partition_index: SYS7
-  partition_name: UBOOT
+  partition_name: lk
   file_name: lk.bin
   is_download: true
   type: NORMAL_ROM
@@ -143,7 +143,7 @@
   type: NORMAL_ROM
   linear_start_addr: 0x1d20000
   physical_start_addr: 0x1d20000
-  partition_size: 0xf00000
+  partition_size: 0x1900000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
   boundary_check: true
@@ -156,9 +156,9 @@
   file_name: recovery.img
   is_download: true
   type: NORMAL_ROM
-  linear_start_addr: 0x2c20000
-  physical_start_addr: 0x2c20000
-  partition_size: 0x1000000
+  linear_start_addr: 0x3620000
+  physical_start_addr: 0x3620000
+  partition_size: 0x1900000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
   boundary_check: true
@@ -171,8 +171,8 @@
   file_name: secro.img
   is_download: true
   type: EXT4_IMG
-  linear_start_addr: 0x3c20000
-  physical_start_addr: 0x3c20000
+  linear_start_addr: 0x4f20000
+  physical_start_addr: 0x4f20000
   partition_size: 0x600000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -186,8 +186,8 @@
   file_name: NONE
   is_download: false
   type: NORMAL_ROM
-  linear_start_addr: 0x4220000
-  physical_start_addr: 0x4220000
+  linear_start_addr: 0x5520000
+  physical_start_addr: 0x5520000
   partition_size: 0x80000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -201,8 +201,8 @@
   file_name: logo.bin
   is_download: true
   type: NORMAL_ROM
-  linear_start_addr: 0x42a0000
-  physical_start_addr: 0x42a0000
+  linear_start_addr: 0x55a0000
+  physical_start_addr: 0x55a0000
   partition_size: 0x800000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -216,8 +216,8 @@
   file_name: NONE
   is_download: false
   type: NORMAL_ROM
-  linear_start_addr: 0x4aa0000
-  physical_start_addr: 0x4aa0000
+  linear_start_addr: 0x5da0000
+  physical_start_addr: 0x5da0000
   partition_size: 0xb60000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -231,8 +231,8 @@
   file_name: trustzone.bin
   is_download: true
   type: NORMAL_ROM
-  linear_start_addr: 0x5600000
-  physical_start_addr: 0x5600000
+  linear_start_addr: 0x6900000
+  physical_start_addr: 0x6900000
   partition_size: 0x500000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -246,8 +246,8 @@
   file_name: trustzone.bin
   is_download: true
   type: NORMAL_ROM
-  linear_start_addr: 0x5b00000
-  physical_start_addr: 0x5b00000
+  linear_start_addr: 0x6e00000
+  physical_start_addr: 0x6e00000
   partition_size: 0x500000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -261,8 +261,8 @@
   file_name: NONE
   is_download: false
   type: NONE
-  linear_start_addr: 0x6000000
-  physical_start_addr: 0x6000000
+  linear_start_addr: 0x7300000
+  physical_start_addr: 0x7300000
   partition_size: 0x100000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -276,8 +276,8 @@
   file_name: NONE
   is_download: false
   type: NONE
-  linear_start_addr: 0x6100000
-  physical_start_addr: 0x6100000
+  linear_start_addr: 0x7400000
+  physical_start_addr: 0x7400000
   partition_size: 0x100000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -291,9 +291,9 @@
   file_name: system.img
   is_download: true
   type: EXT4_IMG
-  linear_start_addr: 0x6200000
-  physical_start_addr: 0x6200000
-  partition_size: 0x4b000000
+  linear_start_addr: 0x7500000
+  physical_start_addr: 0x7500000
+  partition_size: 0x66666800
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
   boundary_check: true
@@ -306,8 +306,8 @@
   file_name: cache.img
   is_download: true
   type: EXT4_IMG
-  linear_start_addr: 0x51200000
-  physical_start_addr: 0x51200000
+  linear_start_addr: 0x6db66800
+  physical_start_addr: 0x6db66800
   partition_size: 0x8000000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -321,8 +321,8 @@
   file_name: userdata.img
   is_download: true
   type: EXT4_IMG
-  linear_start_addr: 0x59200000
-  physical_start_addr: 0x59200000
+  linear_start_addr: 0x75b66800
+  physical_start_addr: 0x75b66800
   partition_size: 0x30400000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -336,8 +336,8 @@
   file_name: NONE
   is_download: false
   type: EXT4_IMG
-  linear_start_addr: 0x89600000
-  physical_start_addr: 0x89600000
+  linear_start_addr: 0xa5f66800
+  physical_start_addr: 0xa5f66800
   partition_size: 0x0
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
@@ -353,7 +353,7 @@
   type: NORMAL_ROM
   linear_start_addr: 0xffff0004
   physical_start_addr: 0xffff0004
-  partition_size: 0x4200
+  partition_size: 0x80000
   region: EMMC_USER
   storage: HW_STORAGE_EMMC
   boundary_check: false
