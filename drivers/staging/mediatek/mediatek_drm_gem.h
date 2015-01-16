@@ -11,6 +11,11 @@
  * GNU General Public License for more details.
  */
 
+#ifndef _MEDIATEK_DRM_GEM_H_
+#define _MEDIATEK_DRM_GEM_H_
+
+#include <drm/drm_gem.h>
+
 struct drm_gem_object;
 
 /*
@@ -61,6 +66,8 @@ struct mtk_drm_gem_obj {
 
 #define to_mtk_gem_obj(x)	container_of(x, struct mtk_drm_gem_obj, base)
 
+struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
+						      unsigned long size);
 void mtk_drm_gem_free_object(struct drm_gem_object *gem);
 struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 				unsigned int flags,	unsigned long size);
@@ -70,3 +77,4 @@ int mtk_drm_gem_dumb_map_offset(struct drm_file *file_priv,
 		struct drm_device *dev, uint32_t handle, uint64_t *offset);
 int mtk_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
+#endif

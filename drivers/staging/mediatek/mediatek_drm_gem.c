@@ -17,6 +17,33 @@
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_gem.h"
 
+
+struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
+						      unsigned long size)
+{
+	struct mtk_drm_gem_obj *mtk_gem_obj;
+	struct drm_gem_object *obj;
+	int ret;
+
+	mtk_gem_obj = kzalloc(sizeof(*mtk_gem_obj), GFP_KERNEL);
+	if (!mtk_gem_obj)
+		return NULL;
+
+	mtk_gem_obj->size = size;
+	obj = &mtk_gem_obj->base;
+
+	ret = drm_gem_object_init(dev, obj, size);
+	if (ret < 0) {
+		DRM_ERROR("failed to initialize gem object\n");
+		kfree(mtk_gem_obj);
+		return NULL;
+	}
+
+	DRM_DEBUG_KMS("created file object = 0x%x\n", (unsigned int)obj->filp);
+
+	return mtk_gem_obj;
+}
+
 struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 				unsigned int flags,	unsigned long size)
 {
@@ -167,6 +194,20 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 		mtk_buf->size = size;
 		mtk_buf->mva_addr = sg_dma_address(sgt->sgl);
 	} else if (flags == 3) {
+		struct page **pages;
+		int npages, size_pages;
+		int offset, index;
+
+		size = PAGE_ALIGN(size);
+		npages = size >> PAGE_SHIFT;
+		size_pages = npages * sizeof(*pages);
+		pages = kmalloc(size_pages, GFP_KERNEL);
+		if (!pages) {
+			ret = -ENOMEM;
+			goto err_NEW;
+		}
+		mtk_buf->pages = pages;
+
 		init_dma_attrs(&mtk_buf->dma_attrs);
 
 		size = PAGE_ALIGN(size);
@@ -176,6 +217,13 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 
 		mtk_buf->paddr = 0;
 		mtk_buf->size = size;
+
+		for (offset = 0, index = 0;
+			offset < size; offset += PAGE_SIZE, index++)
+			mtk_buf->pages[index] =
+				vmalloc_to_page(mtk_buf->kvaddr + offset);
+
+		mtk_buf->sgt = drm_prime_pages_to_sg(mtk_buf->pages, npages);
 	}
 #endif
 	else {
