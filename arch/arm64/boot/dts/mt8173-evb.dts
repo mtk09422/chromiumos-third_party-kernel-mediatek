@@ -18,6 +18,7 @@
 
 / {
 	model = "mediatek,mt8173-evb";
+	compatible = "mediatek,mt8173-evb", "mediatek,mt8173";
 
 	aliases {
 		serial0 = &uart0;
