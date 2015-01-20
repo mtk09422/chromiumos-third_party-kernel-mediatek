@@ -33,10 +33,13 @@
 #include <linux/of_irq.h>
 #include <linux/clk.h>
 
+#define I2C_RS_TRANSFER			(1 << 4)
 #define I2C_HS_NACKERR			(1 << 2)
 #define I2C_ACKERR			(1 << 1)
 #define I2C_TRANSAC_COMP		(1 << 0)
 #define I2C_TRANSAC_START		(1 << 0)
+#define I2C_RS_MUL_CNFG		(1 << 15)
+#define I2C_RS_MUL_TRIG		(1 << 14)
 #define I2C_TIMING_STEP_DIV_MASK	(0x3f << 0)
 #define I2C_TIMING_SAMPLE_COUNT_MASK	(0x7 << 0)
 #define I2C_TIMING_SAMPLE_DIV_MASK	(0x7 << 8)
@@ -336,10 +339,11 @@ static int i2c_set_speed(struct mtk_i2c *i2c, unsigned int clk_src_in_hz)
 	return 0;
 }
 
-static int mtk_i2c_do_transfer(struct mtk_i2c *i2c)
+static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, int num, int left_num)
 {
 	u16 addr_reg;
 	u16 control_reg;
+	u16 start_reg = 0;
 	int tmo = i2c->adap.timeout;
 
 	i2c->trans_stop = false;
@@ -355,6 +359,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c)
 		control_reg |= I2C_CONTROL_RS;
 	if (i2c->op == I2C_MASTER_WRRD)
 		control_reg |= I2C_CONTROL_DIR_CHANGE | I2C_CONTROL_RS;
+	if (left_num >= 1)
+		control_reg |= I2C_CONTROL_RS;
 	i2c_writew(control_reg, i2c, OFFSET_CONTROL);
 
 	/* set start condition */
@@ -372,28 +378,22 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c)
 	i2c_writew(addr_reg, i2c, OFFSET_SLAVE_ADDR);
 
 	/* Clear interrupt status */
-	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
-		i2c, OFFSET_INTR_STAT);
+	i2c_writew(I2C_RS_TRANSFER | I2C_HS_NACKERR | I2C_ACKERR
+			| I2C_TRANSAC_COMP, i2c, OFFSET_INTR_STAT);
 	i2c_writew(I2C_FIFO_ADDR_CLR, i2c, OFFSET_FIFO_ADDR_CLR);
 
 	/* Enable interrupt */
-	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
-		i2c, OFFSET_INTR_MASK);
+	i2c_writew(I2C_RS_TRANSFER | I2C_HS_NACKERR | I2C_ACKERR
+			| I2C_TRANSAC_COMP, i2c, OFFSET_INTR_MASK);
 
 	/* Set transfer and transaction len */
 	if (i2c->op == I2C_MASTER_WRRD) {
-		if (i2c->platform_compat & COMPAT_MT8173) {
-			i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
-			i2c_writew(i2c->msg_aux_len, i2c,
-				OFFSET_TRANSFER_LEN_AUX);
-		} else {
-			i2c_writew(i2c->msg_len | (i2c->msg_aux_len) << 8,
-				i2c, OFFSET_TRANSFER_LEN);
-		}
+		i2c_writew(i2c->msg_len | (i2c->msg_aux_len) << 8,
+			i2c, OFFSET_TRANSFER_LEN);
 		i2c_writew(I2C_WRRD_TRANAC_VALUE, i2c, OFFSET_TRANSAC_LEN);
 	} else {
 		i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
-		i2c_writew(I2C_RD_TRANAC_VALUE, i2c, OFFSET_TRANSAC_LEN);
+		i2c_writew(num, i2c, OFFSET_TRANSAC_LEN);
 	}
 
 	/* Prepare buffer data to start transfer */
@@ -423,7 +423,17 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c)
 	/* flush before sending start */
 	mb();
 	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
-	i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
+
+	if (i2c->platform_compat & COMPAT_MT6577)
+		start_reg = I2C_TRANSAC_START;
+	else if (i2c->platform_compat & COMPAT_MT8173) {
+		if (left_num >= 1)
+			start_reg = I2C_TRANSAC_START | I2C_RS_MUL_CNFG
+					| I2C_RS_MUL_TRIG;
+		else
+			start_reg = I2C_TRANSAC_START | I2C_RS_MUL_TRIG;
+	}
+	i2c_writew(start_reg, i2c, OFFSET_START);
 
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
 	if (tmo == 0) {
@@ -437,6 +447,10 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c)
 		mtk_i2c_init_hw(i2c);
 		return -EREMOTEIO;
 	}
+
+	if (i2c->irq_stat & I2C_RS_TRANSFER)
+		dev_dbg(i2c->dev, "addr: %x, restart transfer interrupt.\n",
+				i2c->addr);
 
 	dev_dbg(i2c->dev, "i2c transfer done.\n");
 
@@ -470,16 +484,8 @@ static inline void mtk_i2c_copy_from_dma(struct mtk_i2c *i2c,
 static bool mtk_i2c_should_combine(struct mtk_i2c *i2c, struct i2c_msg *msg)
 {
 	struct i2c_msg *next_msg = msg + 1;
-	int max_wrrd_trans_size;
 
-	if (i2c->platform_compat & COMPAT_MT8173)
-		/* In mt8173 platform the max wrrd transfer number is 65535 */
-		max_wrrd_trans_size = MAX_WRRD_TRANS_SIZE_MT8173;
-	else
-		/* In mt65xx platform the max wrrd transfer number is 31 */
-		max_wrrd_trans_size = MAX_WRRD_TRANS_SIZE_MT6577;
-
-	if ((next_msg->len <= max_wrrd_trans_size) &&
+	if ((next_msg->len <= MAX_WRRD_TRANS_SIZE_MT6577) &&
 			msg->addr == next_msg->addr &&
 			!(msg->flags & I2C_M_RD) &&
 			(next_msg->flags & I2C_M_RD) == I2C_M_RD) {
@@ -537,11 +543,14 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 		else
 			i2c->op = I2C_MASTER_WR;
 
-		/* combined two messages into one transaction */
-		if (left_num >= 1 && mtk_i2c_should_combine(i2c, msgs)) {
-			i2c->msg_aux_len = (msgs + 1)->len;
-			i2c->op = I2C_MASTER_WRRD;
-			left_num--;
+		if (i2c->platform_compat & COMPAT_MT6577) {
+			/* combined two messages into one transaction */
+			if (left_num >= 1
+				&& mtk_i2c_should_combine(i2c, msgs)) {
+				i2c->msg_aux_len = (msgs + 1)->len;
+				i2c->op = I2C_MASTER_WRRD;
+				left_num--;
+			}
 		}
 
 		/*
@@ -551,7 +560,7 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 		 */
 		mtk_i2c_copy_to_dma(i2c, msgs);
 		i2c->msg_buf = (u8 *)i2c->dma_buf.paddr;
-		ret = mtk_i2c_do_transfer(i2c);
+		ret = mtk_i2c_do_transfer(i2c, num, left_num);
 		if (ret < 0)
 			goto err_exit;
 
@@ -579,12 +588,12 @@ static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
 	struct mtk_i2c *i2c = dev_id;
 
 	/* Clear interrupt mask */
-	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
-		i2c, OFFSET_INTR_MASK);
+	i2c_writew(~(I2C_RS_TRANSFER | I2C_HS_NACKERR | I2C_ACKERR
+			| I2C_TRANSAC_COMP), i2c, OFFSET_INTR_MASK);
 
 	i2c->irq_stat = i2c_readw(i2c, OFFSET_INTR_STAT);
-	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
-		i2c, OFFSET_INTR_STAT);
+	i2c_writew(I2C_RS_TRANSFER | I2C_HS_NACKERR | I2C_ACKERR
+			| I2C_TRANSAC_COMP, i2c, OFFSET_INTR_STAT);
 	i2c->trans_stop = true;
 	wake_up(&i2c->wait);
 
