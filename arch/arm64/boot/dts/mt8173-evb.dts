@@ -35,6 +35,12 @@
 	chosen {
 		linux,stdout-path = &uart0;
 	};
+
+	sound {
+		compatible = "mediatek,mt8173-evb";
+		mediatek,audio-codec = <&mt6397codec>;
+	};
+
 };
 
 &pwrap {
@@ -52,6 +58,10 @@
 			reg = <0xe000 0x3e>;
 			interrupt-parent = <&pmic>;
 			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		mt6397codec: mt6397codec {
+			compatible = "mediatek,mt6397-codec";
 		};
 
 		mt6397clock: mt6397clock {
