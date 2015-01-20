@@ -1,0 +1,368 @@
+/*
+ * mtk_afe_digital_type.h  --  Mediatek audio SOC digital module definitions
+ *
+ * Copyright (c) 2015 MediaTek Inc.
+ * Author: Koro Chen <koro.chen@mediatek.com>
+ *         Hidalgo Huang <hidalgo.huang@mediatek.com>
+ *         Ir Lian <ir.lian@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#ifndef _MTK_AFE_DIGITAL_TYPE_H
+#define _MTK_AFE_DIGITAL_TYPE_H
+
+/*****************************************************************************
+ *                ENUM DEFINITION
+ *****************************************************************************/
+enum mtk_afe_pin {
+	/* memory interfrace */
+	MTK_AFE_PIN_DL1 = 0,
+	MTK_AFE_PIN_DL2,
+	MTK_AFE_PIN_VUL,
+	MTK_AFE_PIN_DAI,
+	MTK_AFE_PIN_I2S,	/* no use, must keep to use with AFE_DAC_CON0 */
+	MTK_AFE_PIN_AWB,
+	MTK_AFE_PIN_MOD_DAI,
+	MTK_AFE_PIN_HDMI,
+	/* connection to int main modem */
+	MTK_AFE_PIN_MOD_PCM1,
+	/* connection to extrt/int modem */
+	MTK_AFE_PIN_MOD_PCM2,
+	/* 1st I2S for DAC and ADC */
+	MTK_AFE_PIN_I2S_DAC,
+	MTK_AFE_PIN_I2S_ADC,
+	/* 2nd I2S */
+	MTK_AFE_PIN_I2S_O2,
+	MTK_AFE_PIN_I2S_I2,
+	/* HW gain contorl */
+	MTK_AFE_PIN_HW_GAIN1,
+	MTK_AFE_PIN_HW_GAIN2,
+	/* megrge interface */
+	MTK_AFE_PIN_MRG_O,
+	MTK_AFE_PIN_MRG_I,
+	MTK_AFE_PIN_DAIBT,
+	MTK_AFE_PIN_NUM,
+	MTK_AFE_MEMIF_NUM =
+		MTK_AFE_PIN_HDMI + 1
+};
+
+enum mtk_afe_interconn_input {
+	MTK_AFE_INTERCONN_I00,
+	MTK_AFE_INTERCONN_I01,
+	MTK_AFE_INTERCONN_I02,
+	MTK_AFE_INTERCONN_I03,
+	MTK_AFE_INTERCONN_I04,
+	MTK_AFE_INTERCONN_I05,
+	MTK_AFE_INTERCONN_I06,
+	MTK_AFE_INTERCONN_I07,
+	MTK_AFE_INTERCONN_I08,
+	MTK_AFE_INTERCONN_I09,
+	MTK_AFE_INTERCONN_I10,
+	MTK_AFE_INTERCONN_I11,
+	MTK_AFE_INTERCONN_I12,
+	MTK_AFE_INTERCONN_I13,
+	MTK_AFE_INTERCONN_I14,
+	MTK_AFE_INTERCONN_I15,
+	MTK_AFE_INTERCONN_I16,
+	MTK_AFE_INTERCONN_I17,
+	MTK_AFE_INTERCONN_I18,
+	MTK_AFE_INTERCONN_I19,
+	MTK_AFE_INTERCONN_I20,
+	MTK_AFE_INTERCONN_NUM_INPUT
+};
+
+enum mtk_afe_interconn_output {
+	MTK_AFE_INTERCONN_O00,
+	MTK_AFE_INTERCONN_O01,
+	MTK_AFE_INTERCONN_O02,
+	MTK_AFE_INTERCONN_O03,
+	MTK_AFE_INTERCONN_O04,
+	MTK_AFE_INTERCONN_O05,
+	MTK_AFE_INTERCONN_O06,
+	MTK_AFE_INTERCONN_O07,
+	MTK_AFE_INTERCONN_O08,
+	MTK_AFE_INTERCONN_O09,
+	MTK_AFE_INTERCONN_O10,
+	MTK_AFE_INTERCONN_O11,
+	MTK_AFE_INTERCONN_O12,
+	MTK_AFE_INTERCONN_O13,
+	MTK_AFE_INTERCONN_O14,
+	MTK_AFE_INTERCONN_O15,
+	MTK_AFE_INTERCONN_O16,
+	MTK_AFE_INTERCONN_O17,
+	MTK_AFE_INTERCONN_O18,
+	MTK_AFE_INTERCONN_O19,
+	MTK_AFE_INTERCONN_O20,
+	MTK_AFE_INTERCONN_O21,
+	MTK_AFE_INTERCONN_O22,
+	MTK_AFE_INTERCONN_NUM_OUTPUT
+};
+
+enum mtk_afe_hdmi_interconn_input {
+	MTK_AFE_INTERCONN_I30 = 30,
+	MTK_AFE_INTERCONN_I31,
+	MTK_AFE_INTERCONN_I32,
+	MTK_AFE_INTERCONN_I33,
+	MTK_AFE_INTERCONN_I34,
+	MTK_AFE_INTERCONN_I35,
+	MTK_AFE_INTERCONN_I36,
+	MTK_AFE_INTERCONN_I37,
+	MTK_AFE_HDMI_CONN_INPUT_BASE = MTK_AFE_INTERCONN_I30,
+	MTK_AFE_HDMI_CONN_INPUT_MAX = MTK_AFE_INTERCONN_I37,
+	MTK_AFE_NUM_HDMI_INPUT = (MTK_AFE_HDMI_CONN_INPUT_MAX -
+				 MTK_AFE_HDMI_CONN_INPUT_BASE + 1)
+};
+
+enum mtk_afe_hdmi_interconn_output {
+	MTK_AFE_INTERCONN_O30 = 30,
+	MTK_AFE_INTERCONN_O31,
+	MTK_AFE_INTERCONN_O32,
+	MTK_AFE_INTERCONN_O33,
+	MTK_AFE_INTERCONN_O34,
+	MTK_AFE_INTERCONN_O35,
+	MTK_AFE_INTERCONN_O36,
+	MTK_AFE_INTERCONN_O37,
+	MTK_AFE_INTERCONN_O38,
+	MTK_AFE_INTERCONN_O39,
+	MTK_AFE_INTERCONN_O40,
+	MTK_AFE_INTERCONN_O41,
+	MTK_AFE_HDMI_CONN_OUTPUT_BASE = MTK_AFE_INTERCONN_O30,
+	MTK_AFE_HDMI_CONN_OUTPUT_MAX = MTK_AFE_INTERCONN_O41,
+	MTK_AFE_NUM_HDMI_OUTPUT = (MTK_AFE_HDMI_CONN_OUTPUT_MAX -
+				  MTK_AFE_HDMI_CONN_OUTPUT_BASE + 1)
+};
+
+enum mtk_afe_conn_state {
+	MTK_AFE_DISCONN = 0,
+	MTK_AFE_CONN,
+	MTK_AFE_SHFT
+};
+
+enum mtk_afe_irq_mode {
+	MTK_AFE_IRQ_MODE_1 = 0,
+	MTK_AFE_IRQ_MODE_2,
+	MTK_AFE_IRQ_MODE_5,
+	MTK_AFE_IRQ_MODE_NUM
+};
+
+enum mtk_afe_inv_bck {
+	MTK_AFE_BCK_INV_NO = 0,
+	MTK_AFE_BCK_INV_YES = 1
+};
+
+enum mtk_afe_in_pad_sel {
+	MTK_AFE_FROM_CONNSYS = 0,
+	MTK_AFE_FROM_IO_MUX = 1
+};
+
+enum mtk_afe_lr_swap {
+	MTK_AFE_LR_SWAP_NO = 0,
+	MTK_AFE_LR_SWAP_YES = 1
+};
+
+enum mtk_afe_hd_en {
+	MTK_AFE_NORMAL_CLOCK = 0,
+	MTK_AFE_LOW_JITTER_CLOCK = 1
+};
+
+enum mtk_afe_inv_lrck {
+	MTK_AFE_INV_LRCK_NO = 0,
+	MTK_AFE_INV_LRCK_YES = 1
+};
+
+enum mtk_afe_i2s_dir {
+	MTK_AFE_I2S_DIR_OUT = 0,
+	MTK_AFE_I2S_DIR_IN = 1
+};
+
+enum mtk_afe_i2s_format {
+	MTK_AFE_I2S_FORMAT_EIAJ = 0,
+	MTK_AFE_I2S_FORMAT_I2S = 1
+};
+
+enum mtk_afe_i2s_src {
+	MTK_AFE_I2S_SRC_MASTER = 0,
+	MTK_AFE_I2S_SRC_SLAVE = 1
+};
+
+enum mtk_afe_i2s_wlen {
+	MTK_AFE_I2S_WLEN_16BITS = 0,
+	MTK_AFE_I2S_WLEN_32BITS = 1
+};
+
+enum mtk_afe_i2s_rate {
+	MTK_AFE_I2S_RATE_8K = 0,
+	MTK_AFE_I2S_RATE_11K = 1,
+	MTK_AFE_I2S_RATE_12K = 2,
+	MTK_AFE_I2S_RATE_16K = 4,
+	MTK_AFE_I2S_RATE_22K = 5,
+	MTK_AFE_I2S_RATE_24K = 6,
+	MTK_AFE_I2S_RATE_32K = 8,
+	MTK_AFE_I2S_RATE_44K = 9,
+	MTK_AFE_I2S_RATE_48K = 10,
+	MTK_AFE_I2S_RATE_88K = 11,
+	MTK_AFE_I2S_RATE_96K = 12,
+	MTK_AFE_I2S_RATE_174K = 13,
+	MTK_AFE_I2S_RATE_192K = 14,
+};
+
+enum mtk_afe_hdmi_input_bits {
+	MTK_AFE_HDMI_INPUT_16BIT = 0,
+	MTK_AFE_HDMI_INPUT_32BIT
+};
+
+enum mtk_afe_hdmi_i2s_wlen {
+	MTK_AFE_HDMI_I2S_8BIT = 0,
+	MTK_AFE_HDMI_I2S_16BIT,
+	MTK_AFE_HDMI_I2S_24BIT,
+	MTK_AFE_HDMI_I2S_32BIT
+};
+
+enum mtk_afe_hdmi_i2s_delay {
+	MTK_AFE_HDMI_I2S_NOT_DELAY = 0,
+	MTK_AFE_HDMI_I2S_FIRST_BIT_1T_DELAY
+};
+
+enum mtk_afe_hdmi_i2s_lrck_inv {
+	MTK_AFE_HDMI_I2S_LRCK_NOT_INVERSE = 0,
+	MTK_AFE_HDMI_I2S_LRCK_INVERSE
+};
+
+enum mtk_afe_hdmi_i2s_bclk_inv {
+	MTK_AFE_HDMI_I2S_BCLK_NOT_INVERSE = 0,
+	MTK_AFE_HDMI_I2S_BCLK_INVERSE
+};
+
+enum {
+	MTK_AFE_IF_I2S = 0,
+	MTK_AFE_IF_2ND_I2S,
+	MTK_AFE_IF_MTK,
+};
+
+enum {
+	MTK_CLK_AFE = 0,
+	MTK_CLK_HDMI,
+	MTK_CLK_SPDIF,
+	MTK_CLK_APLL22M,
+	MTK_CLK_APLL24M,
+	MTK_CLK_APLL1_TUNER,
+	MTK_CLK_APLL2_TUNER,
+	MTK_CLK_INFRASYS_AUD,
+	MTK_CLK_TOP_PDN_AUD,
+	MTK_CLK_TOP_PDN_AUD_BUS,
+	MTK_CLK_TOP_AUD1_SEL,
+	MTK_CLK_TOP_AUD2_SEL,
+	MTK_CLK_TOP_APLL1_CK,
+	MTK_CLK_TOP_APLL2_CK,
+	MTK_CLK_SCP_SYS_AUD,
+	MTK_CLK_CLK26M,
+	MTK_CLK_NUM
+};
+
+enum {
+	MTK_AFE_O16BIT = 0,
+	MTK_AFE_O24BIT
+};
+
+enum mtk_afe_apll_source {
+	MTK_AFE_APLL1 = 0,
+	MTK_AFE_APLL2
+};
+
+enum mtk_afe_apll_clock_type {
+	MTK_AFE_ENGEN = 0,
+	MTK_AFE_I2S0,
+	MTK_AFE_I2S1,
+	MTK_AFE_I2S2,
+	MTK_AFE_I2S3,
+	MTK_AFE_SPDIF,
+	MTK_AFE_SPDIF2,
+	MTK_AFE_I2S3_BCK,
+	MTK_AFE_APLL_CLOCK_TYPE_NUM
+};
+
+enum mtk_afe_apll_clk_freq {
+	MTK_AFE_APLL1_CLK_FREQ = (22579200 * 8),
+	MTK_AFE_APLL2_CLK_FREQ = (24576000 * 8),
+};
+
+enum mtk_afe_apll_divider_group {
+	MTK_AFE_APLL1_DIV0 = 8,
+	MTK_AFE_APLL1_DIV1 = 9,
+	MTK_AFE_APLL1_DIV2 = 10,
+	MTK_AFE_APLL1_DIV3 = 11,
+	MTK_AFE_APLL1_DIV4 = 12,
+	MTK_AFE_APLL1_DIV5 = 13,
+	MTK_AFE_SPDIF_DIV = 14,
+	MTK_AFE_SPDIF2_DIV = 15,
+	MTK_AFE_APLL2_DIV0 = 16,
+	MTK_AFE_APLL2_DIV1 = 17,
+	MTK_AFE_APLL2_DIV2 = 18,
+	MTK_AFE_APLL2_DIV3 = 19,
+	MTK_AFE_APLL2_DIV4 = 20,
+	MTK_AFE_APLL2_DIV5 = 21,
+	MTK_AFE_APLL_DIV_COUNT = (MTK_AFE_APLL2_DIV5 - MTK_AFE_APLL1_DIV0 + 1),
+};
+
+enum mtk_afe_tdm_bck_cycles {
+	MTK_AFE_TDM_16_BCK_CYCLES = 0,
+	MTK_AFE_TDM_24_BCK_CYCLES,
+	MTK_AFE_TDM_32_BCK_CYCLES,
+};
+
+enum mtk_afe_tdm_lrck_inv {
+	MTK_AFE_TDM_LRCK_NOT_INV = 0,
+	MTK_AFE_TDM_LRCK_INV,
+};
+
+enum mtk_afe_tdm_bck_inv {
+	MTK_AFE_TDM_BCK_NOT_INV = 0,
+	MTK_AFE_TDM_BCK_INV,
+};
+
+enum mtk_afe_tdm_delay {
+	MTK_AFE_TDM_0_BCK_DELAY = 0,
+	MTK_AFE_TDM_1_BCK_DELAY,
+};
+
+enum mtk_afe_tdm_wlen {
+	MTK_AFE_TDM_WLEN_16BIT = 1,
+	MTK_AFE_TDM_WLEN_32BIT = 2,
+};
+
+enum mtk_afe_tdm_left_align {
+	MTK_AFE_TDM_NOT_MSB_ALIGNED = 0,
+	MTK_AFE_TDM_MSB_ALIGNED,
+};
+
+enum mtk_afe_tdm_ch_sdata {
+	MTK_AFE_TDM_2CH_SDATA = 0,
+	MTK_AFE_TDM_4CH_SDATA,
+	MTK_AFE_TDM_8CH_SDATA,
+};
+
+enum mtk_afe_tdm_ch_start {
+	MTK_AFE_TDM_CH_START_O30_O31 = 0,
+	MTK_AFE_TDM_CH_START_O32_O33,
+	MTK_AFE_TDM_CH_START_O34_O35,
+	MTK_AFE_TDM_CH_START_O36_O37,
+	MTK_AFE_TDM_CH_ZERO,
+};
+
+enum {
+	MTK_AFE_HDMI_LOOP_NONE = 0,
+	MTK_AFE_HDMI_LOOP_SDAT0,
+	MTK_AFE_HDMI_LOOP_SDAT1,
+	MTK_AFE_HDMI_LOOP_SDAT2,
+	MTK_AFE_HDMI_LOOP_SDAT3,
+};
+
+#endif

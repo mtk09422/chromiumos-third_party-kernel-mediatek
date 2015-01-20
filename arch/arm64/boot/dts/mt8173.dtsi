@@ -500,6 +500,47 @@
 			mediatek,height = <1280>;
 			mediatek,panel = <&panel>;
 		};
+
+		audio: mt8173-afe-pcm@0x11220000  {
+			compatible = "mediatek,mt8173-afe-pcm";
+			#sound-dai-cells = <1>;
+			reg = <0 0x11220000 0 0x1000>,
+				  <0 0x11221000 0 0x9000>;
+			afe-sram = "DL1";
+			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&audiosys AUD_AFE>,
+			         <&audiosys AUD_HDMI>,
+			         <&audiosys AUD_SPDF>,
+			         <&audiosys AUD_22M>,
+			         <&audiosys AUD_24M>,
+			         <&audiosys AUD_APLL_TNR>,
+			         <&audiosys AUD_APLL2_TNR>,
+			         <&infrasys INFRA_AUDIO>,
+			         <&topckgen TOP_AUDIO_SEL>,
+			         <&topckgen TOP_AUD_INTBUS_SEL>,
+			         <&topckgen TOP_AUD_1_SEL>,
+			         <&topckgen TOP_AUD_2_SEL>,
+			         <&topckgen TOP_APLL1_CK>,
+			         <&topckgen TOP_APLL2_CK>,
+			         <&scpsys SCP_SYS_AUDIO>,
+			         <&clk26m>;
+			clock-names = "aud_afe_clk",
+			              "aud_hdmi_clk",
+			              "aud_spdif_clk",
+			              "aud_apll22m_clk",
+			              "aud_apll24m_clk",
+			              "aud_apll1_tuner_clk",
+			              "aud_apll2_tuner_clk",
+			              "infra_sys_audio_clk",
+			              "top_pdn_audio",
+			              "top_pdn_aud_intbus",
+			              "top_audio_1_sel",
+			              "top_audio_2_sel",
+			              "top_apll1_ck",
+			              "top_apll2_ck",
+			              "scp_sys_audio",
+			              "clk26m";
+		};
 	};
 
 	panel: panel {
