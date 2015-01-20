@@ -233,13 +233,14 @@ struct hdmi *hdmi_init(struct drm_device *dev, struct drm_encoder *encoder)
 	return hdmi;
 
 fail:
-	if (hdmi) {
-		/* bridge/connector are normally destroyed by drm: */
-		if (hdmi->bridge)
-			hdmi->bridge->funcs->destroy(hdmi->bridge);
-		if (hdmi->connector)
-			hdmi->connector->funcs->destroy(hdmi->connector);
-		hdmi_destroy(&hdmi->refcount);
+	/* bridge is normally destroyed by drm: */
+	if (hdmi->bridge) {
+		hdmi_bridge_destroy(hdmi->bridge);
+		hdmi->bridge = NULL;
+	}
+	if (hdmi->connector) {
+		hdmi->connector->funcs->destroy(hdmi->connector);
+		hdmi->connector = NULL;
 	}
 
 	return ERR_PTR(ret);
