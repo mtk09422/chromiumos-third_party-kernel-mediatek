@@ -443,6 +443,13 @@ config SND_SOC_MAX98095
 config SND_SOC_MAX9850
 	tristate
 
+config SND_SOC_MT6397
+	bool
+	depends on ARCH_MEDIATEK
+	help
+	 Say Y if you want to use MT6397 audio
+	 codec for the Mediatek SoCs' Audio.
+
 config SND_SOC_PCM1681
 	tristate "Texas Instruments PCM1681 CODEC"
 	depends on I2C
