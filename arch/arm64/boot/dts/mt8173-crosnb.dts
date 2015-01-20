@@ -152,6 +152,16 @@
 			};
 		};
 	};
+
+	sound {
+		compatible = "mediatek,mt8173-max98090";
+		mediatek,audio-codec = <&max98090>;
+		reg-vgp1-supply = <&mt6397_vgp1_reg>;
+		reg-vgp4-supply = <&mt6397_vgp4_reg>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&aud_i2s2>;
+		status = "okay";
+	};
 };
 
 &uart0 {
@@ -399,6 +409,12 @@
 	pinctrl-0 = <&i2c0_pins_a>;
 	status = "okay";
 	clock-frequency = <100000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	max98090: audio-codec@10 {
+		compatible = "maxim,max98090";
+		reg = <0x10>;
+	};
 };
 
 &i2c1 {
@@ -474,4 +490,17 @@
 	pinctrl-0 = <&i2c6_pins_a>;
 	status = "okay";
 	clock-frequency = <100000>;
+};
+
+&pio {
+	aud_i2s2: aud_i2s2 {
+		pins1 {
+			pinmux = <MT8173_PIN_128_I2S0_LRCK__FUNC_I2S0_WS>,
+					<MT8173_PIN_129_I2S0_BCK__FUNC_I2S0_BCK>,
+					<MT8173_PIN_130_I2S0_MCK__FUNC_I2S0_MCK>,
+					<MT8173_PIN_131_I2S0_DATA0__FUNC_I2S0_DO>,
+					<MT8173_PIN_132_I2S0_DATA1__FUNC_I2S0_DI>;
+			bias-pull-down;
+		};
+	};
 };
