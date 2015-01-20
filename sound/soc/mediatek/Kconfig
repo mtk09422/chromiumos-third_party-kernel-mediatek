@@ -1,0 +1,26 @@
+config SND_SOC_MT8173
+	bool
+
+config SND_SOC_MT8173_MT6397
+	bool "ASoC Audio driver for MT8173 with MT6397 codec"
+	depends on ARCH_MEDIATEK
+	select SND_SOC_MT8173
+	select SND_SOC_MT6397
+	help
+	  This adds ASoC driver for Mediatek MT8173 boards
+	  with the MT6397 audio codec.
+	  Select Y if you have such device.
+	  Ex: mt8173_evb
+
+config SND_SOC_MT8173_MAX98090
+	bool "ASoC Audio driver for MT8173 with MAX98090 codec"
+	depends on ARCH_MEDIATEK
+	select SND_SOC_MT8173
+	select SND_SOC_MAX98090
+	help
+	  This adds ASoC driver for Mediatek MT8173 boards
+	  with the MAX98090 audio codec.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
+
