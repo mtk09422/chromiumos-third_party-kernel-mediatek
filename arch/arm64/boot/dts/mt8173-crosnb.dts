@@ -411,6 +411,10 @@
 	max98090: audio-codec@10 {
 		compatible = "maxim,max98090";
 		reg = <0x10>;
+		interrupt-parent = <&pio>;
+		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&max98090_irq>;
 	};
 };
 
@@ -498,6 +502,12 @@
 					<MT8173_PIN_131_I2S0_DATA0__FUNC_I2S0_DO>,
 					<MT8173_PIN_132_I2S0_DATA1__FUNC_I2S0_DI>;
 			bias-pull-down;
+		};
+	};
+	max98090_irq: max98090_irq {
+		pins1 {
+			pins = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
+			bias-pull-up;
 		};
 	};
 };
