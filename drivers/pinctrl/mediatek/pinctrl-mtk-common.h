@@ -178,6 +178,7 @@ struct mtk_eint_offsets {
  */
 struct mtk_pinctrl_devdata {
 	const struct mtk_desc_pin	*pins;
+	unsigned int				base;
 	unsigned int				npins;
 	const struct mtk_drv_group_desc	*grp_desc;
 	unsigned int	n_grp_cls;
