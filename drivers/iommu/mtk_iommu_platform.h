@@ -18,8 +18,9 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/mm.h>
+#include <linux/platform_device.h>
 
-#include "mtk_iommu.h"
+#include "mtk_iommu_pagetable.h"
 
 enum {
 	M4U_ID_0 = 0,
@@ -27,7 +28,8 @@ enum {
 	M4U_ID_ALL
 };
 
-#define MTK_IOMMU_PGT_SZ  SZ_1M /*pagetable size*/
+#define MTK_PGT_SIZE       SZ_1M    /*pagetable size,mt8135*/
+#define M4U_PGD_SIZE       SZ_16K   /*pagetable size,mt8173*/
 
 #define MTK_PROTECT_PA_ALIGN  128
 
@@ -39,7 +41,7 @@ struct mtk_iommu_port {
 	unsigned int m4u_slave:2;/*main tlb index in mm iommu*/
 	unsigned int larb_id:4;
 	unsigned int port_id:8;/*port id in larb*/
-	unsigned int tf_id:16;/*translation fault id*/
+	unsigned int tf_id:16; /*translation fault id*/
 };
 
 struct mtk_iommu {
@@ -52,23 +54,19 @@ struct mtk_iommu_info {
 	void __iomem *m4u_L2_base;
 	void __iomem *smi_common_ao_base;
 	void __iomem *larb_base[MTK_IOMMU_LARB_MAX_NR];
+	void __iomem *dispbase;
 	struct mtk_iommu m4u[M4U_ID_ALL];
 	struct clk *m4u_infra_clk;
 	struct clk *smi_infra_clk;
-	/*struct clk *smi_clk[SMI_CLK_LARB_MAX];*/
-	unsigned int iova_base; /*iova start addr*/
-	unsigned int iova_size;
-	dma_addr_t   pgt_basepa;
 	void __iomem *protect_va; /*dirty data*/
 	struct device *dev;
-	struct iommu_domain *domain;
+	struct kmem_cache *imu_pte_kmem;
 	const struct mtk_iommu_cfg *imucfg;
-	struct mtkmmu_drvdata portcfg[MTK_IOMMU_PORT_MAX_NR];
 };
 
 struct mtk_iommu_domain {
-	unsigned int *pgtableva; /*pagetable base addr*/
-	dma_addr_t pgtablepa;
+	struct imu_pgd_t *pgd;
+	dma_addr_t pgd_pa;
 	spinlock_t pgtlock;	/* lock for modifying page table*/
 	spinlock_t portlock;    /* lock for config port*/
 	struct mtk_iommu_info *piommuinfo;
@@ -81,16 +79,18 @@ struct mtk_iommu_cfg {
 	unsigned int m4u1_offset;
 	unsigned int L2_offset;
 	unsigned int larb_nr;
-	unsigned int larb_nr_real;
-	unsigned int m4u_port_in_larbx[MTK_IOMMU_LARB_MAX_NR];
 	unsigned int m4u_gpu_port;
 	unsigned int m4u_port_nr;
+	unsigned int iova_base;
+	size_t       iova_size;
 	const struct mtk_iommu_port *pport;
 
 	/*hw function*/
+	int (*pte_init)(struct mtk_iommu_info *piommu);
+	int (*pte_uninit)(struct mtk_iommu_info *piommu);
 	int (*dt_parse)(struct platform_device *pdev,
 			struct mtk_iommu_info *piommu);
-	int (*hw_init)(const struct mtk_iommu_info *piommu);
+	int (*hw_init)(const struct mtk_iommu_domain *mtkdomain);
 	int (*map)(struct mtk_iommu_domain *mtkdomain, unsigned int iova,
 		   phys_addr_t paddr, size_t size);
 	size_t (*unmap)(struct mtk_iommu_domain *mtkdomain, unsigned int iova,
@@ -108,5 +108,12 @@ extern const struct mtk_iommu_cfg mtk_iommu_mt8173_cfg;
 
 const char *mtk_iommu_get_port_name(const struct mtk_iommu_info *piommu,
 				    unsigned int portid);
+
+int m4u_map(struct mtk_iommu_domain *m4u_domain, unsigned int iova,
+	    phys_addr_t paddr, unsigned int size, unsigned int prot);
+int m4u_unmap(struct mtk_iommu_domain *domain, unsigned int iova,
+	      unsigned int size);
+int m4u_get_pte_info(const struct mtk_iommu_domain *domain,
+		     unsigned int iova, struct m4u_pte_info_t *pte_info);
 
 #endif
