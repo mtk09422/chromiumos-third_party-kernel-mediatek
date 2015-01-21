@@ -15,4 +15,7 @@ config PINCTRL_MT8173
 	def_bool MACH_MT8173
 	select PINCTRL_MTK_COMMON
 
+config PINCTRL_MT6397
+	def_bool MFD_MT6397
+
 endif
