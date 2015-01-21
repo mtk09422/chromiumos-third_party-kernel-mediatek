@@ -377,6 +377,7 @@ static const struct mtk_pin_drv_grp mt8173_pin_drv[] = {
 
 static const struct mtk_pinctrl_devdata mt8173_pinctrl_data = {
 	.pins = mtk_pins_mt8173,
+	.base = 0,
 	.npins = ARRAY_SIZE(mtk_pins_mt8173),
 	.grp_desc = mt8173_drv_grp,
 	.n_grp_cls = ARRAY_SIZE(mt8173_drv_grp),

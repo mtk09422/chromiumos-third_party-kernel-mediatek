@@ -15,6 +15,7 @@
 /dts-v1/;
 #include <dt-bindings/clock/mediatek,mt6397-clks.h>
 #include "mt8173.dtsi"
+#include "mt6397-pinfunc.h"
 
 / {
 	model = "mediatek,mt8173-evb";
@@ -53,11 +54,22 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 
+		syscfg_pctl_pmic: syscfg_pctl_pmic@0000C000 {
+			compatible = "mediatek,mt6397-pctl-pmic-syscfg", "syscon";
+			reg = <0 0x0000C000 0 0x0108>;
+		};
+
 		rtc: rtc@e000 {
 			compatible = "mediatek,mt6397-rtc";
 			reg = <0xe000 0x3e>;
 			interrupt-parent = <&pmic>;
 			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		pio6397: pinctrl@0x0000C000 {
+			compatible = "mediatek,mt6397-pinctrl";
+			mediatek,pctl-regmap = <&syscfg_pctl_pmic>;
+			gpio-controller;
 		};
 
 		mt6397codec: mt6397codec {
@@ -305,8 +317,8 @@
 				regulator-name = "VBUCKA";
 				regulator-min-microvolt = < 700000>;
 				regulator-max-microvolt = <1310000>;
-				regulator-min-microamp 	= <2000000>;
-				regulator-max-microamp 	= <4400000>;
+				regulator-min-microamp	= <2000000>;
+				regulator-max-microamp	= <4400000>;
 				regulator-ramp-delay = <10000>;
 				regulator-always-on;
 			};
@@ -314,8 +326,8 @@
 				regulator-name = "VBUCKB";
 				regulator-min-microvolt = < 700000>;
 				regulator-max-microvolt = <1310000>;
-				regulator-min-microamp 	= <2000000>;
-				regulator-max-microamp 	= <3000000>;
+				regulator-min-microamp	= <2000000>;
+				regulator-max-microamp	= <3000000>;
 				regulator-ramp-delay = <10000>;
 				regulator-always-on;
 			};
