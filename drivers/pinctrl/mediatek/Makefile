@@ -1,4 +1,5 @@
-ccflags-y += -Idrivers/mfd
+ccflags-y += -I drivers/mfd
+ccflags-y += -I drivers/pinctrl/mediatek
 
 # Core
 obj-$(CONFIG_PINCTRL_MTK_COMMON)	+= pinctrl-mtk-common.o
