@@ -16,22 +16,21 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
+#include <asm/dma-iommu.h>
+#include <linux/of_platform.h>
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
 #include "mediatek_drm_fb.h"
 #include "mediatek_drm_gem.h"
 #include "mediatek_drm_output.h"
+
 #include "mediatek_drm_dmabuf.h"
 #include "mediatek_drm_debugfs.h"
 
 #include "mediatek_drm_hw-mt8173.h"
 
 #include "mediatek_drm_dev_if.h"
-
-#ifdef CONFIG_MTK_IOMMU
-#include <../drivers/iommu/mtk_iommu.h>
-#endif
 
 #define DRIVER_NAME "mediatek-drm"
 #define DRIVER_DESC "Mediatek SoC DRM"
@@ -160,39 +159,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	mtk_output_init(dev);
 	mtk_enable_vblank(mtk_crtc->od_regs);
 
-#ifdef CONFIG_MTK_IOMMU
-	{
-		struct mtkmmu_drvdata mmuport[4];
-		struct of_phandle_args out_args;
-
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 2, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 3, 0);
-		DRM_INFO("DBG_YT disable ovl layer2/3\n");
-
-		of_parse_phandle_with_args(dev->dev->of_node, "iommus",
-			"iommu-cells", 0, &out_args);
-		DRM_INFO("DBG_YT IOMMU 8173 %X\n", out_args.args[0]);
-
-		mmuport[0].portid = out_args.args[0];
-		mmuport[0].pnext = &mmuport[1];
-
-		of_parse_phandle_with_args(dev->dev->of_node, "iommus",
-			"iommu-cells", 1, &out_args);
-		DRM_INFO("DBG_YT IOMMU 8173 %X\n", out_args.args[0]);
-
-		mmuport[1].portid = out_args.args[0];
-		mmuport[1].pnext = NULL;
-
-		DRM_INFO("DBG_YT attach_device M4U_PORT_OVL\n");
-		dev->dev->archdata.iommu = &mmuport[0];
-		arm_iommu_attach_device(dev->dev, mtk_iommu_mapping());
-	}
-#endif
-
-#ifdef CONFIG_DRM_MEDIATEK_FBDEV
-	mtk_fbdev_create(dev);
-#endif
-
 	drm_kms_helper_poll_init(dev);
 	mediatek_drm_debugfs_init(&mtk_crtc->base);
 
@@ -207,6 +173,37 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 
 	DRM_INFO("MainDispPathPowerOn\n");
 	MainDispPathPowerOn(&mtk_crtc->base);
+
+#ifdef CONFIG_MTK_IOMMU
+	{
+		struct device_node *node;
+		struct platform_device *pdev;
+		struct dma_iommu_mapping *imu_mapping;
+
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 2, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 3, 0);
+		DRM_INFO("DBG_YT disable ovl layer2/3\n");
+
+		node = of_parse_phandle(dev->dev->of_node, "iommus", 0);
+		if (!node)
+			return 0;
+
+		pdev = of_find_device_by_node(node);
+		if (WARN_ON(!pdev)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		imu_mapping = pdev->dev.archdata.mapping;
+
+		DRM_INFO("find dev name %s map %p\n", pdev->name, imu_mapping);
+		arm_iommu_attach_device(dev->dev, imu_mapping);
+	}
+#endif
+
+#ifdef CONFIG_DRM_MEDIATEK_FBDEV
+	mtk_fbdev_create(dev);
+#endif
 
 	return 0;
 }
