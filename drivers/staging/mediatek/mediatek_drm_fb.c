@@ -217,7 +217,8 @@ int mtk_fbdev_create(struct drm_device *dev)
 		dev_err(dev->dev, "failed to allocate DRM fbdev\n");
 		return -ENOMEM;
 	}
-	fbdev->funcs = &mediatek_drm_fb_helper_funcs;
+
+	drm_fb_helper_prepare(dev, fbdev, &mediatek_drm_fb_helper_funcs);
 
 	ret = drm_fb_helper_init(dev, fbdev, dev->mode_config.num_crtc,
 						dev->mode_config.num_connector);
