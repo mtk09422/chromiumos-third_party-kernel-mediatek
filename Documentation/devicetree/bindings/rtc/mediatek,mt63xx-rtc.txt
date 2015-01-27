@@ -1,0 +1,18 @@
+Mediatek MT63xx real-time clock
+
+MT63xx is Mediatek PMIC chip series. RTC is one submodule of PMIC chip.
+The RTC maintains seconds counter, also provide alarm function.
+
+Required properties:
+- compatible: Should be "mediatek,mt6397-rtc".
+- reg: base physical address and size of the registers.
+- interrupt-parent: phandle for the interrupt controller
+- interrupts: RTC alarm interrupt.
+
+Examples:
+rtc: rtc@e000 {
+	compatible = "mediatek,mt6397-rtc";
+	reg = <0xe000 0x3e>;
+	interrupt-parent = <&pmic>;
+	interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+};
