@@ -46,10 +46,10 @@
 		#address-cells = <0x1>;
 		#size-cells = <0>;
 
-		gpio-sck = <&pio 5 0>;
-		gpio-miso = <&pio 6 0>;
-		gpio-mosi = <&pio 7 0>;
-		cs-gpios = <&pio 8 0>;
+		gpio-sck = <&pio 102 0>;
+		gpio-miso = <&pio 103 0>;
+		gpio-mosi = <&pio 104 0>;
+		cs-gpios = <&pio 105 0>;
 		num-chipselects = <1>;
 
 		/* clients */
