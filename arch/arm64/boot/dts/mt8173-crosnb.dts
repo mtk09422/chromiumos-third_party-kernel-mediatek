@@ -400,6 +400,30 @@
 		};
 	};
 
+	mmc1_pins_default: mmc1default {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
+			     <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+			     <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>,
+			     <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+			     <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK>;
+			bias-pull-down;
+			drive-strength = <MTK_DRIVE_4mA>;
+		};
+
+		pins_insert {
+			pinmux = <MT8173_PIN_1_EINT1__FUNC_GPIO1>;
+			bias-pull-up;
+		};
+	};
+
 	mmc0_pins_uhs: mmc0@0{
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
@@ -423,6 +447,25 @@
 			bias-pull-down = <MTK_PUPD_SET_R1R0_01>;
 		};
 	};
+
+	mmc1_pins_uhs: mmc1@0 {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
+			     <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+			     <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>,
+			     <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+			     <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_77_MSDC1_CLK__FUNC_MSDC1_CLK>;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
 };
 
 &mmc0 {
@@ -436,6 +479,20 @@
 	core-power-supply = <&mt6397_vemc_3v3_reg>;
 	non-removable;
 	func = "EMMC";
+};
+
+&mmc1 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc1_pins_default>;
+	pinctrl-1 = <&mmc1_pins_uhs>;
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	cap-sd-highspeed;
+	cd-gpios = <&pio 1 0>;
+	core-power-supply = <&mt6397_vmch_reg>;
+	io-power-supply = <&mt6397_vmc_reg>;
+	func = "SDCARD";
 };
 
 &i2c0 {
