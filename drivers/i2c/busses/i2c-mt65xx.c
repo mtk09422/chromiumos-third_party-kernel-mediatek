@@ -331,8 +331,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 	u16 addr_reg;
 	u16 control_reg;
 	u16 start_reg = 0;
-	dma_addr_t rpaddr;
-	dma_addr_t wpaddr;
+	dma_addr_t rpaddr = 0;
+	dma_addr_t wpaddr = 0;
 	int tmo = i2c->adap.timeout;
 
 	i2c->trans_stop = false;
