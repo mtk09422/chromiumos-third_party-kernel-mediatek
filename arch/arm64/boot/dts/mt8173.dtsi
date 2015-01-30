@@ -241,6 +241,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C2>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 		};
 
 		i2c1: i2c@11008000 {
@@ -251,6 +252,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C2>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 		};
 
 		i2c2: i2c@11009000 {
@@ -261,6 +263,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C2>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 		};
 
 		i2c3: i2c3@0x11010000 {
@@ -271,6 +274,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C3>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 
 			it6151mipirx@6c {
 				compatible = "ite,it6151mipirx";
@@ -281,8 +285,6 @@
 				compatible = "ite,it6151dptx";
 				reg = <0x5c>;
 			};
-
-
 		};
 
 		i2c4: i2c4@0x11011000 {
@@ -293,6 +295,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C4>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 		};
 
 		i2c6: i2c6@0x11013000 {
@@ -303,6 +306,7 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C6>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
 		};
 
 		uart0: serial@11002000 {
@@ -352,8 +356,8 @@
 			compatible = "mediatek,mt8173-mmc","mediatek,mt8135-mmc";
 			reg = <0 0x11230000 0 0x108>;
 			interrupts = <0 71 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&perisys PERI_MSDC30_0>, <&apmixedsys APMIXED_MSDCPLL>;
-			clock-names = "source", "pll";
+			clocks = <&perisys PERI_MSDC30_0>;
+			clock-names = "source";
 			status = "disabled";
 		};
 
@@ -361,8 +365,17 @@
 			compatible = "mediatek,mt8173-mmc","mediatek,mt8135-mmc";
 			reg = <0 0x11240000 0 0x108>;
 			interrupts = <0 72 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&perisys PERI_MSDC30_1>, <&apmixedsys APMIXED_MSDCPLL>;
-			clock-names = "source", "pll";
+			clocks = <&perisys PERI_MSDC30_1>;
+			clock-names = "source";
+			status = "disabled";
+		};
+
+		mmc3: mmc@11260000 {
+			compatible = "mediatek,mt8173-mmc","mediatek,mt8135-mmc";
+			reg = <0 0x11260000 0 0x108>;
+			interrupts = <0 74 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&perisys PERI_MSDC30_3>;
+			clock-names = "source";
 			status = "disabled";
 		};
 
