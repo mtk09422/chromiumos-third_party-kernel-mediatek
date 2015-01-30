@@ -351,7 +351,7 @@
 	bus-width = <8>;
 	max-frequency = <50000000>;
 	cap-mmc-highspeed;
-	core-power-supply = <&mt6397_vemc_3v3_reg>;
+	vmmc-supply = <&mt6397_vemc_3v3_reg>;
 	non-removable;
 	func = "EMMC";
 };
@@ -363,8 +363,8 @@
 	status = "okay";
 	bus-width = <4>;
 	max-frequency = <50000000>;
-	core-power-supply = <&mt6397_vmch_reg>;
-	io-power-supply = <&mt6397_vmc_reg>;
+	vmmc-supply = <&mt6397_vmch_reg>;
+	vqmmc-supply = <&mt6397_vmc_reg>;
 	cd-gpios = <&pio 63 0>;
 	func = "SDCARD";
 };
