@@ -249,8 +249,8 @@
 			mt6397_vgp3_reg: ldo_vgp3 {
 				regulator-compatible = "ldo_vgp3";
 				regulator-name = "vcamaf";
-				regulator-min-microvolt = <1200000>;
-				regulator-max-microvolt = <3300000>;
+				regulator-min-microvolt = <1620000>;
+				regulator-max-microvolt = <1980000>;
 				regulator-enable-ramp-delay = <218>;
 			};
 
@@ -335,6 +335,30 @@
 		};
 	};
 
+	mmc3_pins_default: mmc3default {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
+			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>,
+			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
+			bias-pull-down;
+			drive-strength = <MTK_DRIVE_4mA>;
+		};
+
+		pins_pdn {
+			pinmux = <MT8173_PIN_100_MSDC2_DAT0__FUNC_GPIO100>;
+			output-high;
+		};
+	};
+
 	mmc0_pins_uhs: mmc0@0{
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
@@ -377,6 +401,26 @@
 			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
 		};
 	};
+
+	mmc3_pins_uhs: mmc3@0 {
+		pins_cmd_dat {
+			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
+			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>,
+			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins_clk {
+			pinmux = <MT8173_PIN_26_MSDC3_CLK__FUNC_MSDC3_CLK>;
+			drive-strength = <MTK_DRIVE_4mA>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
+
 };
 
 &mmc0 {
@@ -387,9 +431,9 @@
 	bus-width = <8>;
 	max-frequency = <50000000>;
 	cap-mmc-highspeed;
-	core-power-supply = <&mt6397_vemc_3v3_reg>;
+	vmmc-supply = <&mt6397_vemc_3v3_reg>;
+	vqmmc-supply = <&mt6397_vio18_reg>;
 	non-removable;
-	func = "EMMC";
 };
 
 &mmc1 {
@@ -401,9 +445,21 @@
 	max-frequency = <25000000>;
 	cap-sd-highspeed;
 	cd-gpios = <&pio 1 0>;
-	core-power-supply = <&mt6397_vmch_reg>;
-	io-power-supply = <&mt6397_vmc_reg>;
-	func = "SDCARD";
+	vmmc-supply = <&mt6397_vmch_reg>;
+	vqmmc-supply = <&mt6397_vmc_reg>;
+};
+
+&mmc3 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc3_pins_default>;
+	pinctrl-1 = <&mmc3_pins_uhs>;
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	cap-sd-highspeed;
+	sd-uhs-sdr25;
+	vqmmc-supply = <&mt6397_vgp3_reg>;
+	non-removable;
 };
 
 &i2c0 {
@@ -496,13 +552,6 @@
 		compatible = "ti,tmp432";
 		reg = <0x4c>;
 	};
-};
-
-&i2c6 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c6_pins_a>;
-	status = "okay";
-	clock-frequency = <100000>;
 };
 
 &pio {
