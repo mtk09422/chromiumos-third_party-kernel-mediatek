@@ -1396,9 +1396,10 @@ static const struct snd_kcontrol_new mt8173__pcm_hdmi_controls[] = {
 static int mt8173_afe_pcm_probe(struct snd_soc_platform *platform)
 {
 	struct mt_afe_info *afe_info = snd_soc_platform_get_drvdata(platform);
-
+/*
 	snd_soc_add_platform_controls(platform, mt8173__pcm_hdmi_controls,
 				      ARRAY_SIZE(mt8173__pcm_hdmi_controls));
+*/
 	mt8173_afe_debugfs =
 		debugfs_create_file("afe_reg", S_IFREG | S_IRUGO,
 				    NULL,
