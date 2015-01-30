@@ -360,7 +360,7 @@
 	bus-width = <8>;
 	max-frequency = <50000000>;
 	cap-mmc-highspeed;
-	core-power-supply = <&mt6397_vemc_3v3_reg>;
+	vmmc-supply = <&mt6397_vemc_3v3_reg>;
 	non-removable;
 	func = "EMMC";
 };
@@ -375,8 +375,8 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr25;
 	cd-gpios = <&pio 132 0>;
-	core-power-supply = <&mt6397_vmch_reg>;
-	io-power-supply = <&mt6397_vmc_reg>;
+	vmmc-supply = <&mt6397_vmch_reg>;
+	vqmmc-supply = <&mt6397_vmc_reg>;
 	func = "SDCARD";
 };
 
@@ -437,13 +437,6 @@
 &i2c4 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c4_pins_a>;
-	status = "okay";
-	clock-frequency = <100000>;
-};
-
-&i2c6 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c6_pins_a>;
 	status = "okay";
 	clock-frequency = <100000>;
 };
