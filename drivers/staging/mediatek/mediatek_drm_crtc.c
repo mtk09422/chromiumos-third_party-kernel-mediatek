@@ -14,6 +14,8 @@
 #include <drm/drmP.h>
 #include <drm/drm_gem.h>
 #include <drm/drm_crtc_helper.h>
+#include <linux/dma-buf.h>
+#include <linux/reservation.h>
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
@@ -286,8 +288,10 @@ static void mtk_drm_crtc_destroy(struct drm_crtc *crtc)
 #ifdef PVRDRM
 	struct drm_device *dev = crtc->dev;
 	unsigned long flags;
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 #endif
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	destroy_workqueue(mtk_crtc->wq);
 
 	/* for (nr = 0; nr < MAX_CRTC; nr++)
 		priv->crtc[nr] = NULL; */
@@ -339,6 +343,12 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 
 	fb = crtc->primary->fb;
 	mtk_fb = to_mtk_fb(fb);
+
+	if (!mtk_fb) {
+		DRM_INFO("mtk_drm_crtc_mode_set: No mtk_fb.\n");
+		return 0;
+	}
+
 	buffer = get_mtk_gem_buffer(mtk_fb->gem_obj[0]);
 
 	DRM_INFO("DBG_YT mtk_drm_crtc_mode_set %X\n", buffer->mva_addr);
@@ -353,6 +363,211 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 	drm_framebuffer_reference(crtc->primary->fb);
 
 	return 0;
+}
+
+static const char *mtk_drm_crtc_fence_get_driver_name(struct fence *fence)
+{
+	return "mtk_drm_fence";
+}
+
+static const char *mtk_drm_crtc_fence_get_timeline_name(struct fence *fence)
+{
+	return "mtk_drm_timeline";
+}
+
+static bool mtk_drm_crtc_fence_enable_signaling(struct fence *fence)
+{
+	set_bit(FENCE_FLAG_ENABLE_SIGNAL_BIT, &fence->flags);
+
+	return 0;
+}
+
+static const struct fence_ops mtk_drm_crtc_fence_ops = {
+	.get_driver_name = mtk_drm_crtc_fence_get_driver_name,
+	.get_timeline_name = mtk_drm_crtc_fence_get_timeline_name,
+	.enable_signaling = mtk_drm_crtc_fence_enable_signaling,
+	.wait = fence_default_wait,
+};
+
+enum {
+	MTK_DRM_CRTC_WORK_MODE_SET = 1,
+	MTK_DRM_CRTC_WORK_PAGE_FLIP,
+};
+
+struct mtk_drm_crtc_work {
+	struct work_struct work;
+	int work_type;
+	struct dma_buf *dmabuf;
+	struct fence *write_fence;
+	struct fence *read_fence;
+	struct drm_crtc *crtc;
+	struct drm_display_mode *mode;
+	struct drm_display_mode *adjusted_mode;
+	int x;
+	int y;
+	struct drm_framebuffer *old_fb;
+	struct drm_framebuffer *new_fb;
+	struct drm_pending_vblank_event *event;
+	uint32_t page_flip_flags;
+};
+
+static void mtk_drm_crtc_work_handler(struct work_struct *work_)
+{
+	struct mtk_drm_crtc_work *work =
+		(struct mtk_drm_crtc_work *) work_;
+
+	if (work->dmabuf) {
+		struct fence *write_fence = work->write_fence;
+
+		if (write_fence) {
+			signed long ret;
+
+			DRM_INFO("write_fence wait %LX\n", write_fence);
+			ret = fence_wait_timeout(write_fence, true, 1000);
+			if (ret == 0)
+				DRM_ERROR("Wait write_fence timeout\n");
+			else if (ret < 0)
+				DRM_ERROR("Wait write_fence error, ret = %l\n",
+					ret);
+		}
+	}
+
+	switch (work->work_type) {
+	case MTK_DRM_CRTC_WORK_MODE_SET:
+		mtk_drm_crtc_mode_set(work->crtc, work->mode,
+			work->adjusted_mode, work->x, work->y, work->old_fb);
+		break;
+	case MTK_DRM_CRTC_WORK_PAGE_FLIP:
+		mtk_drm_crtc_page_flip(work->crtc, work->new_fb,
+			work->event, work->page_flip_flags);
+		break;
+	}
+
+	fence_signal(work->read_fence);
+
+	if (work->dmabuf)
+		dma_buf_put(work->dmabuf);
+
+	kfree(work);
+}
+
+static int mtk_drm_crtc_queue_work(int work_type,
+	struct drm_crtc *crtc,
+	struct drm_display_mode *mode,
+	struct drm_display_mode *adjusted_mode,
+	int x, int y, struct drm_framebuffer *old_fb,
+	struct drm_framebuffer *new_fb,
+	struct drm_pending_vblank_event *event,
+	uint32_t page_flip_flags)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_drm_fb *mtk_fb = to_mtk_fb(new_fb);
+	struct mtk_drm_crtc_work *work;
+	struct dma_buf *dmabuf = mtk_fb->gem_obj[0]->dma_buf;
+	struct fence *write_fence = NULL;
+	struct fence *read_fence = NULL;
+	spinlock_t *read_fence_lock = NULL;
+	unsigned read_fence_context;
+	static unsigned read_fence_seqno;
+
+	DRM_INFO("mtk_drm_crtc_queue_work type = %d\n", work_type);
+
+	work = (struct mtk_drm_crtc_work *)
+		kzalloc(sizeof(struct mtk_drm_crtc_work), GFP_KERNEL);
+	if (!work) {
+		DRM_ERROR("mtk_drm_crtc_queue_work: ");
+		DRM_ERROR("could not allocate render_work_t\n");
+		goto no_memory;
+	}
+	INIT_WORK((struct work_struct *)work,
+		mtk_drm_crtc_work_handler);
+
+	if (dmabuf) {
+		get_dma_buf(dmabuf);
+		write_fence = reservation_object_get_excl(dmabuf->resv);
+	}
+
+	read_fence = kzalloc(sizeof(struct fence), GFP_KERNEL);
+	if (!read_fence) {
+		DRM_ERROR("mtk_drm_crtc_queue_work: ");
+		DRM_ERROR("could not allocate struct fence\n");
+		goto no_memory;
+	}
+	read_fence_lock = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
+	if (!read_fence_lock) {
+		DRM_ERROR("mtk_drm_crtc_queue_work: ");
+		DRM_ERROR("could not allocate spinlock_t\n");
+		goto no_memory;
+	}
+	spin_lock_init(read_fence_lock);
+	read_fence_context = fence_context_alloc(1);
+	fence_init(read_fence, &mtk_drm_crtc_fence_ops,
+		read_fence_lock, read_fence_context, ++read_fence_seqno);
+	read_fence->ops->enable_signaling(read_fence);
+
+	reservation_object_reserve_shared(dmabuf->resv);
+	reservation_object_add_shared_fence(dmabuf->resv, read_fence);
+
+	work->work_type = work_type;
+	work->dmabuf = dmabuf;
+	work->write_fence = write_fence;
+	work->read_fence = read_fence;
+	work->crtc = crtc;
+	work->mode = mode;
+	work->adjusted_mode = adjusted_mode;
+	work->x = x;
+	work->y = y;
+	work->old_fb = old_fb;
+	work->new_fb = new_fb;
+	work->event = event;
+	work->page_flip_flags = page_flip_flags;
+
+	queue_work(mtk_crtc->wq, (struct work_struct *)work);
+
+	if (!write_fence) {
+		signed long ret;
+
+		ret = fence_wait_timeout(read_fence, true, 1000);
+		if (ret == 0)
+			DRM_ERROR("Wait read_fence timeout\n");
+		else if (ret < 0)
+			DRM_ERROR("Wait read_fence error, ret = %l\n", ret);
+	}
+
+	goto out;
+
+no_memory:
+	if (work)
+		kfree((void *)work);
+
+	if (read_fence)
+		kfree((void *)read_fence);
+
+	if (read_fence_lock)
+		kfree((void *)read_fence_lock);
+
+	return -ENOMEM;
+out:
+	return 0;
+}
+
+static int mtk_drm_crtc_page_flip_fence(struct drm_crtc *crtc,
+	struct drm_framebuffer *fb,
+	struct drm_pending_vblank_event *event,
+	uint32_t page_flip_flags)
+{
+	return mtk_drm_crtc_queue_work(MTK_DRM_CRTC_WORK_PAGE_FLIP,
+	    crtc, NULL, NULL, 0, 0, NULL, fb, event, page_flip_flags);
+}
+
+static int mtk_drm_crtc_mode_set_fence(struct drm_crtc *crtc,
+	struct drm_display_mode *mode,
+	struct drm_display_mode *adjusted_mode,
+	int x, int y, struct drm_framebuffer *old_fb)
+{
+	return mtk_drm_crtc_queue_work(MTK_DRM_CRTC_WORK_MODE_SET,
+		crtc, mode, adjusted_mode, x, y, old_fb,
+		crtc->primary->fb, NULL, 0);
 }
 
 static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
@@ -388,6 +603,16 @@ int mtk_drm_crtc_create(struct drm_device *dev, unsigned int nr)
 	if (!mtk_crtc) {
 		DRM_ERROR("failed to allocate mtk crtc\n");
 		return -ENOMEM;
+	}
+
+	mtk_crtc->wq =
+		alloc_workqueue("mtk_drm_crtc_wq",
+		WQ_HIGHPRI | WQ_UNBOUND | WQ_MEM_RECLAIM,
+		1);
+	if (!mtk_crtc->wq) {
+		DRM_ERROR("mtk_drm_crtc_create: ");
+		DRM_ERROR("failed to create mtk drm crtc work queue\n");
+		return -1;
 	}
 
 	priv->crtc[nr] = &mtk_crtc->base;
