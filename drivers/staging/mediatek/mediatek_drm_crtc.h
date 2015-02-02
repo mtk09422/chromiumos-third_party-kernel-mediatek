@@ -136,6 +136,7 @@ struct mtk_drm_crtc {
 	struct pvr_drm_flip_data	*flip_data;
 	struct pvr_drm_flip_data	*wdma_data;
 #endif
+	struct workqueue_struct *wq;
 };
 
 #define to_mtk_crtc(x) container_of(x, struct mtk_drm_crtc, base)
