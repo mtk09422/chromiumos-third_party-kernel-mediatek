@@ -199,6 +199,16 @@ config USB_RCAR_GEN2_PHY
 	  To compile this driver as a module, choose M here: the
 	  module will be called phy-rcar-gen2-usb.
 
+config MT65XX_USB3PHY
+	tristate "Mediatek USB 3.0 PHY controller Driver"
+	depends on ARCH_MEDIATEK
+	select USB_PHY
+	help
+	  Say 'Y' here to add support for Mediatek USB 3.0 (Super Speed) phy
+	  controller for mt65xx SoCs. it supports two usb2 ports and
+	  one usb3 port.
+	  To compile this driver as a module, choose M here
+
 config USB_ULPI
 	bool "Generic ULPI Transceiver Driver"
 	depends on ARM || ARM64

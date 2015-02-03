@@ -1,0 +1,25 @@
+MT65XX xhci
+
+The device node for Mediatek SOC usb3.0 host controller
+
+Required properties:
+ - compatible : Should follow xhci dts binding file requirement
+ - reg        : Offset and length of registers
+ - interrupts : Interrupt; mode, number and trigger
+ - mediatek,phy : the phy that xhci will bind
+
+Example:
+usb: usb30@11270000 {
+	compatible = "mediatek,mt8173-xhci", "generic-xhci";
+	reg = <0 0x11270000 0 0x1000>;
+	interrupts = <0 115 0x8>;
+	mediatek,phy = <&u3phy>;
+};
+
+u3phy:usb-phy@11271000 {
+	compatible = "mediatek,mt65xx-u3phy";
+	reg = <0 0x11271000 0 0x3000>,
+		<0 0x11280000 0 0x20000>;
+	usb-host = <&usb>;
+	...
+};
