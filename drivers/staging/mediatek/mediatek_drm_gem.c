@@ -14,7 +14,6 @@
 #include <drm/drmP.h>
 #include <drm/drm_gem.h>
 
-#include "mediatek_drm_drv.h"
 #include "mediatek_drm_gem.h"
 
 
@@ -39,7 +38,7 @@ struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
 		return NULL;
 	}
 
-	DRM_DEBUG_KMS("created file object = 0x%x\n", (unsigned int)obj->filp);
+	DRM_DEBUG_KMS("created file object = 0x%p\n", obj->filp);
 
 	return mtk_gem_obj;
 }
@@ -70,13 +69,6 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 	}
 	mtk_gem->buffer = mtk_buf;
 
-#ifndef CONFIG_MTK_IOMMU
-	if (flags) {
-		dev_err(dev->dev, "iommu is not supported!! %d\n", flags);
-		flags = 0;
-	}
-#endif
-
 	if (flags == 0) {
 		size = round_up(size, PAGE_SIZE);
 		mtk_buf->kvaddr = kzalloc(size, GFP_KERNEL);
@@ -88,112 +80,7 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 		mtk_buf->paddr = virt_to_phys(mtk_buf->kvaddr);
 		mtk_buf->size = size;
 		mtk_buf->mva_addr = mtk_buf->paddr;
-	}
-#ifdef CONFIG_MTK_IOMMU
-	else if (flags == 2) {
-		struct page **pages;
-		struct sg_table *sgt;
-		struct scatterlist *sgl;
-		int i, npages;
-
-		size = round_up(size, PAGE_SIZE);
-		mtk_buf->kvaddr = kzalloc(size, GFP_KERNEL);
-		if (!mtk_buf->kvaddr) {
-			ret = -ENOMEM;
-			goto err_NEW;
-		}
-
-		npages = size >> PAGE_SHIFT;
-		pages = kmalloc(npages * sizeof(*pages), GFP_KERNEL);
-		if (!pages) {
-			ret = -ENOMEM;
-			goto err_NEW;
-		}
-		mtk_buf->pages = pages;
-
-		sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
-		if (!sgt) {
-			ret = -ENOMEM;
-			goto err_NEW;
-		}
-		mtk_buf->sgt = sgt;
-
-		ret = sg_alloc_table(sgt, npages, GFP_KERNEL);
-		if (ret)
-			goto err_NEW;
-
-		for (i = 0; i < npages; i++)
-			pages[i] = virt_to_page(mtk_buf->kvaddr + i*PAGE_SIZE);
-
-		for_each_sg(sgt->sgl, sgl, npages, i) {
-			sg_set_page(sgl, pages[i], PAGE_SIZE, 0);
-		}
-
-		if (dma_map_sg(dev->dev, sgt->sgl, sgt->nents,
-				DMA_BIDIRECTIONAL) == 0) {
-			DRM_INFO("DBG_YT dma_map_sg failed\n");
-			goto err_NEW;
-		}
-
-		mtk_buf->paddr = virt_to_phys(mtk_buf->kvaddr);
-		mtk_buf->size = size;
-		mtk_buf->mva_addr = sg_dma_address(sgt->sgl);
-	} else if (flags == 1) { /* use iommu to */
-		struct page **pages;
-		struct sg_table *sgt;
-		struct scatterlist *sgl;
-		int i, npages;
-
-		size = PAGE_ALIGN(size) + PAGE_SIZE*32;
-		npages = size >> PAGE_SHIFT;
-		pages = kmalloc(npages * sizeof(*pages), GFP_KERNEL);
-		if (!pages) {
-			ret = -ENOMEM;
-			goto err_NEW;
-		}
-		mtk_buf->pages = pages;
-
-		for (i = 0; i < npages; i++) {
-			pages[i] = alloc_page(GFP_KERNEL);
-			if (IS_ERR(pages[i])) {
-				ret = PTR_ERR(pages[i]);
-				goto err_NEW;
-			}
-		}
-
-		mtk_buf->kvaddr = vmap(pages, npages, 0, PAGE_KERNEL);
-		if (!mtk_buf->kvaddr) {
-			DRM_DEBUG_KMS("fail vmap\n");
-			ret = -EIO;
-			goto err_NEW;
-		}
-
-		sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
-		if (!sgt) {
-			ret = -ENOMEM;
-			goto err_NEW;
-		}
-		mtk_buf->sgt = sgt;
-
-		ret = sg_alloc_table(sgt, npages, GFP_KERNEL);
-		if (ret)
-			goto err_NEW;
-
-		for_each_sg(sgt->sgl, sgl, npages, i) {
-			sg_set_page(sgl, pages[i], PAGE_SIZE, 0);
-		}
-
-		npages = dma_map_sg(dev->dev, sgt->sgl, sgt->nents,
-			DMA_BIDIRECTIONAL);
-		if (!npages) {
-			DRM_INFO("DBG_YT dma_map_sg failed\n");
-			goto err_NEW;
-		}
-
-		mtk_buf->paddr = 0;
-		mtk_buf->size = size;
-		mtk_buf->mva_addr = sg_dma_address(sgt->sgl);
-	} else if (flags == 3) {
+	} else {
 		struct page **pages;
 		int npages, size_pages;
 		int offset, index;
@@ -204,15 +91,14 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 		pages = kmalloc(size_pages, GFP_KERNEL);
 		if (!pages) {
 			ret = -ENOMEM;
-			goto err_NEW;
+			goto err_size;
 		}
 		mtk_buf->pages = pages;
 
 		init_dma_attrs(&mtk_buf->dma_attrs);
 
-		size = PAGE_ALIGN(size);
 		mtk_buf->kvaddr = dma_alloc_attrs(dev->dev, size,
-			&mtk_buf->mva_addr,	GFP_KERNEL,
+			(dma_addr_t *)&mtk_buf->mva_addr, GFP_KERNEL,
 			&mtk_buf->dma_attrs);
 
 		mtk_buf->paddr = 0;
@@ -225,24 +111,22 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 
 		mtk_buf->sgt = drm_prime_pages_to_sg(mtk_buf->pages, npages);
 	}
-#endif
-	else {
-		ret = -EINVAL;
-		goto err_size;
-	}
 	mtk_gem->flags = flags;
 
-	DRM_INFO("kvaddr = %X mva_addr = %X\n",
-		(unsigned int)mtk_buf->kvaddr, mtk_buf->mva_addr);
+	DRM_INFO("kvaddr = %p mva_addr = %X\n",
+		mtk_buf->kvaddr, mtk_buf->mva_addr);
 	ret = drm_gem_object_init(dev, &mtk_gem->base, size);
 	if (ret)
-		goto err_init;
+		goto err_mem;
 
 	return mtk_gem;
 
-err_NEW:
-err_init:
-	kfree(mtk_buf->kvaddr);
+err_mem:
+	if (mtk_buf->paddr)
+		kfree(mtk_buf->kvaddr);
+	else
+		dma_free_attrs(dev->dev, size, mtk_buf->kvaddr,
+			mtk_buf->mva_addr, &mtk_buf->dma_attrs);
 err_size:
 	kfree(mtk_buf);
 err_buf:
@@ -349,7 +233,7 @@ int mtk_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 	gem = vma->vm_private_data;
 	mtk_gem = to_mtk_gem_obj(gem);
 
-	if (mtk_gem->flags == 0 || mtk_gem->flags == 2) {
+	if (mtk_gem->flags == 0) {
 		/*
 		 * get page frame number to physical memory to be mapped
 		 * to user space.
@@ -357,29 +241,6 @@ int mtk_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 		ret = remap_pfn_range(vma, vma->vm_start,
 			mtk_gem->buffer->paddr >> PAGE_SHIFT,
 			vma->vm_end - vma->vm_start, vma->vm_page_prot);
-	} else if (mtk_gem->flags == 1) {
-		struct mtk_drm_gem_buf *buffer = mtk_gem->buffer;
-		unsigned long usize, uaddr;
-		int i = 0;
-
-		uaddr = vma->vm_start;
-		usize = vma->vm_end - vma->vm_start;
-
-		if (!buffer->pages)
-			return -EINVAL;
-
-		vma->vm_flags |= VM_MIXEDMAP;
-
-		do {
-			ret = vm_insert_page(vma, uaddr, buffer->pages[i++]);
-			if (ret) {
-				DRM_ERROR("failed to remap %d\n", ret);
-				return ret;
-			}
-
-			uaddr += PAGE_SIZE;
-			usize -= PAGE_SIZE;
-		} while (usize > 0);
 	} else {
 		struct drm_file *file_priv = filp->private_data;
 		struct drm_device *dev = file_priv->minor->dev;
