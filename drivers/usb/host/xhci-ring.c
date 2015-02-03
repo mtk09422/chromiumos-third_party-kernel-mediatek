@@ -68,6 +68,7 @@
 #include <linux/slab.h>
 #include "xhci.h"
 #include "xhci-trace.h"
+#include "xhci-mtk.h"
 
 /*
  * Returns zero if the TRB isn't in this segment, otherwise it returns the DMA
@@ -2978,11 +2979,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	return xhci_queue_bulk_tx(xhci, mem_flags, urb, slot_id, ep_index);
 }
 
-/*
- * The TD size is the number of bytes remaining in the TD (including this TRB),
- * right shifted by 10.
- * It must fit in bits 21:17, so it can't be bigger than 31.
- */
+
 static u32 xhci_td_remainder(unsigned int remainder)
 {
 	u32 max = (1 << (21 - 17 + 1)) - 1;
@@ -3131,9 +3128,14 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 		/* Set the TRB length, TD size, and interrupter fields. */
 		if (xhci->hci_version < 0x100) {
-			remainder = xhci_td_remainder(
+			if (xhci->quirks & XHCI_MTK_HOST) {
+				remainder = xhci_mtk_td_remainder_quirk(
+					running_total, trb_buff_len, urb);
+			} else {
+				remainder = xhci_td_remainder(
 					urb->transfer_buffer_length -
 					running_total);
+			}
 		} else {
 			remainder = xhci_v1_0_td_remainder(running_total,
 					trb_buff_len, total_packet_count, urb,
@@ -3184,6 +3186,20 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	return 0;
 }
 
+static int need_one_trb_for_zero_pkt(struct urb *urb)
+{
+	int max_packet = usb_endpoint_maxp(&urb->ep->desc);
+	int ret = 0;
+
+	max_packet = GET_MAX_PACKET(max_packet);
+
+	if ((urb->transfer_flags & URB_ZERO_PACKET) &&
+		((urb->transfer_buffer_length % max_packet) == 0))
+		ret = 1;
+
+	return ret;
+}
+
 /* This is very similar to what ehci-q.c qtd_fill() does */
 int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 		struct urb *urb, int slot_id, unsigned int ep_index)
@@ -3225,7 +3241,11 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 		num_trbs++;
 		running_total += TRB_MAX_BUFF_SIZE;
 	}
-	/* FIXME: this doesn't deal with URB_ZERO_PACKET - need one more */
+
+	if (xhci->quirks & XHCI_MTK_HOST) {
+		if (need_one_trb_for_zero_pkt(urb))
+			num_trbs++;
+	}
 
 	ret = prepare_transfer(xhci, xhci->devs[slot_id],
 			ep_index, urb->stream_id,
@@ -3286,9 +3306,14 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 		/* Set the TRB length, TD size, and interrupter fields. */
 		if (xhci->hci_version < 0x100) {
-			remainder = xhci_td_remainder(
+			if (xhci->quirks & XHCI_MTK_HOST) {
+				remainder = xhci_mtk_td_remainder_quirk(
+					running_total, trb_buff_len, urb);
+			} else {
+				remainder = xhci_td_remainder(
 					urb->transfer_buffer_length -
 					running_total);
+			}
 		} else {
 			remainder = xhci_v1_0_td_remainder(running_total,
 					trb_buff_len, total_packet_count, urb,
@@ -3383,7 +3408,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 		field |= 0x1;
 
 	/* xHCI 1.0 6.4.1.2.1: Transfer Type field */
-	if (xhci->hci_version == 0x100) {
+	if ((xhci->hci_version == 0x100) || (xhci->quirks & XHCI_MTK_HOST)) {
 		if (urb->transfer_buffer_length > 0) {
 			if (setup->bRequestType & USB_DIR_IN)
 				field |= TRB_TX_TYPE(TRB_DATA_IN);
@@ -3407,8 +3432,14 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 		field = TRB_TYPE(TRB_DATA);
 
 	length_field = TRB_LEN(urb->transfer_buffer_length) |
-		xhci_td_remainder(urb->transfer_buffer_length) |
 		TRB_INTR_TARGET(0);
+
+	if (xhci->quirks & XHCI_MTK_HOST) {
+		length_field |= xhci_mtk_td_remainder_quirk(0,
+				urb->transfer_buffer_length, urb);
+	} else
+		length_field |= xhci_td_remainder(urb->transfer_buffer_length);
+
 	if (urb->transfer_buffer_length > 0) {
 		if (setup->bRequestType & USB_DIR_IN)
 			field |= TRB_DIR_IN;
@@ -3632,8 +3663,14 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 			/* Set the TRB length, TD size, & interrupter fields. */
 			if (xhci->hci_version < 0x100) {
-				remainder = xhci_td_remainder(
-						td_len - running_total);
+				if (xhci->quirks & XHCI_MTK_HOST) {
+					remainder = xhci_mtk_td_remainder_quirk(
+						running_total, trb_buff_len,
+						urb);
+				} else {
+					remainder = xhci_td_remainder(
+							td_len - running_total);
+				}
 			} else {
 				remainder = xhci_v1_0_td_remainder(
 						running_total, trb_buff_len,
