@@ -1285,8 +1285,8 @@ static void mt8173_afe_set_2nd_i2s_enable(struct mtk_afe_info *afe_info,
 static int mt8173_hdmi_loopback_get(struct snd_kcontrol *kcontrol,
 				    struct snd_ctl_elem_value *ucontrol)
 {
-	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct mtk_afe_info *afe_info = snd_soc_platform_get_drvdata(platform);
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct mtk_afe_info *afe_info = snd_soc_component_get_drvdata(comp);
 
 	ucontrol->value.integer.value[0] = afe_info->hdmi_loop_type;
 	return 0;
@@ -1396,10 +1396,9 @@ static const struct snd_kcontrol_new mt8173__pcm_hdmi_controls[] = {
 static int mt8173_afe_pcm_probe(struct snd_soc_platform *platform)
 {
 	struct mt_afe_info *afe_info = snd_soc_platform_get_drvdata(platform);
-/*
+
 	snd_soc_add_platform_controls(platform, mt8173__pcm_hdmi_controls,
 				      ARRAY_SIZE(mt8173__pcm_hdmi_controls));
-*/
 	mt8173_afe_debugfs =
 		debugfs_create_file("afe_reg", S_IFREG | S_IRUGO,
 				    NULL,
@@ -1706,7 +1705,7 @@ static int mt8173_afe_dais_hw_params(struct snd_pcm_substream *substream,
 static int mt8173_afe_pcm_set_route(struct mtk_afe_info *afe_info)
 {
 	/* FIXME: hardcode use 2ndI2S */
-	bool use_2nd_i2s = false;
+	bool use_2nd_i2s = true;
 
 	if (!use_2nd_i2s) {
 		afe_info->codec_if = MTK_AFE_IF_MTK;
