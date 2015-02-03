@@ -1,6 +1,7 @@
 config DRM_MEDIATEK
 	tristate "DRM Support for Mediatek SoCs"
 	depends on DRM
+	depends on MTK_IOMMU
 	depends on ARCH_MEDIATEK || (ARM && COMPILE_TEST)
 	depends on !DRM_MEDIATEK_ROGUE
 	select DRM_PANEL
