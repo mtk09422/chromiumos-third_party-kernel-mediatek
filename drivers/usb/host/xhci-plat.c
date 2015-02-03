@@ -22,6 +22,7 @@
 #include "xhci.h"
 #include "xhci-mvebu.h"
 #include "xhci-rcar.h"
+#include "xhci-mtk.h"
 
 static struct hc_driver __read_mostly xhci_plat_hc_driver;
 
@@ -39,6 +40,7 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
 static int xhci_plat_setup(struct usb_hcd *hcd)
 {
 	struct device_node *of_node = hcd->self.controller->of_node;
+	struct xhci_hcd *xhci;
 	int ret;
 
 	if (of_device_is_compatible(of_node, "renesas,xhci-r8a7790") ||
@@ -48,7 +50,22 @@ static int xhci_plat_setup(struct usb_hcd *hcd)
 			return ret;
 	}
 
-	return xhci_gen_setup(hcd, xhci_plat_quirks);
+	ret = xhci_gen_setup(hcd, xhci_plat_quirks);
+	if (ret)
+		return ret;
+
+	xhci = hcd_to_xhci(hcd);
+	if (!usb_hcd_is_primary_hcd(hcd))
+		return 0;
+
+	if (of_device_is_compatible(of_node, "mediatek,mt8173-xhci")) {
+		ret = xhci_mtk_init_quirk(xhci);
+		if (!ret)
+			return ret;
+	}
+
+	kfree(hcd_to_xhci(hcd));
+	return ret;
 }
 
 static int xhci_plat_start(struct usb_hcd *hcd)
@@ -193,6 +210,8 @@ static int xhci_plat_remove(struct platform_device *dev)
 	if (!IS_ERR(clk))
 		clk_disable_unprepare(clk);
 	usb_put_hcd(hcd);
+	if (xhci->quirks & XHCI_MTK_HOST)
+		xhci_mtk_exit_quirk(xhci);
 	kfree(xhci);
 
 	return 0;
@@ -239,6 +258,7 @@ static const struct of_device_id usb_xhci_of_match[] = {
 	{ .compatible = "marvell,armada-380-xhci"},
 	{ .compatible = "renesas,xhci-r8a7790"},
 	{ .compatible = "renesas,xhci-r8a7791"},
+	{ .compatible = "mediatek,mt8173-xhci"},
 	{ },
 };
 MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
