@@ -50,6 +50,15 @@ config USB_XHCI_RCAR
 	  Say 'Y' to enable the support for the xHCI host controller
 	  found in Renesas R-Car ARM SoCs.
 
+config USB_XHCI_MTK
+	tristate "xHCI support for Mediatek MT65xx"
+	select USB_XHCI_PLATFORM
+	depends on ARCH_MEDIATEK || COMPILE_TEST
+	---help---
+	  Say 'Y' to enable the support for the xHCI host controller
+	  found in Mediatek MT65xx SOCs that supports usb3.0.
+	  If unsure, say N.
+
 endif # USB_XHCI_HCD
 
 config USB_EHCI_HCD

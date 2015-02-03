@@ -1501,7 +1501,9 @@ struct xhci_hcd {
 	struct xhci_virt_device	*devs[MAX_HC_SLOTS];
 	/* For keeping track of bandwidth domains per roothub. */
 	struct xhci_root_port_bw_info	*rh_bw;
-
+#ifdef CONFIG_USB_XHCI_MTK
+	void *sch_ports;
+#endif
 	/* DMA pools */
 	struct dma_pool	*device_pool;
 	struct dma_pool	*segment_pool;
@@ -1560,6 +1562,7 @@ struct xhci_hcd {
 #define XHCI_SPURIOUS_WAKEUP	(1 << 18)
 /* For controllers with a broken beyond repair streams implementation */
 #define XHCI_BROKEN_STREAMS	(1 << 19)
+#define XHCI_MTK_HOST		(1 << 20)
 	unsigned int		num_active_eps;
 	unsigned int		limit_active_eps;
 	/* There are two roothubs to keep track of bus suspend info for */

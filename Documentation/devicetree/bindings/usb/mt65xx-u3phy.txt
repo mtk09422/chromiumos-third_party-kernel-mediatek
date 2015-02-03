@@ -1,0 +1,30 @@
+MT65xx U3PHY
+
+The device node for Mediatek SOC usb3.0 phy
+
+Required properties:
+ - compatible : Should be "mediatek,mt8173-u3phy"
+ - reg        : Offset and length of registers
+ - usb-host   : usb controller which the phy will bind
+ - reg-vusb33-supply:  regulator of usb avdd3.3v
+ - clocks     : must support all clocks that phy need
+ - clock-names: the names of clocks
+ - p1-gpio    : must contain gpio controller, gpio number and valid level
+ - pinctrl-names &pinctrl-0    : maybe not neccesary, is only used to set
+   gpio-pin mode
+
+Example:
+
+u3phy: usb-phy@11271000 {
+	compatible = "mediatek,mt8173-u3phy";
+	reg = <0 0x11271000 0 0x3000>,
+		<0 0x11280000 0 0x20000>;
+	usb-host = <&usb>;
+	reg-vusb33-supply = <&mt6397_usb_reg>;
+	usb3_ref_clk = <&apmixedsys>;
+	clocks = <&scpsys SCP_SYS_USB>,
+		<&perisys PERI_USB0>,
+		<&perisys PERI_USB1>;
+	clock-names = "scp_sys_usb", "peri_usb0", "peri_usb1";
+	p1-gpio = <&pio 130 0>; /* 0: high level valid */
+};
