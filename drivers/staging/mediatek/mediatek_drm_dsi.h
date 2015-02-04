@@ -102,51 +102,58 @@ extern void  it6151_pre_enable_temp(void);
 
 #define		MIPITX_DSI0_CLOCK_LANE	0x04
     #define RG_DSI0_LNTC_LDOOUT_EN				(1)
-    #define RG_DSI0_LNTC_LOOPBACK_EN			(1<<1)
+    #define RG_DSI0_LNTC_CKLANE_EN				(1<<1)
     #define RG_DSI0_LNTC_LPTX_IPLUS1			(1<<2)
     #define RG_DSI0_LNTC_LPTX_IPLUS2			(1<<3)
     #define RG_DSI0_LNTC_LPTX_IMINUS			(1<<4)
-    #define RG_DSI0_LNTC_PHI_SEL				(1<<5)
+    #define RG_DSI0_LNTC_LPCD_IPLUS				(1<<5)
+    #define RG_DSI0_LNTC_LPCD_IMLUS				(1<<6)
     #define RG_DSI0_LNTC_RT_CODE				(0xF<<8)
 
 
 
 #define		MIPITX_DSI0_DATA_LANE0	0x08
     #define RG_DSI0_LNT0_LDOOUT_EN				(1)
-    #define RG_DSI0_LNT0_LOOPBACK_EN			(1<<1)
+    #define RG_DSI0_LNT0_CKLANE_EN				(1<<1)
     #define RG_DSI0_LNT0_LPTX_IPLUS1			(1<<2)
     #define RG_DSI0_LNT0_LPTX_IPLUS2			(1<<3)
     #define RG_DSI0_LNT0_LPTX_IMINUS			(1<<4)
     #define RG_DSI0_LNT0_LPCD_IPLUS				(1<<5)
     #define RG_DSI0_LNT0_LPCD_IMINUS			(1<<6)
-    #define RG_DSI0_LNT0_RT_CODE				(0xF<<7)
+    #define RG_DSI0_LNT0_RT_CODE				(0xF<<8)
 
 
 #define		MIPITX_DSI0_DATA_LANE1	0x0C
-    #define RG_DSI0_LNT1_LDOOUT_EN			(1)
-    #define RG_DSI0_LNT1_LOOPBACK_EN		(1<<1)
-    #define RG_DSI0_LNT1_LPTX_IPLUS1		(1<<2)
-    #define RG_DSI0_LNT1_LPTX_IPLUS2		(1<<3)
-    #define RG_DSI0_LNT1_LPTX_IMINUS		(1<<4)
-    #define RG_DSI0_LNT1_RT_CODE			(0xF<<5)
+    #define RG_DSI0_LNT1_LDOOUT_EN				(1)
+	#define RG_DSI0_LNT1_CKLANE_EN				(1<<1)
+	#define RG_DSI0_LNT1_LPTX_IPLUS1			(1<<2)
+	#define RG_DSI0_LNT1_LPTX_IPLUS2			(1<<3)
+	#define RG_DSI0_LNT1_LPTX_IMINUS			(1<<4)
+	#define RG_DSI0_LNT1_LPCD_IPLUS				(1<<5)
+	#define RG_DSI0_LNT1_LPCD_IMINUS			(1<<6)
+	#define RG_DSI0_LNT1_RT_CODE				(0xF<<8)
 
 
 #define		MIPITX_DSI0_DATA_LANE2	0x10
     #define RG_DSI0_LNT2_LDOOUT_EN				(1)
-    #define RG_DSI0_LNT2_LOOPBACK_EN			(1<<1)
-    #define RG_DSI0_LNT2_LPTX_IPLUS1			(1<<2)
-    #define RG_DSI0_LNT2_LPTX_IPLUS2			(1<<3)
-    #define RG_DSI0_LNT2LPTX_IMINUS				(1<<4)
-    #define RG_DSI0_LNT2_RT_CODE				(0xF<<5)
+	#define RG_DSI0_LNT2_CKLANE_EN				(1<<1)
+	#define RG_DSI0_LNT2_LPTX_IPLUS1			(1<<2)
+	#define RG_DSI0_LNT2_LPTX_IPLUS2			(1<<3)
+	#define RG_DSI0_LNT2_LPTX_IMINUS			(1<<4)
+	#define RG_DSI0_LNT2_LPCD_IPLUS				(1<<5)
+	#define RG_DSI0_LNT2_LPCD_IMINUS			(1<<6)
+	#define RG_DSI0_LNT2_RT_CODE				(0xF<<8)
 
 
 #define		MIPITX_DSI0_DATA_LANE3	0x14
-	#define RG_DSI0_LNT3_LDOOUT_EN			(1)
-	#define RG_DSI0_LNT3_LOOPBACK_EN			(1<<1)
+	#define RG_DSI0_LNT3_LDOOUT_EN				(1)
+	#define RG_DSI0_LNT3_CKLANE_EN				(1<<1)
 	#define RG_DSI0_LNT3_LPTX_IPLUS1			(1<<2)
 	#define RG_DSI0_LNT3_LPTX_IPLUS2			(1<<3)
-	#define RG_DSI0_LNT3LPTX_IMINUS				(1<<4)
-	#define RG_DSI0_LNT3_RT_CODE				(0xF<<5)
+	#define RG_DSI0_LNT3_LPTX_IMINUS			(1<<4)
+	#define RG_DSI0_LNT3_LPCD_IPLUS				(1<<5)
+	#define RG_DSI0_LNT3_LPCD_IMINUS			(1<<6)
+	#define RG_DSI0_LNT3_RT_CODE				(0xF<<8)
 
 
 
@@ -178,16 +185,19 @@ extern void  it6151_pre_enable_temp(void);
 
 
 #define		MIPITX_DSI_PLL_CON0	0x50
-    #define RG_DSI0_MPPLL_VOD_EN		(1)
-    #define RG_DSI0_MPPLL_PLL_EN			(1<<1)
-    #define RG_DSI0_MPPLL_PREDIV			(3<<2)
-    #define RG_DSI0_MPPLL_TXDIV0			(3<<4)
-    #define RG_DSI0_MPPLL_TXDIV1			(3<<6)
-    #define RG_DSI0_MPPLL_POSDIV		(7<<8)
-    #define RG_DSI0_MPPLL_MONVC_EN		(1<<11)
-    #define RG_DSI0_MPPLL_MONREF_EN	(1<<12)
+    #define RG_DSI0_MPPLL_PLL_EN			(1<<0)
+    #define RG_DSI0_MPPLL_PREDIV			(3<<1)
+    #define RG_DSI0_MPPLL_TXDIV0			(3<<3)
+    #define RG_DSI0_MPPLL_TXDIV1			(3<<5)
+    #define RG_DSI0_MPPLL_POSDIV		(7<<7)
+    #define RG_DSI0_MPPLL_MONVC_EN		(1<<10)
+    #define RG_DSI0_MPPLL_MONREF_EN		(1<<11)
+	#define RG_DSI0_MPPLL_VOD_EN		(1<<12)
 
-
+#define		MIPITX_DSI_PLL_PWR		0x68
+	#define RG_DSI_MPPLL_SDM_PWR_ON			(1<<0)
+	#define RG_DSI_MPPLL_SDM_ISO_EN			(1<<1)
+	#define RG_DSI_MPPLL_SDM_PWR_ACK		(1<<8)
 
 #define	DSI_PHY_TIMECON0			0x0110
 	#define LPX			(0xFF<<0)

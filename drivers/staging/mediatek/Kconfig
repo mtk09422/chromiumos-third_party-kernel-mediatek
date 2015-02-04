@@ -7,6 +7,7 @@ config DRM_MEDIATEK
 	select DRM_PANEL
 	select DRM_MIPI_DSI
 	select DRM_PANEL_SIMPLE
+	select DRM_MEDIATEK_IT6151
 	select DRM_KMS_HELPER
 	help
 	  Choose this option if you have a Mediatek SoCs.
@@ -27,3 +28,11 @@ config DRM_MEDIATEK_FBDEV
 	  the Linux console on top of the Mediatek DRM mode
 	  setting driver.
 
+config DRM_MEDIATEK_IT6151
+	bool "Enable IT6151FN : MIPI to eDP Converter"
+	depends on DRM_MEDIATEK || DRM_MEDIATEK_ROGUE
+	help
+	  Choose this option if you have IT6151 for display
+	  The IT6151 is a high-performance and low-power
+	  MIPI to eDP converter
+	  This driver is used for test

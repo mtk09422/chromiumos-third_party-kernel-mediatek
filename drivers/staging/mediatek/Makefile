@@ -5,6 +5,7 @@ mediatek-drm-objs := mediatek_drm_drv.o \
                   mediatek_drm_gem.o \
                   mediatek_drm_dmabuf.o \
                   mediatek_drm_dsi.o \
+                  it6151.o \
                   mediatek_drm_debugfs.o \
                   mediatek_drm_hw-mt8173.o
 

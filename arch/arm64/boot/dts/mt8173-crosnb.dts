@@ -250,9 +250,10 @@
 			mt6397_vgp2_reg: ldo_vgp2 {
 				regulator-compatible = "ldo_vgp2";
 				regulator-name = "vcamio";
-				regulator-min-microvolt = <1000000>;
-				regulator-max-microvolt = <3300000>;
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
 				regulator-enable-ramp-delay = <218>;
+				regulator-always-on;
 			};
 
 			mt6397_vgp3_reg: ldo_vgp3 {

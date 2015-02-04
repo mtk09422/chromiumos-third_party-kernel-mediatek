@@ -271,6 +271,18 @@
 			clock-div = <16>;
 			clocks = <&perisys PERI_I2C3>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
+
+			it6151mipirx@6c {
+				compatible = "ite,it6151mipirx";
+				reg = <0x6c>;
+			};
+
+			it6151dptx@5c {
+				compatible = "ite,it6151dptx";
+				reg = <0x5c>;
+			};
+
+
 		};
 
 		i2c4: i2c4@0x11011000 {
@@ -365,7 +377,7 @@
 				<0 0x1401B000 0 0x1000>,	/* DSI0 */
 				<0 0x14020000 0 0x1000>,	/* MUTEX */
 				<0 0x14023000 0 0x1000>,	/* OD */
-				<0 0x14026000 0 0x1000>;	/* LVDS */
+				<0 0x10215000 0 0x1000>;  /* MIPITX */
 			#interrupts = <0 182 0x8>;	/* RDMA */
 			interrupts = <0 196 0x8>;	/* OD */
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
@@ -380,7 +392,9 @@
 				<&mmsys MM_DISP_COLOR0>,
 				<&mmsys MM_DISP_AAL>,
 				<&mmsys MM_DISP_UFOE>,
-				<&mmsys MM_DISP_OD>;
+				<&mmsys MM_DISP_OD>,
+				<&mmsys MM_DSI0_ENGINE>,
+				<&mmsys MM_DSI0_DIGITAL>;
 			clock-names = "disp_mtcmos",
 				"smi_common_ck",
 				"smi_larb0_ck",
@@ -391,9 +405,12 @@
 				"color0_disp_ck",
 				"aal_disp_ck",
 				"ufoe_disp_ck",
-				"od_disp_ck";
+				"od_disp_ck",
+				"dsi0_engine_disp_ck",
+				"dsi0_digital_disp_ck";
 			mediatek,width = <800>;
 			mediatek,height = <1280>;
+			mediatek,mipi-tx-burst-freq = <150>;
 			mediatek,panel = <&panel>;
 		};
 
