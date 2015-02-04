@@ -552,7 +552,15 @@
 		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
 		google,cros-ec-spi-msg-delay = <500>;
 		google,cros-ec-spi-pre-delay = <500>;
+
+                i2c_tunnel: i2c-tunnel {
+                        compatible = "google,cros-ec-i2c-tunnel";
+                        google,remote-bus = <0>;
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                };
 	};
 };
 
 #include "mt8173-cros-ec-keyboard.dtsi"
+#include "mt8173-cros-ec-sbs.dtsi"
