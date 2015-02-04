@@ -136,6 +136,11 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	if (IS_ERR(mtk_crtc->od_regs))
 		return PTR_ERR(mtk_crtc->od_regs);
 
+	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 9);
+	mtk_crtc->dsi_ana_reg = devm_ioremap_resource(dev->dev, regs);
+	if (IS_ERR(mtk_crtc->dsi_ana_reg))
+		return PTR_ERR(mtk_crtc->dsi_ana_reg);
+
 	mtk_dsi_probe(dev);
 
 	/*
@@ -355,6 +360,19 @@ static struct platform_driver mediatek_drm_platform_driver = {
 static int mediatek_drm_init(void)
 {
 	int err;
+
+#ifdef CONFIG_DRM_MEDIATEK_IT6151
+		DRM_INFO("DBG_YT it6151mipirx_i2c_driver\n");
+		err = i2c_add_driver(&it6151mipirx_i2c_driver);
+		if (err < 0)
+			return err;
+
+		DRM_INFO("DBG_YT it6151dptx_i2c_driver\n");
+		err = i2c_add_driver(&it6151dptx_i2c_driver);
+		if (err < 0)
+			return err;
+#endif
+
 
 	DRM_INFO("DBG_YT mediatek_drm_init\n");
 	err = platform_driver_register(&mediatek_drm_platform_driver);
