@@ -273,9 +273,10 @@
 			mt6397_vgp6_reg: ldo_vgp6 {
 				regulator-compatible = "ldo_vgp6";
 				regulator-name = "vgp6";
-				regulator-min-microvolt = <1200000>;
+				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-enable-ramp-delay = <218>;
+				regulator-always-on;
 			};
 
 			mt6397_vibr_reg: ldo_vibr {
