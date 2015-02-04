@@ -419,10 +419,14 @@ static int get_u3phy_p1_vbus_gpio(struct mt65xx_u3phy *u3phy)
 	struct device_node *dn = u3phy->dev->of_node;
 	u32 flags;
 
+	/*
+	* not all platforms have such gpio, so it's not a error
+	* if it does not exists.
+	*/
 	u3phy->p1_gpio_num = of_get_named_gpio_flags(dn, "p1-gpio", 0, &flags);
 	if (u3phy->p1_gpio_num < 0) {
-		dev_err(u3phy->dev, "failed to get p1-gpio-num\n");
-		return -EINVAL;
+		dev_warn(u3phy->dev, "can't get p1-gpio-num, ignore it.\n");
+		return 0;
 	}
 	u3phy->p1_gpio_active_low = !!(flags & OF_GPIO_ACTIVE_LOW);
 
@@ -434,12 +438,14 @@ static int get_u3phy_p1_vbus_gpio(struct mt65xx_u3phy *u3phy)
 
 static inline void vbus_gpio_pullup(struct mt65xx_u3phy *u3phy)
 {
-	gpio_set_value(u3phy->p1_gpio_num, !u3phy->p1_gpio_active_low);
+	if (u3phy->p1_gpio_num >= 0)
+		gpio_set_value(u3phy->p1_gpio_num, !u3phy->p1_gpio_active_low);
 }
 
 static inline void vbus_gpio_pulldown(struct mt65xx_u3phy *u3phy)
 {
-	gpio_set_value(u3phy->p1_gpio_num, u3phy->p1_gpio_active_low);
+	if (u3phy->p1_gpio_num >= 0)
+		gpio_set_value(u3phy->p1_gpio_num, u3phy->p1_gpio_active_low);
 }
 
 
