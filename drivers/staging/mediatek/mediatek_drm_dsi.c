@@ -64,6 +64,10 @@ struct mtk_dsi {
 	struct clk *dsi_dsi_clk_cg;
 	struct clk *dsi_div2_clk_cg;
 
+	struct clk *dsi0_engine_clk_cg;
+	struct clk *dsi0_digital_clk_cg;
+
+
 	struct drm_minor *minor;
 
 	u32 pll_clk_rate;
@@ -105,7 +109,8 @@ static inline void mtk_dsi_writel(struct mtk_dsi *dsi, unsigned long value,
 	writel(value, dsi->dsi_reg_base + (reg << 2));
 }
 
-#ifdef CONFIG_DRM_MEDIATEK_IT6151
+#if 0
+def CONFIG_DRM_MEDIATEK_IT6151
 static int mtk_dsi_of_read_u32(const struct device_node *np,
 				  const char *propname, u32 *out_value)
 {
@@ -211,7 +216,7 @@ return;
 	}
 }
 
-
+#if 0
 void DSI_PHY_clk_setting(struct mtk_dsi *dsi)
 {
 	u32 reg, txdiv = 0, pcw = 0;
@@ -377,6 +382,184 @@ void DSI_PHY_clk_setting(struct mtk_dsi *dsi)
 
 }
 
+#endif
+
+
+void DSI_PHY_clk_setting(struct mtk_dsi *dsi)
+{
+
+	unsigned int data_Rate = dsi->pll_clk_rate * 2;
+	unsigned int txdiv = 0;
+	unsigned int txdiv0 = 0;
+	unsigned int txdiv1 = 0;
+	unsigned int pcw = 0;
+	u32 reg;
+	u32 temp;
+
+
+	/* step 2 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_BG_CON);
+	reg = (reg & (~RG_DSI_V032_SEL)) | (4<<17);
+	reg = (reg & (~RG_DSI_V04_SEL)) | (4<<14);
+	reg = (reg & (~RG_DSI_V072_SEL)) | (4<<11);
+	reg = (reg & (~RG_DSI_V10_SEL)) | (4<<8);
+	reg = (reg & (~RG_DSI_V12_SEL)) | (4<<5);
+	reg = (reg & (~RG_DSI_BG_CKEN)) | (1<<1);
+	reg = (reg & (~RG_DSI_BG_CORE_EN)) | (1);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_BG_CON);
+
+	/* step 3 */
+	udelay(1000);
+
+	/* step 4 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
+	reg = (reg & (~RG_DSI_LNT_IMP_CAL_CODE)) | (8<<4);
+	reg = (reg & (~RG_DSI_LNT_HS_BIAS_EN)) | (1<<1);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
+
+	/* step 5 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_CON);
+	reg = (reg & (~RG_DSI0_CKG_LDOOUT_EN)) | (1<<1);
+	reg = (reg & (~RG_DSI0_LDOCORE_EN)) | (1);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_CON);
+
+	/* step 6 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_PWR);
+	reg = (reg & (~RG_DSI_MPPLL_SDM_PWR_ON)) | (1<<0);
+	reg = (reg & (~RG_DSI_MPPLL_SDM_ISO_EN));
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_PWR);
+
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+	reg = (reg & (~RG_DSI0_MPPLL_PLL_EN));
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+
+
+	udelay(1000);
+
+	if (data_Rate > 1250) {
+		txdiv = 1;
+		txdiv0 = 0;
+		txdiv1 = 0;
+	} else if (data_Rate >= 500) {
+		txdiv = 1;
+		txdiv0 = 0;
+		txdiv1 = 0;
+	} else if (data_Rate >= 250) {
+		txdiv = 2;
+		txdiv0 = 1;
+		txdiv1 = 0;
+	} else if (data_Rate >= 125) {
+		txdiv = 4;
+		txdiv0 = 2;
+		txdiv1 = 0;
+	} else if (data_Rate > 62) {
+		txdiv = 8;
+		txdiv0 = 2;
+		txdiv1 = 1;
+	} else if (data_Rate >= 50) {
+		txdiv = 16;
+		txdiv0 = 2;
+		txdiv1 = 2;
+	} else {
+	}
+
+	/* step 8 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+
+	switch (txdiv) {
+	case 1:
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (0<<3);
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<5);
+
+		break;
+	case 2:
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (1<<3);
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<5);
+		break;
+	case 4:
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<3);
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<5);
+		break;
+	case 8:
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<3);
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (1<<5);
+		break;
+	case 16:
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<3);
+		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (2<<5);
+		break;
+
+	default:
+		break;
+	}
+	reg = (reg & (~RG_DSI0_MPPLL_PREDIV));
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+
+	/* step 10 */
+	/* PLL PCW config */
+	/*
+	   PCW bit 24~30 = floor(pcw)
+	   PCW bit 16~23 = (pcw - floor(pcw))*256
+	   PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
+	   PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
+	 */
+	/* pcw = data_Rate*4*txdiv/(26*2);//Post DIV =4, so need data_Rate*4 */
+	pcw = data_Rate * txdiv / 13;
+	temp = data_Rate * txdiv % 13;
+	reg = ((pcw & 0x7F)<<24) + (((256 * temp / 13) & 0xFF)<<16)
+			+ (((256 * (256 * temp % 13)/13) & 0xFF)<<8)
+			+ ((256 * (256 * (256 * temp % 13) % 13) / 13) & 0xFF);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON2);
+
+
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
+	reg = (reg & (~RG_DSI0_MPPLL_SDM_FRA_EN)) | (1<<0);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
+
+
+	/* step 11 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_CLOCK_LANE);
+	reg = (reg & (~RG_DSI0_LNTC_LDOOUT_EN)) | (1<<0);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_CLOCK_LANE);
+
+	/* step 12 */
+		reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE0);
+		reg = (reg & (~RG_DSI0_LNT0_LDOOUT_EN)) | (1<<0);
+		writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE0);
+
+	/* step 13 */
+		reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE1);
+		reg = (reg & (~RG_DSI0_LNT1_LDOOUT_EN)) | (1<<0);
+		writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE1);
+
+	/* step 14 */
+		reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE2);
+		reg = (reg & (~RG_DSI0_LNT2_LDOOUT_EN)) | (1<<0);
+		writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE2);
+
+	/* step 15 */
+		reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE3);
+		reg = (reg & (~RG_DSI0_LNT3_LDOOUT_EN)) | (1<<0);
+		writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE3);
+
+	/* step 16 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+	reg = (reg & (~RG_DSI0_MPPLL_PLL_EN)) | (1<<0);
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
+
+	/* step 17 */
+	udelay(1000);
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
+	reg = (reg & (~RG_DSI0_MPPLL_SDM_SSC_EN));
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
+
+	/* step 18 */
+	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
+	reg = (reg & (~RG_DSI_PAD_TIE_LOW_EN));
+	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
+
+}
+
 
 
 void DSI_PHY_TIMCONFIG(struct mtk_dsi *dsi)
@@ -425,7 +608,7 @@ void DSI_PHY_TIMCONFIG(struct mtk_dsi *dsi)
 
 	timcon1 = (timcon1 & (~TA_GET)) | (5 * (timcon0 & LPX)<<16);
 
-	timcon1 = (timcon1 & (~TA_SURE)) |  ((3 * (timcon0 & LPX) / 2) << 8);
+	timcon1 = (timcon1 & (~TA_SURE)) | ((3 * (timcon0 & LPX) / 2) << 8);
 	timcon1 =  (timcon1 & (~TA_GO)) | (4 * (timcon0 & LPX));
 
 	/*timcon1 = (timcon1 & (~DA_HS_EXIT)) | ((2 * (timcon0 & LPX))<<24);*/
@@ -464,8 +647,8 @@ void DSI_PHY_TIMCONFIG(struct mtk_dsi *dsi)
 void mtk_dsi_reset(struct mtk_dsi *dsi)
 {
 
-	writel(1, dsi->dsi_reg_base + DSI_CON_CTRL);
-	writel(0, dsi->dsi_reg_base + DSI_CON_CTRL);
+	writel(3, dsi->dsi_reg_base + DSI_CON_CTRL);
+	writel(2, dsi->dsi_reg_base + DSI_CON_CTRL);
 
 }
 
@@ -475,26 +658,19 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 	int ret;
 
 
-		DSI_PHY_clk_switch(dsi, 1);
 		DSI_PHY_clk_setting(dsi);
 
 
-	ret = clk_prepare_enable(dsi->dsi_disp_clk_cg);
+	ret = clk_prepare_enable(dsi->dsi0_engine_clk_cg);
 	if (ret < 0) {
-		dev_err(dsi->dev, "cannot enable dsi_disp_clk clock %d\n", ret);
-		goto err_dsi_disp_clk;
+		dev_err(dsi->dev, "can't enable dsi0_engine_clk_cg %d\n", ret);
+		goto err_dsi0_engine_clk_cg;
 	}
 
-	ret = clk_prepare_enable(dsi->dsi_dsi_clk_cg);
+	ret = clk_prepare_enable(dsi->dsi0_digital_clk_cg);
 	if (ret < 0) {
-		dev_err(dsi->dev, "cannot enable dsi_dsi_clk clock %d\n", ret);
-		goto err_dsi_dsi_clk;
-	}
-
-	ret = clk_prepare_enable(dsi->dsi_div2_clk_cg);
-	if (ret < 0) {
-		dev_err(dsi->dev, "cannot enable dsi_div2_clk clock %d\n", ret);
-		goto err_dsi_div2_clk;
+		dev_err(dsi->dev, "can't enable dsi0_digital_clk_cg %d\n", ret);
+		goto err_dsi0_digital_clk_cg;
 	}
 
 	mtk_dsi_reset((dsi));
@@ -505,12 +681,10 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 
 	return 0;
 
-err_dsi_disp_clk:
-	clk_disable_unprepare(dsi->dsi_disp_clk_cg);
-err_dsi_dsi_clk:
-	clk_disable_unprepare(dsi->dsi_dsi_clk_cg);
-err_dsi_div2_clk:
-	clk_disable_unprepare(dsi->dsi_div2_clk_cg);
+err_dsi0_engine_clk_cg:
+	clk_disable_unprepare(dsi->dsi0_engine_clk_cg);
+err_dsi0_digital_clk_cg:
+	clk_disable_unprepare(dsi->dsi0_digital_clk_cg);
 
 	return ret;
 }
@@ -782,9 +956,8 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
 
 	return;
-	clk_disable_unprepare(dsi->dsi_disp_clk_cg);
-	clk_disable_unprepare(dsi->dsi_dsi_clk_cg);
-	clk_disable_unprepare(dsi->dsi_div2_clk_cg);
+	clk_disable_unprepare(dsi->dsi0_engine_clk_cg);
+	clk_disable_unprepare(dsi->dsi0_digital_clk_cg);
 
 	usleep_range(10000, 20000);
 
@@ -836,6 +1009,60 @@ int mtk_output_dsi_enable(struct mtk_output *output)
 	return 0;
 }
 
+
+
+int mtk_output_dsi_enable_temp(struct mtk_dsi *dsi)
+{
+	int ret;
+
+	if (dsi->enabled == true)
+		return 0;
+
+	ret = mtk_dsi_poweron(dsi);
+	if (ret < 0)
+		return ret;
+
+	dsi_rxtx_control(dsi);
+
+
+	DSI_clk_ULP_mode(dsi, 0);
+
+	DSI_lane0_ULP_mode(dsi, 0);
+
+	DSI_clk_HS_mode(dsi, 0);
+
+
+	DSI_SetMode(dsi);
+
+
+/*
+	ret = drm_panel_enable(dsi->output.panel);
+	if (ret < 0) {
+		mtk_dsi_poweroff(dsi);
+		return ret;
+	}
+*/
+
+	DSI_PS_Control(dsi);
+
+
+	DSI_Config_VDO_Timing(dsi);
+
+
+
+	DSI_SetMode(dsi);
+	DSI_clk_HS_mode(dsi, 1);
+
+
+
+	mtk_dsi_start(dsi);
+
+
+	dsi->enabled = true;
+
+
+	return 0;
+}
 
 
 int mtk_output_dsi_disable(struct mtk_dsi *dsi)
@@ -921,6 +1148,7 @@ int mtk_dsi_probe(struct drm_device *dev)
 	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
 	struct device *pdev = get_mtk_drm_device(dev);
 	struct mtk_drm_crtc *mtk_crtc;
+/*	u32 reg,i; */
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[0]);
 
@@ -948,53 +1176,43 @@ int mtk_dsi_probe(struct drm_device *dev)
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->lanes = 4;
+	dsi->pll_clk_rate = 200;
 
 
-
-
-#ifdef CONFIG_DRM_MEDIATEK_IT6151
+#if 0
+	/* #ifdef CONFIG_DRM_MEDIATEK_IT6151 */
 	err = mtk_dsi_of_read_u32(pdev->of_node,
 		"mediatek,mipi-tx-burst-freq", &dsi->pll_clk_rate);
 	if (err < 0)
 		return err;
 #endif
 
-	dsi->dsi_disp_clk_cg = devm_clk_get(pdev, "dsi_disp_clk_cg");
-	if (IS_ERR(dsi->dsi_disp_clk_cg)) {
-		dev_err(pdev, "cannot get dsi_disp_clk_cg\n");
-		return PTR_ERR(dsi->dsi_disp_clk_cg);
+	dsi->dsi0_engine_clk_cg = devm_clk_get(pdev, "dsi0_engine_disp_ck");
+	if (IS_ERR(dsi->dsi0_engine_clk_cg)) {
+		dev_err(pdev, "cannot get dsi0_engine_clk_cg\n");
+		return PTR_ERR(dsi->dsi0_engine_clk_cg);
 	}
 
-	err = clk_prepare_enable(dsi->dsi_disp_clk_cg);
+	err = clk_prepare_enable(dsi->dsi0_engine_clk_cg);
 	if (err < 0) {
-		dev_err(pdev, "cannot enable dsi_disp_clk_cg\n");
+		dev_err(pdev, "cannot enable dsi0_engine_clk_cg\n");
 		return err;
 	}
 
-	dsi->dsi_dsi_clk_cg = devm_clk_get(pdev, "dsi_dsi_clk_cg");
-	if (IS_ERR(dsi->dsi_dsi_clk_cg)) {
-		dev_err(pdev, "cannot get dsi_dsi_clk_cg\n");
-		return PTR_ERR(dsi->dsi_dsi_clk_cg);
+
+	dsi->dsi0_digital_clk_cg = devm_clk_get(pdev, "dsi0_digital_disp_ck");
+	if (IS_ERR(dsi->dsi0_digital_clk_cg)) {
+		dev_err(pdev, "cannot get dsi0_digital_clk_cg\n");
+		return PTR_ERR(dsi->dsi0_digital_clk_cg);
 	}
 
-	err = clk_prepare_enable(dsi->dsi_dsi_clk_cg);
+	err = clk_prepare_enable(dsi->dsi0_digital_clk_cg);
 	if (err < 0) {
-		dev_err(pdev, "cannot enable low-power clock\n");
+		dev_err(pdev, "cannot enable dsi0_digital_clk_cg\n");
 		return err;
 	}
 
-	dsi->dsi_div2_clk_cg = devm_clk_get(pdev, "dsi_div2_dsi_clk_cg");
-	if (IS_ERR(dsi->dsi_div2_clk_cg)) {
-		dev_err(pdev, "cannot get dsi_div2_clk_cg\n");
-		return PTR_ERR(dsi->dsi_div2_clk_cg);
-	}
 
-
-	err = clk_prepare_enable(dsi->dsi_div2_clk_cg);
-	if (err < 0) {
-		dev_err(pdev, "cannot enable parent clock\n");
-		return err;
-	}
 
 #if 0
 	err = mtk_dsi_setup_clocks(dsi);
@@ -1041,8 +1259,8 @@ int mtk_dsi_probe(struct drm_device *dev)
 
 dsi->vm.pixelclock = 76000;
 dsi->vm.hactive   = 1368;
-dsi->vm.hback_porch = 102;
-dsi->vm.hfront_porch = 104;
+dsi->vm.hback_porch = 100;
+dsi->vm.hfront_porch = 106;
 dsi->vm.hsync_len = 26;
 
 dsi->vm.vactive   = 768;
@@ -1052,10 +1270,13 @@ dsi->vm.vsync_len = 12;
 
 #ifdef CONFIG_DRM_MEDIATEK_IT6151
 
+dsi->it6151_rst = 94;
 
-dsi->it6151_rst = 185;
+/*
+
+
 dsi->bl_en_gpio = 23;
-dsi->it6151_pwr1v2_gpio = 183;
+dsi->it6151_pwr1v2_gpio = 93;
 
 
 
@@ -1064,10 +1285,11 @@ gpio_direction_output(dsi->bl_en_gpio, 1);
 
 gpio_request(dsi->it6151_pwr1v2_gpio, "it6151pwr12-gpio");
 gpio_direction_output(dsi->it6151_pwr1v2_gpio, 1);
+*/
 
-gpio_request(dsi->it6151_rst, "it6151pwr12-gpio");
+gpio_request(dsi->it6151_rst, "it6151reset-gpio");
 gpio_direction_output(dsi->it6151_rst, 0);
-udelay(5);
+udelay(15);
 gpio_direction_output(dsi->it6151_rst, 1);
 
 
@@ -1180,9 +1402,11 @@ else
 */
 
 
-mtk_output_dsi_enable(&dsi->output);
+mtk_output_dsi_enable_temp(dsi);
 
 it6151_pre_enable_temp();
+
+
 #endif
 
 	/*mtk_output_init(pdev, &dsi->output);*/
