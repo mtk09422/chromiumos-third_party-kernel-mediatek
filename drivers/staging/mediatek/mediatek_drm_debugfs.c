@@ -112,13 +112,15 @@ static void process_dbg_opt(const char *opt)
 
 		/* OVL */
 		for (i = 0; i < 0x260; i += 16)
-			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[1] + i,
 			readl(gdrm_disp_base[1] + i),
 			readl(gdrm_disp_base[1] + i + 4),
 			readl(gdrm_disp_base[1] + i + 8),
 			readl(gdrm_disp_base[1] + i + 12));
 		for (i = 0xf40; i < 0xfc0; i += 16)
-			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[1] + i,
 			readl(gdrm_disp_base[1] + i),
 			readl(gdrm_disp_base[1] + i + 4),
 			readl(gdrm_disp_base[1] + i + 8),
@@ -128,7 +130,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* CONFIG */
 		for (i = 0; i < 0x120; i += 16)
-			DRM_INFO("CFG   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("CFG   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[0] + i,
 			readl(gdrm_disp_base[0] + i),
 			readl(gdrm_disp_base[0] + i + 4),
 			readl(gdrm_disp_base[0] + i + 8),
@@ -136,13 +139,15 @@ static void process_dbg_opt(const char *opt)
 
 		/* OVL */
 		for (i = 0; i < 0x260; i += 16)
-			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[1] + i,
 			readl(gdrm_disp_base[1] + i),
 			readl(gdrm_disp_base[1] + i + 4),
 			readl(gdrm_disp_base[1] + i + 8),
 			readl(gdrm_disp_base[1] + i + 12));
 		for (i = 0xf40; i < 0xfc0; i += 16)
-			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("OVL   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[1] + i,
 			readl(gdrm_disp_base[1] + i),
 			readl(gdrm_disp_base[1] + i + 4),
 			readl(gdrm_disp_base[1] + i + 8),
@@ -150,7 +155,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* RDMA */
 		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("RDMA  0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("RDMA  0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[2] + i,
 			readl(gdrm_disp_base[2] + i),
 			readl(gdrm_disp_base[2] + i + 4),
 			readl(gdrm_disp_base[2] + i + 8),
@@ -158,7 +164,15 @@ static void process_dbg_opt(const char *opt)
 
 		/* COLOR0 */
 		for (i = 0x400; i < 0x500; i += 16)
-			DRM_INFO("COLOR 0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("COLOR 0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[3] + i,
+			readl(gdrm_disp_base[3] + i),
+			readl(gdrm_disp_base[3] + i + 4),
+			readl(gdrm_disp_base[3] + i + 8),
+			readl(gdrm_disp_base[3] + i + 12));
+		for (i = 0xC00; i < 0xD00; i += 16)
+			DRM_INFO("COLOR 0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[3] + i,
 			readl(gdrm_disp_base[3] + i),
 			readl(gdrm_disp_base[3] + i + 4),
 			readl(gdrm_disp_base[3] + i + 8),
@@ -166,7 +180,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* AAL */
 		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("AAL   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("AAL   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[4] + i,
 			readl(gdrm_disp_base[4] + i),
 			readl(gdrm_disp_base[4] + i + 4),
 			readl(gdrm_disp_base[4] + i + 8),
@@ -174,7 +189,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* UFOE */
 		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("UFOE  0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("UFOE  0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[5] + i,
 			readl(gdrm_disp_base[5] + i),
 			readl(gdrm_disp_base[5] + i + 4),
 			readl(gdrm_disp_base[5] + i + 8),
@@ -182,7 +198,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* DSI0 */
 		for (i = 0; i < 0x200; i += 16)
-			DRM_INFO("DSI   0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("DSI   0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[6] + i,
 			readl(gdrm_disp_base[6] + i),
 			readl(gdrm_disp_base[6] + i + 4),
 			readl(gdrm_disp_base[6] + i + 8),
@@ -190,7 +207,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* MUTEX */
 		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("MUTEX 0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("MUTEX 0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[7] + i,
 			readl(gdrm_disp_base[7] + i),
 			readl(gdrm_disp_base[7] + i + 4),
 			readl(gdrm_disp_base[7] + i + 8),
@@ -198,7 +216,8 @@ static void process_dbg_opt(const char *opt)
 
 		/* OD */
 		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("OD    0x%08X: %08X %08X %08X %08X\n", i,
+			DRM_INFO("OD    0x%08X: %08X %08X %08X %08X\n",
+			gdrm_disp_table[8] + i,
 			readl(gdrm_disp_base[8] + i),
 			readl(gdrm_disp_base[8] + i + 4),
 			readl(gdrm_disp_base[8] + i + 8),
