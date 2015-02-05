@@ -2054,6 +2054,9 @@ static void mt6397_codec_init_reg(struct mt6397_codec_priv *mt6397_data)
 	mt6397_set_reg(mt6397_data, MT6397_AFUNC_AUD_CON2, 0x0000, 0x0080);
 	/* gain step gain and enable */
 	mt6397_set_reg(mt6397_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	/* sck inverse */
+	mt6397_set_reg(mt6397_data,
+		       MT6397_AFE_PMIC_NEWIF_CFG2, 1 << 15, 1 << 15);
 }
 
 static int mt6397_debug_open(struct inode *inode, struct file *file)
