@@ -213,6 +213,17 @@ static void ODStart(void __iomem *od_base, unsigned int W, unsigned int H)
 	writel(1, od_base + DISP_OD_EN);
 }
 
+static void UFOEStart(void __iomem *ufoe_base)
+{
+	writel(0x4, ufoe_base + DISPSYS_UFOE_BASE); /* default, BYPASS */
+}
+
+static void ColorStart(void __iomem *color_base)
+{
+	writel(0x2080, color_base + DISP_COLOR_CFG_MAIN); /* default, BYPASS */
+	writel(0x1, color_base + DISP_COLOR_START);
+}
+
 static unsigned int ovl_fmt_convert(unsigned int fmt)
 {
 	switch (fmt) {
@@ -349,6 +360,8 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 		bpp = 1;	/* invalid input format */
 	}
 
+	OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1);
+
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
 	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
 
@@ -453,6 +466,12 @@ void MainDispPathSetup(struct drm_crtc *crtc)
 
 	/* Setup OD */
 	ODStart(mtk_crtc->od_regs, width, height);
+
+	/* Setup UFOE */
+	UFOEStart(mtk_crtc->ufoe_regs);
+
+	/* Setup Color */
+	ColorStart(mtk_crtc->color_regs);
 
 	/* Setup main path connection */
 	DispConfigMainPathConnection(mtk_crtc->regs);

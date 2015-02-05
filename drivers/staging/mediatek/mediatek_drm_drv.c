@@ -185,9 +185,11 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		struct platform_device *pdev;
 		struct dma_iommu_mapping *imu_mapping;
 
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 1, 0);
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 2, 0);
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 3, 0);
-		DRM_INFO("DBG_YT disable ovl layer2/3\n");
+		DRM_INFO("DBG_YT disable ovl layer\n");
 
 		node = of_parse_phandle(dev->dev->of_node, "iommus", 0);
 		if (!node)
