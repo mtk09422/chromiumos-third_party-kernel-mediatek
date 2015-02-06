@@ -463,6 +463,8 @@
 	pinctrl-0 = <&i2c2_pins_a>;
 	status = "okay";
 	clock-frequency = <100000>;
+	#address-cells = <0x1>;
+	#size-cells = <0>;
 	tpm: tpm@20 {
 		compatible = "infineon,slb9645tt";
 		reg = <0x20>;
