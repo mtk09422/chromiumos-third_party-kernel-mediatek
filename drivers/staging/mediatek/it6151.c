@@ -179,7 +179,7 @@ struct it6151_bridge {
 #define DPTX_LANE_COUNT  B_1_LANE/*8B_1_LANE*/
 #define EN_UFO 0
 #define MIPI_PACKED_FMT		RGB_24b
-#define MP_H_RESYNC			0
+#define MP_H_RESYNC			1
 #define MP_V_RESYNC			0
 #define EN_VLC					0
 #define VLC_CFG_H			0  /*bit7~4*/
