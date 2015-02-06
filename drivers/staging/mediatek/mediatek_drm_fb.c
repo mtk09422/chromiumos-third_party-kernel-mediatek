@@ -115,7 +115,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 	mode.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
 							sizes->surface_depth);
 
-	mode.height = mode.height << 1; /* for fb use? */
+	mode.height = mode.height;/* << 1; for fb use? */
 	size = mode.pitches[0] * mode.height;
 	dev_info(dev->dev, "mtk_fbdev_probe %dx%d bpp %d pitch %d size %d\n",
 		mode.width, mode.height, sizes->surface_bpp, mode.pitches[0],
@@ -178,7 +178,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	strcpy(info->fix.id, "mtk");
 	/* dev->mode_config.fb_base = (resource_size_t)bo->paddr; */
-	info->var.yres = info->var.yres_virtual >> 1; /* for fb use? */
+	info->var.yres = info->var.yres_virtual;/* >> 1; for fb use? */
 	info->fix.smem_start = buffer->mva_addr + offset;
 	info->fix.smem_len = size;
 	info->screen_base = buffer->kvaddr + offset;

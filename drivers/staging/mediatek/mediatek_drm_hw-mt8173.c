@@ -233,16 +233,20 @@ static unsigned int ovl_fmt_convert(unsigned int fmt)
 		return OVL_INFMT_RGB565;
 	case DRM_FORMAT_ARGB8888:
 		return OVL_INFMT_ARGB8888;
-	case DRM_FORMAT_XRGB8888:
-		return OVL_INFMT_xRGB8888;
+	case DRM_FORMAT_RGBA8888:
+		return OVL_INFMT_RGBA8888;
+	case DRM_FORMAT_BGR888:
+		return OVL_INFMT_BGR888;
+	case DRM_FORMAT_BGR565:
+		return OVL_INFMT_BGR565;
+	case DRM_FORMAT_ABGR8888:
+		return OVL_INFMT_ABGR8888;
+	case DRM_FORMAT_BGRA8888:
+		return OVL_INFMT_BGRA8888;
 	case DRM_FORMAT_YUYV:
 		return OVL_INFMT_YUYV;
 	case DRM_FORMAT_UYVY:
 		return OVL_INFMT_UYVY;
-	case DRM_FORMAT_YVYU:
-		return OVL_INFMT_YVYU;
-	case DRM_FORMAT_VYUY:
-		return OVL_INFMT_VYUY;
 	default:
 		DRM_ERROR("drm format %X is not supported\n", fmt);
 		return OVL_INFMT_UNKNOWN;
@@ -300,7 +304,7 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int source = 0;	/* from memory */
 	unsigned int src_x = 0;	/* ROI x offset */
 	unsigned int src_y = 0;	/* ROI y offset */
-	unsigned int src_pitch = crtc->mode.hdisplay * 4;
+	unsigned int src_pitch;
 	unsigned int dst_x = 0;	/* ROI x offset */
 	unsigned int dst_y = 0;	/* ROI y offset */
 	unsigned int dst_w = crtc->mode.hdisplay;	/* ROT width */
@@ -314,52 +318,31 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int fmt = ovl_fmt_convert(format);
 
 	if (fmt == OVL_INFMT_BGR888 || fmt == OVL_INFMT_BGR565 ||
-		fmt == OVL_INFMT_ABGR8888 || fmt == OVL_INFMT_PABGR8888 ||
-		fmt == OVL_INFMT_xBGR8888) {
+		fmt == OVL_INFMT_ABGR8888 || fmt == OVL_INFMT_BGRA8888) {
 		fmt -= OVL_COLOR_BASE;
 		rgb_swap = 1;
 	} else {
 		rgb_swap = 0;
 	}
 
-	if ((src_x & 1)) {
-		switch (fmt) {
-		case OVL_INFMT_YUYV:
-			fmt = OVL_INFMT_YVYU;
-			break;
-		case OVL_INFMT_UYVY:
-			fmt = OVL_INFMT_VYUY;
-			break;
-		case OVL_INFMT_YVYU:
-			fmt = OVL_INFMT_YUYV;
-			break;
-		case OVL_INFMT_VYUY:
-			fmt = OVL_INFMT_UYVY;
-			break;
-		}
-	}
-
 	switch (fmt) {
 	case OVL_INFMT_ARGB8888:
-	case OVL_INFMT_PARGB8888:
-	case OVL_INFMT_xRGB8888:
+	case OVL_INFMT_RGBA8888:
 		bpp = 4;
 		break;
 	case OVL_INFMT_RGB888:
-	case OVL_INFMT_YUV444:
 		bpp = 3;
 		break;
 	case OVL_INFMT_RGB565:
 	case OVL_INFMT_YUYV:
 	case OVL_INFMT_UYVY:
-	case OVL_INFMT_YVYU:
-	case OVL_INFMT_VYUY:
 		bpp = 2;
 		break;
 	default:
 		bpp = 1;	/* invalid input format */
 	}
 
+	src_pitch = crtc->mode.hdisplay * bpp;
 	OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1);
 
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
