@@ -17,7 +17,9 @@
 #include <linux/of_gpio.h>
 
 #include "mediatek_drm_output.h"
+#include "it6151.h"
 
+#ifndef CONFIG_DRM_MEDIATEK_IT6151
 static struct drm_encoder *mtk_drm_connector_best_encoder(
 						struct drm_connector *connector)
 {
@@ -164,6 +166,7 @@ static const struct drm_connector_helper_funcs mtk_drm_conn_helper_funcs = {
 	/* .mode_valid	= , // FIXME: optional? */
 	.best_encoder	= mtk_drm_connector_best_encoder,
 };
+#endif
 
 static void mtk_drm_encoder_destroy(struct drm_encoder *encoder)
 {
@@ -221,6 +224,75 @@ static const struct drm_encoder_helper_funcs mtk_drm_encoder_helpers_funcs = {
 	.mode_set = mtk_drm_encoder_mode_set,
 	.commit = mtk_drm_encoder_commit,
 };
+
+#ifdef CONFIG_DRM_MEDIATEK_IT6151
+struct bridge_init {
+	struct i2c_client *mipirx_client;
+	struct i2c_client *dptx_client;
+	struct device_node *node_mipirx;
+	struct device_node *node_dptx;
+};
+
+static bool find_bridge(const char *mipirx, const char *dptx,
+	struct bridge_init *bridge)
+{
+	pr_info("DBG_jitao find_bridge\n");
+
+	/* bridge->mipirx_client = NULL; */
+	bridge->node_mipirx = of_find_compatible_node(NULL, NULL, mipirx);
+
+	pr_info("DBG_jitao find_bridge 1\n");
+
+	if (!bridge->node_mipirx)
+		return false;
+
+	pr_info("DBG_jitao find_bridge 2 of-%s\n",
+		of_node_full_name(bridge->node_mipirx));
+
+	/* bridge->mipirx_client = it6151_mipirx;
+	//of_find_i2c_device_by_node(bridge->node_mipirx);
+	if (!bridge->mipirx_client)
+		return false; */
+
+	pr_info("DBG_jitao find_bridge 3\n");
+
+	/* bridge->dptx_client = NULL; */
+	bridge->node_dptx = of_find_compatible_node(NULL, NULL, dptx);
+	if (!bridge->node_dptx)
+		return false;
+
+	pr_info("DBG_jitao find_bridge 4\n");
+
+	/* bridge->dptx_client = it6151_dptx;
+	//of_find_i2c_device_by_node(bridge->node_dptx);
+	if (!bridge->dptx_client)
+		return false; */
+
+	pr_info("DBG_jitao find_bridge 5\n");
+
+	return true;
+}
+
+static int mtk_drm_attach_lcm_bridge(struct drm_device *dev,
+	struct drm_encoder *encoder)
+{
+	struct bridge_init *bridge;
+	int ret;
+
+	pr_info("DBG_jitao mtk_drm_attach_lcm_bridge\n");
+
+	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
+
+	if (find_bridge("ite,it6151mipirx", "ite,it6151dptx", bridge)) {
+		ret = it6151_init(dev, encoder, bridge->mipirx_client,
+			bridge->dptx_client, bridge->node_mipirx);
+		if (ret != 0)
+			return 1;
+	}
+
+	return 0;
+}
+#endif
 
 int mtk_output_init(struct drm_device *dev)
 {
@@ -282,9 +354,15 @@ int mtk_output_init(struct drm_device *dev)
 	drm_encoder_init(dev, out->encoder, &mtk_drm_encoder_funcs, enc_type);
 	drm_encoder_helper_add(out->encoder, &mtk_drm_encoder_helpers_funcs);
 
+#ifndef CONFIG_DRM_MEDIATEK_IT6151
 	drm_connector_init(dev, conn, &mtk_drm_conn_funcs, conn_type);
 	drm_connector_helper_add(conn, &mtk_drm_conn_helper_funcs);
 	mtk_conn->enc_id = enc->base.id;
+#else
+	ret = mtk_drm_attach_lcm_bridge(dev, out->encoder);
+	if (ret)
+		return ret;
+#endif
 
 	DRM_INFO("DBG_YT mtk_output_init3\n");
 
@@ -293,8 +371,10 @@ int mtk_output_init(struct drm_device *dev)
 	if (out->panel)
 		drm_panel_attach(out->panel, out->connector);
 
+#ifndef CONFIG_DRM_MEDIATEK_IT6151
 	drm_mode_connector_attach_encoder(conn, out->encoder);
 	drm_connector_register(conn);
+#endif
 
 	out->encoder->possible_crtcs = 0x3;
 
