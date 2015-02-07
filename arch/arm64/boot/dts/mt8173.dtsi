@@ -436,8 +436,8 @@
 				"od_disp_ck",
 				"dsi0_engine_disp_ck",
 				"dsi0_digital_disp_ck";
-			mediatek,width = <800>;
-			mediatek,height = <1280>;
+			mediatek,width = <1368>;
+			mediatek,height = <768>;
 			mediatek,mipi-tx-burst-freq = <150>;
 			mediatek,panel = <&panel>;
 		};

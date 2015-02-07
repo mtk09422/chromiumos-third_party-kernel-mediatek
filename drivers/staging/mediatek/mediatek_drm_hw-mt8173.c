@@ -352,7 +352,6 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 
 	writel(0x00000001, drm_disp_base + DISP_REG_OVL_RDMA0_CTRL);
 	writel(0x40402020, drm_disp_base + DISP_REG_OVL_RDMA0_MEM_GMC_SETTING);
-	writel(0x01000000, drm_disp_base + DISP_REG_OVL_RDMA0_FIFO_CTRL);
 
 	reg = keyEn << 30 | source << 28 | rgb_swap << 25 | fmt << 12 |
 		aen << 8 | alpha;
