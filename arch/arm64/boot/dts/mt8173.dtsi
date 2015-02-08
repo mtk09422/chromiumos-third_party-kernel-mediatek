@@ -282,16 +282,6 @@
 			clocks = <&perisys PERI_I2C3>, <&perisys PERI_AP_DMA>;
 			clock-names = "main", "dma";
 			status = "disabled";
-
-			it6151mipirx@6c {
-				compatible = "ite,it6151mipirx";
-				reg = <0x6c>;
-			};
-
-			it6151dptx@5c {
-				compatible = "ite,it6151dptx";
-				reg = <0x5c>;
-			};
 		};
 
 		i2c4: i2c4@0x11011000 {
