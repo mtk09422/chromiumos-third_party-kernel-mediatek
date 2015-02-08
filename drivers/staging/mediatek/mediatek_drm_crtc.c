@@ -107,7 +107,7 @@ static void mtk_flip_cb(struct drm_gem_object *bo,
 			fb->pixel_format);
 	else
 		DRM_ERROR("mtk_flip_cb not set hw (NO fb)\n");
-	irq_num = 1;
+
 	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
 }
 #endif

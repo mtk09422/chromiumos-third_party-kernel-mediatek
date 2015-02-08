@@ -417,6 +417,27 @@
 			mediatek,panel = <&panel>;
 		};
 
+		mfgsys-gpu@0x13000000 {
+			compatible = "mediatek,mt8173-gpu";
+			reg = <0 0x13000000 0 0xFFFF>, <0 0x13fff000 0 0x1000>;
+			mfgsys-power-supply = <&mt6397_vgpu_reg>;
+			clocks = <&apmixedsys APMIXED_MMPLL>,
+					<&scpsys SCP_SYS_MFG>,
+					<&mfgsys MFG_AXI>,
+					<&mfgsys MFG_MEM>,
+					<&mfgsys MFG_G3D>,
+					<&mfgsys MFG_26M>;
+			clock-names = "mmpll_clk",
+					"scp_sys_mfg",
+					"mfg_axi",
+					"mfg_mem",
+					"mfg_g3d",
+					"mfg_26m";
+
+			interrupts = <0 217 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "RGX";
+		};
+
 		audio: mt8173-afe-pcm@0x11220000  {
 			compatible = "mediatek,mt8173-afe-pcm";
 			#sound-dai-cells = <1>;

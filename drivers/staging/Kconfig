@@ -110,4 +110,5 @@ source "drivers/staging/unisys/Kconfig"
 
 source "drivers/staging/mediatek/Kconfig"
 
+source "drivers/staging/img-rogue/Kconfig"
 endif # STAGING

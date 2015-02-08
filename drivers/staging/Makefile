@@ -47,3 +47,5 @@ obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
 obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
 obj-$(CONFIG_UNISYSSPAR)	+= unisys/
 obj-$(CONFIG_DRM_MEDIATEK)	+= mediatek/
+obj-$(CONFIG_DRM_MEDIATEK_ROGUE) += mediatek/
+obj-$(CONFIG_POWERVR_ROGUE)      += img-rogue/
