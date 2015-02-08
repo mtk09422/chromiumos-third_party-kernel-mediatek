@@ -541,6 +541,16 @@
 	pinctrl-0 = <&i2c3_pins_a>;
 	status = "okay";
 	clock-frequency = <100000>;
+	#address-cells = <0x1>;
+	#size-cells = <0>;
+	it6151mipirx@6c {
+		compatible = "ite,it6151mipirx";
+		reg = <0x6c>;
+	};
+	it6151dptx@5c {
+		compatible = "ite,it6151dptx";
+		reg = <0x5c>;
+	};
 };
 
 &i2c4 {
