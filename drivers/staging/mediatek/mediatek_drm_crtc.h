@@ -15,7 +15,6 @@
 
 #ifdef PVRDRM
 #include <pvr_drm_display.h>
-extern int irq_num;
 
 enum mtk_drm_crtc_flip_status {
 	MTK_DRM_CRTC_FLIP_STATUS_NONE = 0,
