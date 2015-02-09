@@ -54,7 +54,7 @@ struct mtk_drm_gem_buf {
  * @size: total memory size to physically non-continuous memory region.
  * @flags: indicate memory type to allocated buffer and cache attruibute.
  *
- * P.S. this object would be transfered to user as kms_bo.handle so
+ * P.S. this object would be transferred to user as kms_bo.handle so
  *	user can access the buffer through kms_bo.handle.
  */
 struct mtk_drm_gem_obj {

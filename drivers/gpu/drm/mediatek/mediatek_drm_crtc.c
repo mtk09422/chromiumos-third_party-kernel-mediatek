@@ -411,6 +411,7 @@ struct mtk_drm_crtc_work {
 	uint32_t page_flip_flags;
 };
 
+#ifdef DRM_USING_DMA_FENCE
 static void mtk_drm_crtc_work_handler(struct work_struct *work_)
 {
 	struct mtk_drm_crtc_work *work =
@@ -422,12 +423,12 @@ static void mtk_drm_crtc_work_handler(struct work_struct *work_)
 		if (write_fence) {
 			signed long ret;
 
-			DRM_INFO("write_fence wait %LX\n", write_fence);
+			DRM_INFO("write_fence wait %p\n", write_fence);
 			ret = fence_wait_timeout(write_fence, true, 1000);
 			if (ret == 0)
 				DRM_ERROR("Wait write_fence timeout\n");
 			else if (ret < 0)
-				DRM_ERROR("Wait write_fence error, ret = %l\n",
+				DRM_ERROR("Wait write_fence error, ret = %lx\n",
 					ret);
 		}
 	}
@@ -531,7 +532,7 @@ static int mtk_drm_crtc_queue_work(int work_type,
 		if (ret == 0)
 			DRM_ERROR("Wait read_fence timeout\n");
 		else if (ret < 0)
-			DRM_ERROR("Wait read_fence error, ret = %l\n", ret);
+			DRM_ERROR("Wait read_fence error, ret = %lx\n", ret);
 	}
 
 	goto out;
@@ -569,6 +570,7 @@ static int mtk_drm_crtc_mode_set_fence(struct drm_crtc *crtc,
 		crtc, mode, adjusted_mode, x, y, old_fb,
 		crtc->primary->fb, NULL, 0);
 }
+#endif
 
 static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 {

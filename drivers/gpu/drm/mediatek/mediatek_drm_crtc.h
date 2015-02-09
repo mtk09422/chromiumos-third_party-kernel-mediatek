@@ -48,7 +48,7 @@ enum mtk_drm_crtc_flip_status {
  * @pixel_format: fourcc pixel format of this overlay
  * @dma_addr: array of bus(accessed by dma) address to the memory region
  *	      allocated for a overlay.
- * @vaddr: array of virtual memory addresss to this overlay.
+ * @vaddr: array of virtual memory address to this overlay.
  * @zpos: order of overlay layer(z position).
  * @default_win: a window to be enabled.
  * @color_key: color key on or off.
@@ -100,9 +100,9 @@ struct mtk_drm_overlay {
  * @pipe: a crtc index created at load() with a new crtc object creation
  *	and the crtc object would be set to private->crtc array
  *	to get a crtc object corresponding to this pipe from private->crtc
- *	array when irq interrupt occured. the reason of using this pipe is that
+ *	array when irq interrupt occurred. the reason of using this pipe is that
  *	drm framework doesn't support multiple irq yet.
- *	we can refer to the crtc to current hardware interrupt occured through
+ *	we can refer to the crtc to current hardware interrupt occurred through
  *	this pipe value.
  * @dpms: store the crtc dpms value
  */

@@ -13,11 +13,11 @@ obj-$(CONFIG_DRM_MEDIATEK) += mediatek-drm.o
 
 ifneq ($(CONFIG_DRM_MEDIATEK_ROGUE),)
 rogue_basedir := drivers/staging/img-rogue
-dc_basedir   := drivers/staging/mediatek
+dc_basedir   := drivers/gpu/drm/mediatek
 
 
 include $(rogue_basedir)/config_kernel.mk
-ccflags-y += -include ../../../$(rogue_basedir)/config_kernel.h
+ccflags-y += -include ../../../../$(rogue_basedir)/config_kernel.h
 
 
 obj-$(CONFIG_DRM_MEDIATEK_ROGUE) += $(DISPLAY_CONTROLLER).o
