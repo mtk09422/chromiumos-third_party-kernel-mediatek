@@ -233,8 +233,8 @@
 #define AFE_IRQ1_BIT		(1<<0)
 #define AFE_IRQ2_BIT		(1<<1)
 #define AFE_HDMI_IRQ_BIT	(1<<4)
-#define AFE_IRQ_STATUS_BITS	0x3F
-
+#define AFE_IRQ_STATUS_BITS	0xFF
+#define AFE_IRQ_TYPE_COUNT	8
 /* others FIXME to remove */
 /* APMIXEDSYS */
 #define AP_PLL_CON5		0x0014
