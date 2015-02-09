@@ -117,7 +117,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	mode.height = mode.height;/* << 1; for fb use? */
 	size = mode.pitches[0] * mode.height;
-	dev_info(dev->dev, "mtk_fbdev_probe %dx%d bpp %d pitch %d size %d\n",
+	dev_info(dev->dev, "mtk_fbdev_probe %dx%d bpp %d pitch %d size %zu\n",
 		mode.width, mode.height, sizes->surface_bpp, mode.pitches[0],
 		size);
 
@@ -213,10 +213,8 @@ int mtk_fbdev_create(struct drm_device *dev)
 	int ret;
 
 	fbdev = devm_kzalloc(dev->dev, sizeof(*fbdev), GFP_KERNEL);
-	if (!fbdev) {
-		dev_err(dev->dev, "failed to allocate DRM fbdev\n");
+	if (!fbdev)
 		return -ENOMEM;
-	}
 
 	drm_fb_helper_prepare(dev, fbdev, &mediatek_drm_fb_helper_funcs);
 

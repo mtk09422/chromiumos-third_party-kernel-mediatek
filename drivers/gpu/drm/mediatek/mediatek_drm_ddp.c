@@ -15,7 +15,7 @@
 #include <linux/clk.h>
 
 #include "mediatek_drm_crtc.h"
-#include "mediatek_drm_hw-mt8173.h"
+#include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_gem.h"

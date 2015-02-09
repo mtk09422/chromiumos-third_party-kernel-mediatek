@@ -28,7 +28,7 @@
 #include "mediatek_drm_dmabuf.h"
 #include "mediatek_drm_debugfs.h"
 
-#include "mediatek_drm_hw-mt8173.h"
+#include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_dev_if.h"
 
@@ -179,7 +179,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	DRM_INFO("MainDispPathPowerOn\n");
 	MainDispPathPowerOn(&mtk_crtc->base);
 
-#ifdef CONFIG_MTK_IOMMU
 	{
 		struct device_node *node;
 		struct platform_device *pdev;
@@ -206,7 +205,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		DRM_INFO("find dev name %s map %p\n", pdev->name, imu_mapping);
 		arm_iommu_attach_device(dev->dev, imu_mapping);
 	}
-#endif
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
 	mtk_fbdev_create(dev);
@@ -390,7 +388,7 @@ static void mediatek_drm_exit(void)
 	/* platform_driver_unregister(&mtk_dsi_driver); */
 }
 
-module_init(mediatek_drm_init);
+late_initcall(mediatek_drm_init);
 module_exit(mediatek_drm_exit);
 
 MODULE_AUTHOR("YT SHEN <yt.shen@mediatek.com>");
