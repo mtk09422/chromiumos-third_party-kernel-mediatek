@@ -459,7 +459,7 @@
 	bus-width = <4>;
 	max-frequency = <25000000>;
 	cap-sd-highspeed;
-	sd-uhs-sdr25;
+	#sd-uhs-sdr25;
 	vqmmc-supply = <&mt6397_vgp3_reg>;
 	non-removable;
 };
