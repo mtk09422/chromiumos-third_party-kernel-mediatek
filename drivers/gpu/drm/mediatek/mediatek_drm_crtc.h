@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#include "mediatek_drm_hw-mt8173.h"
+#include "mediatek_drm_ddp.h"
 
 #ifdef PVRDRM
 #include <pvr_drm_display.h>

@@ -28,7 +28,7 @@
 #include "mediatek_drm_dmabuf.h"
 #include "mediatek_drm_debugfs.h"
 
-#include "mediatek_drm_hw-mt8173.h"
+#include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_dev_if.h"
 
