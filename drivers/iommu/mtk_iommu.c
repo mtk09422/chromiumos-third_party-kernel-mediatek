@@ -213,34 +213,29 @@ static int mtk_iommu_add_device(struct device *dev)
 	unsigned int i = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct of_phandle_args out_args = {0};
-	struct mtk_iommu_user *imu_owner, *imu_owner_head = NULL;
+	struct mtk_iommu_user *imu_owner, *imu_owner_head = NULL, *next;
 
 	while (!of_parse_phandle_with_args(pdev->dev.of_node, "iommus",
 					   "iommu-cells", i, &out_args)) {
 		if (0 == i) { /*list head*/
-			imu_owner_head = devm_kzalloc(
-						dev, sizeof(*imu_owner_head),
-						GFP_KERNEL);
-			if (!imu_owner_head) {
-				dev_err(dev, "cannot allocate device data");
+			imu_owner_head = kzalloc(sizeof(*imu_owner_head),
+						 GFP_KERNEL);
+			if (!imu_owner_head)
 				return -ENOMEM;
-			}
 
 			INIT_LIST_HEAD(&imu_owner_head->list);
 			dev->archdata.iommu = imu_owner_head;
 		}
 
-		imu_owner = devm_kzalloc(dev, sizeof(*imu_owner), GFP_KERNEL);
-		if (!imu_owner) {
-			dev_err(dev, "cannot alloc device data");
+		imu_owner = kzalloc(sizeof(*imu_owner), GFP_KERNEL);
+		if (!imu_owner)
 			goto dev_mem_err;
-		}
 
 		if (1 == out_args.args_count) {
 			imu_owner->portid = out_args.args[0];
 			dev_dbg(dev, "iommu add portid%d", imu_owner->portid);
 		} else {
-			dev_err(dev, "iommu format error,arg number = %d",
+			dev_err(dev, "iommu format error,arg number = %d\n",
 				out_args.args_count);
 		}
 
@@ -250,7 +245,13 @@ static int mtk_iommu_add_device(struct device *dev)
 	}
 
 	return 0;
+
 dev_mem_err:
+	imu_owner_head = dev->archdata.iommu;
+	list_for_each_entry_safe(imu_owner, next, &imu_owner_head->list, list)
+		kfree(imu_owner);
+	kfree(imu_owner_head);
+
 	return -ENOMEM;
 }
 
@@ -259,15 +260,15 @@ static void mtk_iommu_remove_device(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct mtk_iommu_user *imu_owner, *next, *imu_owner_head = NULL;
 
-	dev_dbg(dev, "remove_device %s\n", pdev->name);
-
 	imu_owner_head = dev->archdata.iommu;
 	if (imu_owner_head) {
+		dev_dbg(dev, "remove_device %s\n", pdev->name);
+
 		list_for_each_entry_safe(imu_owner, next, &imu_owner_head->list,
 					 list)
-			devm_kfree(dev, imu_owner);
+			kfree(imu_owner);
 
-		devm_kfree(dev, imu_owner_head);
+		kfree(imu_owner_head);
 	}
 }
 
