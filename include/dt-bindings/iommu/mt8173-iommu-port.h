@@ -19,10 +19,9 @@
 #define M4U_LARB1_PORT(n)      ((n) + 8)
 #define M4U_LARB2_PORT(n)      ((n) + 17)
 #define M4U_LARB3_PORT(n)      ((n) + 38)
-#define M4U_LARB4_PORT(n)      ((n) + 43)
-#define M4U_LARB5_PORT(n)      ((n) + 49)
-#define M4U_LARB6_PORT(n)      ((n) + 58)
-
+#define M4U_LARB4_PORT(n)      ((n) + 53)
+#define M4U_LARB5_PORT(n)      ((n) + 59)
+#define M4U_LARB6_PORT(n)      ((n) + 68)
 
 /*larb0 */
 #define	M4U_PORT_DISP_OVL0    M4U_LARB0_PORT(0)
