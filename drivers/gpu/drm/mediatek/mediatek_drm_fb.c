@@ -78,6 +78,32 @@ static struct mtk_drm_fb *mtk_drm_framebuffer_init(struct drm_device *dev,
 }
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
+static int mtk_drm_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+{
+	struct drm_fb_helper *helper = info->par;
+	struct device *dev = get_mtk_drm_device(helper->dev);
+	struct mtk_drm_fb *mtk_fb = to_mtk_fb(helper->fb);
+	struct mtk_drm_gem_buf *buffer = get_mtk_gem_buffer(mtk_fb->gem_obj[0]);
+	int ret;
+
+	vma->vm_flags |= VM_MIXEDMAP;
+
+	if (dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, &buffer->dma_attrs)) {
+		ret = dma_mmap_attrs(dev, vma, buffer->pages,
+		buffer->mva_addr, buffer->size, &buffer->dma_attrs);
+	} else {
+		ret = dma_mmap_attrs(dev, vma, buffer->kvaddr,
+		buffer->mva_addr, buffer->size, &buffer->dma_attrs);
+	}
+
+	if (ret) {
+		DRM_ERROR("failed to fb_mmap %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
 static struct fb_ops mediatek_fb_ops = {
 	.owner = THIS_MODULE,
 	.fb_fillrect = sys_fillrect,
@@ -88,6 +114,7 @@ static struct fb_ops mediatek_fb_ops = {
 	.fb_blank = drm_fb_helper_blank,
 	.fb_pan_display = drm_fb_helper_pan_display,
 	.fb_setcmap = drm_fb_helper_setcmap,
+	.fb_mmap = mtk_drm_fb_mmap,
 };
 
 static int mtk_fbdev_probe(struct drm_fb_helper *helper,
