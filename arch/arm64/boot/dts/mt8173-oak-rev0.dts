@@ -20,7 +20,7 @@
 
 / {
 	model = "mediatek,mt8173-crosnb";
-	compatible = "mediatek,mt8173-crosnb", "mediatek,mt8173";
+	compatible = "google,oak-rev0","google,oak","mediatek,mt8173";
 
 	aliases {
 		serial0 = &uart0;
@@ -602,9 +602,9 @@
 };
 
 &spi_gpio0 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&spi_gpio0_pins>;
-        status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_gpio0_pins>;
+	status = "okay";
 	/* clients */
 	cros_ec: ec@0 {
 		compatible = "google,cros-ec-spi";
@@ -615,12 +615,12 @@
 		google,cros-ec-spi-msg-delay = <500>;
 		google,cros-ec-spi-pre-delay = <500>;
 
-                i2c_tunnel: i2c-tunnel {
-                        compatible = "google,cros-ec-i2c-tunnel";
-                        google,remote-bus = <0>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-                };
+		i2c_tunnel: i2c-tunnel {
+			compatible = "google,cros-ec-i2c-tunnel";
+			google,remote-bus = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
 	};
 };
 
