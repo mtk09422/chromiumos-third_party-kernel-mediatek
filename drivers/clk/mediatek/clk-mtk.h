@@ -161,4 +161,14 @@ static inline void mtk_register_reset_controller(struct device_node *np,
 }
 #endif
 
+#ifdef CONFIG_RESET_CONTROLLER
+void mtk_register_reset_controller(struct device_node *np,
+			unsigned int num_regs, int regofs);
+#else
+static inline void mtk_register_reset_controller(struct device_node *np,
+			unsigned int num_regs, int regofs)
+{
+}
+#endif
+
 #endif /* __DRV_CLK_MTK_H */
