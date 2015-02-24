@@ -707,7 +707,7 @@ static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
 		return -EINVAL;
 	}
 
-	ret = gpiochip_lock_as_irq(pctl->chip, pin->pin.number);
+	ret = gpio_lock_as_irq(pctl->chip, pin->pin.number);
 	if (ret) {
 		dev_err(pctl->dev, "unable to lock HW IRQ %lu for IRQ\n",
 			irqd_to_hwirq(d));
@@ -732,7 +732,7 @@ static void mtk_pinctrl_irq_release_resources(struct irq_data *d)
 		return;
 	}
 
-	gpiochip_unlock_as_irq(pctl->chip, pin->pin.number);
+	gpio_unlock_as_irq(pctl->chip, pin->pin.number);
 }
 
 static void __iomem *mtk_eint_get_offset(struct mtk_pinctrl *pctl,
@@ -1125,7 +1125,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 
 	prop = of_find_property(np, "pins-are-numbered", NULL);
 	if (!prop) {
-		dev_err(&pdev->dev, "only support pins-are-numbered format\n", ret);
+		dev_err(&pdev->dev, "only support pins-are-numbered format\n");
 		return -EINVAL;
 	}
 
