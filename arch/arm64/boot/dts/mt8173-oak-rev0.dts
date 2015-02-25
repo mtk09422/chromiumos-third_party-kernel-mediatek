@@ -34,10 +34,6 @@
 		reg = <0 0x40000000 0 0x40000000>;
 	};
 
-	psci {
-		method = "";
-	};
-
 	chosen {
 		linux,stdout-path = &uart0;
 	};
