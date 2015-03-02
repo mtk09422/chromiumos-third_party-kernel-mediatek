@@ -427,8 +427,6 @@ struct msdc_host {
 	struct mmc_host *mmc;	/* mmc structure */
 	int cmd_rsp;
 
-	struct regulator *core_power;
-	struct regulator *io_power;
 	spinlock_t lock;
 	struct mmc_request *mrq;
 	struct mmc_command *cmd;
@@ -782,28 +780,33 @@ static void msdc_ungate_clock(struct msdc_host *host)
 }
 #endif
 
-static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
+static void msdc_set_power_mode(struct msdc_host *host, struct mmc_ios *ios)
 {
 	int ret;
+	struct mmc_host *mmc = host->mmc;
 
-	dev_dbg(host->dev, "Set power mode(%d)", mode);
-	if (mode != MMC_POWER_OFF) {
-		regulator_set_voltage(host->core_power, VOL_3300, VOL_3300);
-		ret = regulator_enable(host->core_power);
-		if (ret)
-			dev_err(host->dev, "Failed to set core power!\n");
+	dev_dbg(host->dev, "Set power mode(%d)", ios->power_mode);
+	if (ios->power_mode != MMC_POWER_OFF) {
+		if (!IS_ERR(mmc->supply.vmmc)) {
+			ret = mmc_regulator_set_ocr(mmc, mmc->supply.vmmc,
+					ios->vdd);
+			if (ret) {
+				dev_err(host->dev, "Failed to set vmmc power!\n");
+				return;
+			}
+		}
 
-		if (host->io_power) {
-			regulator_set_voltage(host->io_power, VOL_3300,
-					VOL_3300);
-			ret = regulator_enable(host->io_power);
+		if (!IS_ERR(mmc->supply.vqmmc)) {
+			ret = regulator_enable(mmc->supply.vqmmc);
 			if (ret)
-				dev_err(host->dev, "Failed to set io power!\n");
+				dev_err(host->dev, "Failed to set vqmmc power!\n");
 		}
 	} else {
-		regulator_disable(host->core_power);
-		if (host->io_power)
-			regulator_disable(host->io_power);
+		if (!IS_ERR(mmc->supply.vmmc))
+			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+
+		if (!IS_ERR(mmc->supply.vqmmc))
+			regulator_disable(mmc->supply.vqmmc);
 	}
 
 	msleep(10);
@@ -1273,58 +1276,30 @@ static void msdc_set_buswidth(struct msdc_host *host, u32 width)
 int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct msdc_host *host = mmc_priv(mmc);
-	int err = 0;
-	u32 status;
-	u32 sclk = host->sclk;
+	int min_uv, max_uv;
+	int ret = 0;
 
-	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
-		return 0;
+	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
+		min_uv = 3300000;
+		max_uv = 3300000;
+	} else if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
+		min_uv = 1800000;
+		max_uv = 1800000;
+	} else {
+		dev_err(host->dev, "Unsupported signal voltage!\n");
+		return -EINVAL;
+	}
 
-	/* make sure SDC is not busy (TBC) */
-	err = -EPERM;
-
-	while (sdc_is_busy(host))
-		cpu_relax();
-
-	/* check if CMD/DATA lines both 0 */
-	if ((readl(host->base + MSDC_PS)
-				& ((1 << 24) | (0xf << 16))) != 0)
-		return err;
-
-	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
-		if (host->io_power) {
-			regulator_set_voltage(host->io_power, VOL_1800,
-					VOL_1800);
-			/* wait at least 5ms for 1.8v signal switching */
-			msleep(5);
-		} else {
-			dev_dbg(host->dev,
-					"Do not support power switch!\n");
-			return err;
+	if (!IS_ERR(mmc->supply.vqmmc)) {
+		ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
+		if (ret) {
+			dev_err(host->dev,
+				"Regulator set error %d: %d - %d\n",
+				ret, min_uv, max_uv);
 		}
 	}
 
-	/* config clock to 10~12MHz mode for volt switch detection by host. */
-	msdc_set_mclk(host, 0, 12000000);
-
-	msleep(5);
-
-	/* start to detect volt change by providing 1.8v signal to card */
-	sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_BV18SDT);
-
-	/* wait at max. 1ms */
-	mdelay(1);
-
-	while ((status = readl(host->base + MSDC_CFG))
-			& MSDC_CFG_BV18SDT)
-		cpu_relax();
-
-	if (status & MSDC_CFG_BV18PSS)
-		err = 0;
-	/* config clock back to init clk freq. */
-	msdc_set_mclk(host, 0, sclk);
-
-	return err;
+	return ret;
 }
 
 static void msdc_request_timeout(struct work_struct *work)
@@ -1471,7 +1446,6 @@ static void msdc_deinit_hw(struct msdc_host *host)
 
 	clk_disable(host->src_clk);
 	clk_unprepare(host->src_clk);
-	msdc_set_power_mode(host, MMC_POWER_OFF); /* make sure power down */
 }
 
 /* init gpd and bd list in msdc_drv_probe */
@@ -1517,7 +1491,7 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	case MMC_POWER_OFF:
 	case MMC_POWER_UP:
 		msdc_init_hw(host);
-		msdc_set_power_mode(host, ios->power_mode);
+		msdc_set_power_mode(host, ios);
 		break;
 	default:
 		break;
@@ -1548,8 +1522,6 @@ static int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	struct resource *res;
 	void __iomem *base;
-	struct regulator *core_power;
-	struct regulator *io_power;
 	struct clk *src_clk;
 	int irq;
 	int ret;
@@ -1563,19 +1535,9 @@ static int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	if (IS_ERR(base))
 		return PTR_ERR(base);
 
-	core_power = devm_regulator_get(&pdev->dev, "core-power");
-	if (IS_ERR(core_power)) {
-		dev_dbg(&pdev->dev,
-			"Cannot get core power from the device tree!\n");
-		return PTR_ERR(core_power);
-	}
-
-	io_power = devm_regulator_get_optional(&pdev->dev, "io-power");
-	if (IS_ERR(io_power)) {
-		io_power = NULL;
-		dev_dbg(&pdev->dev,
-			"Cannot get io power from the device tree!\n");
-	}
+	ret = mmc_regulator_get_supply(mmc);
+	if (ret == -EPROBE_DEFER)
+		return ret;
 
 	src_clk = devm_clk_get(&pdev->dev, "source");
 	if (IS_ERR(src_clk)) {
@@ -1612,8 +1574,6 @@ static int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	host->irq = irq;
 	host->base = base;
 	host->src_clk = src_clk;
-	host->core_power = core_power;
-	host->io_power = io_power;
 
 	return 0;
 err:
