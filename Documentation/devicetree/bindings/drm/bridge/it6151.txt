@@ -1,0 +1,17 @@
+it6151 bridge bindings
+
+Required properties:
+	- compatible: "ite,it6151mipirx", "ite,it6151mipirx"
+	- reg: i2c address of the bridge
+
+Example:
+	it6151dptx@5c {
+		compatible = "ite,it6151dptx";
+		reg = <0x5c>;
+	};
+
+	it6151mipirx@6c {
+		compatible = "ite,it6151mipirx";
+		reg = <0x6c>;
+	};
+
