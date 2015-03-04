@@ -228,4 +228,134 @@
 #define PERI_I2C6		35
 #define PERI_NR_CLK		36
 
+/* MFG_SYS */
+
+#define MFG_AXI			1
+#define MFG_MEM			2
+#define MFG_G3D			3
+#define MFG_26M			4
+#define MFG_NR_CLK		5
+
+/* IMG_SYS */
+
+#define IMG_LARB2_SMI		1
+#define IMG_CAM_SMI		2
+#define IMG_CAM_CAM		3
+#define IMG_SEN_TG		4
+#define IMG_SEN_CAM		5
+#define IMG_CAM_SV		6
+#define IMG_FD			7
+#define IMG_NR_CLK		8
+
+/* MM_SYS */
+
+#define MM_SMI_COMMON		1
+#define MM_SMI_LARB0		2
+#define MM_CAM_MDP		3
+#define MM_MDP_RDMA0		4
+#define MM_MDP_RDMA1		5
+#define MM_MDP_RSZ0		6
+#define MM_MDP_RSZ1		7
+#define MM_MDP_RSZ2		8
+#define MM_MDP_TDSHP0		9
+#define MM_MDP_TDSHP1		10
+#define MM_MDP_WDMA		11
+#define MM_MDP_WROT0		12
+#define MM_MDP_WROT1		13
+#define MM_FAKE_ENG		14
+#define MM_MUTEX_32K		15
+#define MM_DISP_OVL0		16
+#define MM_DISP_OVL1		17
+#define MM_DISP_RDMA0		18
+#define MM_DISP_RDMA1		19
+#define MM_DISP_RDMA2		20
+#define MM_DISP_WDMA0		21
+#define MM_DISP_WDMA1		22
+#define MM_DISP_COLOR0		23
+#define MM_DISP_COLOR1		24
+#define MM_DISP_AAL		25
+#define MM_DISP_GAMMA		26
+#define MM_DISP_UFOE		27
+#define MM_DISP_SPLIT0		28
+#define MM_DISP_SPLIT1		29
+#define MM_DISP_MERGE		30
+#define MM_DISP_OD		31
+#define MM_DISP_PWM0MM		32
+#define MM_DISP_PWM026M		33
+#define MM_DISP_PWM1MM		34
+#define MM_DISP_PWM126M		35
+#define MM_DSI0_ENGINE		36
+#define MM_DSI0_DIGITAL		37
+#define MM_DSI1_ENGINE		38
+#define MM_DSI1_DIGITAL		39
+#define MM_DPI_PIXEL		40
+#define MM_DPI_ENGINE		41
+#define MM_DPI1_PIXEL		42
+#define MM_DPI1_ENGINE		43
+#define MM_HDMI_PIXEL		44
+#define MM_HDMI_PLLCK		45
+#define MM_HDMI_AUDIO		46
+#define MM_HDMI_SPDIF		47
+#define MM_LVDS_PIXEL		48
+#define MM_LVDS_CTS		49
+#define MM_SMI_LARB4		50
+#define MM_HDMI_HDCP		51
+#define MM_HDMI_HDCP24M		52
+#define MM_NR_CLK		53
+
+/* VDEC_SYS */
+
+#define VDEC_CKEN		1
+#define VDEC_LARB_CKEN		2
+#define VDEC_NR_CLK		3
+
+/* VENC_SYS */
+
+#define VENC_CKE0		1
+#define VENC_CKE1		2
+#define VENC_CKE2		3
+#define VENC_CKE3		4
+#define VENC_NR_CLK		5
+
+/* VENCLT_SYS */
+
+#define VENCLT_CKE0		1
+#define VENCLT_CKE1		2
+#define VENCLT_NR_CLK		3
+
+/* AUDIO_SYS */
+
+#define AUD_AFE			1
+#define AUD_I2S			2
+#define AUD_22M			3
+#define AUD_24M			4
+#define AUD_SPDF2		5
+#define AUD_APLL2_TNR		6
+#define AUD_APLL_TNR		7
+#define AUD_HDMI		8
+#define AUD_SPDF		9
+#define AUD_ADDA3		10
+#define AUD_ADDA2		11
+#define AUD_ADC			12
+#define AUD_DAC			13
+#define AUD_DAC_PREDIS		14
+#define AUD_TML			15
+#define AUD_AHB_IDLE_EX		16
+#define AUD_AHB_IDLE_IN		17
+#define AUD_NR_CLK		18
+
+/* SCP_SYS */
+
+#define SCP_SYS_VDE		1
+#define SCP_SYS_MFG		2
+#define SCP_SYS_VEN		3
+#define SCP_SYS_ISP		4
+#define SCP_SYS_DIS		5
+#define SCP_SYS_VEN2		6
+#define SCP_SYS_AUDIO		7
+#define SCP_SYS_MFG_2D		8
+#define SCP_SYS_MFG_ASYNC	9
+#define SCP_SYS_USB		10
+#define SCP_NR_CLK		11
+
 #endif /* _DT_BINDINGS_CLK_MT8173_H */
