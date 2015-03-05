@@ -17,6 +17,10 @@
 #include "mediatek_drm_crtc.h"
 #include "mediatek_drm_ddp.h"
 
+#include "mediatek_drm_drv.h"
+#include "mediatek_drm_gem.h"
+#include "mediatek_drm_dev_if.h"
+
 /* These are locked by dev->vbl_lock */
 void mtk_enable_vblank(void __iomem *disp_base)
 {
@@ -241,6 +245,7 @@ static unsigned int ovl_fmt_convert(unsigned int fmt)
 		return OVL_INFMT_BGR565;
 	case DRM_FORMAT_ABGR8888:
 		return OVL_INFMT_ABGR8888;
+	case DRM_FORMAT_XRGB8888:
 	case DRM_FORMAT_BGRA8888:
 		return OVL_INFMT_BGRA8888;
 	case DRM_FORMAT_YUYV:
@@ -425,15 +430,17 @@ void MainDispPathPowerOff(struct drm_crtc *crtc)
 void MainDispPathSetup(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct device *pdev = get_mtk_drm_device(crtc->dev);
+
 	unsigned int width, height;
 	int err;
 
-	err = of_property_read_u32(crtc->dev->dev->of_node, "mediatek,width",
+	err = of_property_read_u32(pdev->of_node, "mediatek,width",
 		&width);
 	if (err < 0)
 		return;
 
-	err = of_property_read_u32(crtc->dev->dev->of_node, "mediatek,height",
+	err = of_property_read_u32(pdev->of_node, "mediatek,height",
 		&height);
 	if (err < 0)
 		return;

@@ -64,7 +64,7 @@ static inline struct mtk_drm_gem_buf *get_mtk_gem_buffer(
 #define get_mtk_drm_private(dev)	((struct mtk_drm_private *) \
 	dev->dev_private)
 #define get_mtk_gem_buffer(gemobj)	(to_mtk_gem_obj(gemobj)->buffer)
-#define get_mtk_drm_device(dev)		(dev->dev)
+#define get_mtk_drm_device(drm)		(((struct drm_device *)drm)->dev)
 #endif
 
 #endif

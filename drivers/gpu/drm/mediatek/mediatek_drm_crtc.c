@@ -62,9 +62,9 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 
 	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->flip_status == MTK_DRM_CRTC_FLIP_STATUS_DONE) {
-		if (mtk_crtc->flip_data) {
-			pvr_drm_flip_done(dev, mtk_crtc->flip_data);
-			mtk_crtc->flip_data = NULL;
+		if (mtk_crtc->flip_sync_op) {
+			pvr_drm_gem_sync_op_complete(dev, mtk_crtc->flip_sync_op);
+			mtk_crtc->flip_sync_op = NULL;
 		}
 		mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
 		checkvsync = 0;
@@ -79,9 +79,18 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 }
 
 #ifdef PVRDRM
+static void mtk_sync_op_complete_cb(struct drm_gem_object *bo,
+				    void *data,
+				    struct pvr_drm_sync_op *sync_op)
+{
+	struct drm_crtc *crtc = (struct drm_crtc *)data;
+
+	pvr_drm_gem_sync_op_complete(crtc->dev, sync_op);
+}
+
 static void mtk_flip_cb(struct drm_gem_object *bo,
 			void *data,
-			struct pvr_drm_flip_data *flip_data)
+			struct pvr_drm_sync_op *sync_op)
 {
 	struct drm_crtc *crtc = (struct drm_crtc *)data;
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
@@ -93,8 +102,8 @@ static void mtk_flip_cb(struct drm_gem_object *bo,
 	WARN_ON(mtk_crtc->flip_status != MTK_DRM_CRTC_FLIP_STATUS_PENDING);
 	mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_DONE;
 
-	WARN_ON(mtk_crtc->flip_data);
-	mtk_crtc->flip_data = flip_data;
+	WARN_ON(mtk_crtc->flip_sync_op);
+	mtk_crtc->flip_sync_op = sync_op;
 
 	/*
 	 * the values related to a buffer of the drm framebuffer
@@ -107,7 +116,7 @@ static void mtk_flip_cb(struct drm_gem_object *bo,
 			fb->pixel_format);
 	else
 		DRM_ERROR("mtk_flip_cb not set hw (NO fb)\n");
-	irq_num = 1;
+
 	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
 }
 #endif
@@ -260,11 +269,25 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_PENDING;
 	spin_unlock_irqrestore(&dev->event_lock, flags);
 
-	ret = pvr_drm_flip_schedule(mtk_fb->gem_obj[0],
-				    mtk_flip_cb,
-				    (void *)crtc);
+	ret = pvr_drm_gem_sync_op_take(mtk_fb->gem_obj[0],
+				       mtk_sync_op_complete_cb,
+				       (void *)crtc);
 	if (ret) {
-		DRM_ERROR("pvr_drm_flip_schedule fail, please check\n");
+		DRM_ERROR("pvr_drm_gem_sync_op_take on new framebuffer failed, please check\n");
+		spin_lock_irqsave(&dev->event_lock, flags);
+		mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
+		spin_unlock_irqrestore(&dev->event_lock, flags);
+		crtc->primary->fb = old_fb;
+	}
+
+	ret = pvr_drm_gem_sync_op_take(to_mtk_fb(old_fb)->gem_obj[0],
+				       mtk_flip_cb,
+				       (void *)crtc);
+	if (ret) {
+		DRM_ERROR("pvr_drm_gem_sync_op_take on old framebuffer failed, please check\n");
+		spin_lock_irqsave(&dev->event_lock, flags);
+		mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
+		spin_unlock_irqrestore(&dev->event_lock, flags);
 		crtc->primary->fb = old_fb;
 	}
 #else
@@ -299,9 +322,9 @@ static void mtk_drm_crtc_destroy(struct drm_crtc *crtc)
 	drm_crtc_cleanup(crtc);
 #ifdef PVRDRM
 	spin_lock_irqsave(&dev->event_lock, flags);
-	if (mtk_crtc->flip_data) {
-		pvr_drm_flip_done(dev, mtk_crtc->flip_data);
-		mtk_crtc->flip_data = NULL;
+	if (mtk_crtc->flip_sync_op) {
+		pvr_drm_gem_sync_op_complete(dev, mtk_crtc->flip_sync_op);
+		mtk_crtc->flip_sync_op = NULL;
 	}
 	mtk_crtc->flip_status = MTK_DRM_CRTC_FLIP_STATUS_NONE;
 	spin_unlock_irqrestore(&dev->event_lock, flags);
