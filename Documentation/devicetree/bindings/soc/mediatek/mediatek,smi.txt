@@ -1,0 +1,17 @@
+SMI hardware block diagram please help check <bindings/iommu/mediatek,iommu.txt>
+
+Required properties:
+- compatible : must be "mediatek,mediatek,mt8173-smi-larb"
+- reg : the register of each local arbiter
+- clocks : the clocks of each local arbiter
+- clock-name: larb_sub*(3 clockes at most)
+
+Example:
+	larb1:larb@16010000 {
+	        compatible = "mediatek,mt8173-smi-larb";
+		reg = <0 0x16010000 0 0x1000>;
+		clocks = <&mmsys MM_SMI_COMMON>,
+		        <&vdecsys VDEC_CKEN>,
+                        <&vdecsys VDEC_LARB_CKEN>;
+		clock-names = "larb_sub0", "larb_sub1", "larb_sub2";
+	};
