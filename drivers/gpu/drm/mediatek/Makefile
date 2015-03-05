@@ -12,7 +12,7 @@ mediatek-drm-objs := mediatek_drm_drv.o \
 obj-$(CONFIG_DRM_MEDIATEK) += mediatek-drm.o
 
 ifneq ($(CONFIG_DRM_MEDIATEK_ROGUE),)
-rogue_basedir := drivers/staging/img-rogue
+rogue_basedir := drivers/gpu/drm/img-rogue
 dc_basedir   := drivers/gpu/drm/mediatek
 
 

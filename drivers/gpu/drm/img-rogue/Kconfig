@@ -1,0 +1,17 @@
+config POWERVR_ROGUE
+	tristate "PowerVR Rogue"
+	depends on HAS_IOMEM
+	depends on DRM
+	select DRM_KMS_HELPER
+	help
+	  Driver for PowerVR Rogue graphics hardware.
+
+	  Say Y here if your SoC contains a PowerVR Rogue GPU. For more
+	  information, see <http://www.imgtec.com/powervr/>.
+
+config POWERVR_ROGUE_DEBUG
+	bool "Enable PowerVR Rogue debug features"
+	depends on POWERVR_ROGUE
+	default n
+	help
+	  Add additional debug features to the PowerVR Rogue driver.

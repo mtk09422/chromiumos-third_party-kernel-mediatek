@@ -132,8 +132,7 @@ struct mtk_drm_crtc {
 	struct drm_pending_vblank_event	*event;
 #ifdef PVRDRM
 	enum mtk_drm_crtc_flip_status	flip_status;
-	struct pvr_drm_flip_data	*flip_data;
-	struct pvr_drm_flip_data	*wdma_data;
+	struct pvr_drm_sync_op		*flip_sync_op;
 #endif
 	struct workqueue_struct *wq;
 };
