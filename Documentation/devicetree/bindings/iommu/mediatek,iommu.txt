@@ -1,0 +1,41 @@
+/******************************************************/
+/*    Mediatek IOMMU Hardware block diagram           */
+/******************************************************/
+              EMI (External Memory Interface)
+               |
+              m4u (Multimedia Memory Management Unit)
+               |
+              smi (Smart Multimedia Interface)
+               |
+        +---------------+-------
+        |               |
+        |               |
+    vdec larb       disp larb      ... SoCs have different local arbiter(larb).
+        |               |
+        |               |
+   +----+----+    +-----+-----+
+   |    |    |    |     |     |    ...
+   |    |    |    |     |     |    ...
+   |    |    |    |     |     |    ...
+  MC   PP   VLD  OVL0 RDMA0 WDMA0  ... There are different ports in each larb.
+
+Required properties:
+- compatible : must be "mediatek,mt8173-iommu"
+- reg : m4u register base
+- interrupts : must contain the interrupts from each internal translation unit
+- clocks : must contain one entry for each clock-name
+- clock-name: m4u clock
+- larb : must contain the larbes of current platform
+- iommu-cells : must be 1. Specifies the client PortID as defined in
+dt-binding/iommu/mt**-iommu-port.h
+
+Example:
+		iommu: mmsys_iommu@10205000 {
+			compatible = "mediatek,mt8173-iommu";
+			reg = <0 0x10205000 0 0x1000>;
+			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_M4U>;
+			clock-names = "infra_m4u";
+			larb = <&larb0 &larb1 &larb2 &larb3 &larb4 &larb5>;
+			#iommu-cells = <1>;
+		};
