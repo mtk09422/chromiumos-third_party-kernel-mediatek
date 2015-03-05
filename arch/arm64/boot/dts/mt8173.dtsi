@@ -15,6 +15,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/reset-controller/mt8173-resets.h>
 #include <dt-bindings/clock/mt8173-clk.h>
+#include <dt-bindings/iommu/mt8173-iommu-port.h>
 #include "mt8173-pinfunc.h"
 
 / {
@@ -316,6 +317,65 @@
 					bias-pull-down;
 				};
 			};
+		};
+
+		iommu: mmsys_iommu@10205000 {
+			compatible = "mediatek,mt8173-iommu";
+			reg = <0 0x10205000 0 0x1000>;
+			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_M4U>;
+			clock-names = "infra_m4u";
+			larb = <&larb0 &larb1 &larb2 &larb3 &larb4 &larb5>;
+			#iommu-cells = <1>;
+		};
+
+		larb0:larb@14021000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x14021000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>, <&mmsys MM_SMI_LARB0>;
+			clock-names = "larb_sub0", "larb_sub1";
+		};
+
+		larb1:larb@16010000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x16010000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>,
+					<&vdecsys VDEC_CKEN>,
+					<&vdecsys VDEC_LARB_CKEN>;
+			clock-names = "larb_sub0", "larb_sub1", "larb_sub2";
+		};
+
+		larb2:larb@16010000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x15001000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>,
+					<&imgsys IMG_LARB2_SMI>;
+			clock-names = "larb_sub0", "larb_sub1";
+		};
+
+		larb3:larb@18001000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x18001000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>,
+					<&vencsys VENC_CKE0>,
+					<&vencsys VENC_CKE1>;
+			clock-names = "larb_sub0", "larb_sub1", "larb_sub2";
+		};
+
+		larb4:larb@14027000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x14027000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>, <&mmsys MM_SMI_LARB4>;
+			clock-names = "larb_sub0", "larb_sub1";
+		};
+
+		larb5:larb@19001000 {
+			compatible = "mediatek,mt8173-smi-larb";
+			reg = <0 0x19001000 0 0x1000>;
+			clocks = <&mmsys MM_SMI_COMMON>,
+					<&vencltsys VENCLT_CKE0>,
+					<&vencltsys VENCLT_CKE1>;
+			clock-names = "larb_sub0", "larb_sub1", "larb_sub2";
 		};
 
 		i2c0: i2c@11007000 {

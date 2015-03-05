@@ -1,0 +1,127 @@
+/*
+ * Copyright (c) 2014-2015 MediaTek Inc.
+ * Author: Yong Wu <yong.wu@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+#ifndef __DTS_IOMMU_PORT_MT8173_H
+#define __DTS_IOMMU_PORT_MT8173_H
+
+#define M4U_LARB0_PORT(n)      ((n) + 0)
+#define M4U_LARB1_PORT(n)      ((n) + 8)
+#define M4U_LARB2_PORT(n)      ((n) + 17)
+#define M4U_LARB3_PORT(n)      ((n) + 38)
+#define M4U_LARB4_PORT(n)      ((n) + 53)
+#define M4U_LARB5_PORT(n)      ((n) + 59)
+#define M4U_PERISYS_PORT(n)    ((n) + 68)
+
+/* larb0 */
+#define	M4U_PORT_DISP_OVL0    M4U_LARB0_PORT(0)
+#define	M4U_PORT_DISP_RDMA0   M4U_LARB0_PORT(1)
+#define	M4U_PORT_DISP_WDMA0   M4U_LARB0_PORT(2)
+#define	M4U_PORT_DISP_OD_R    M4U_LARB0_PORT(3)
+#define	M4U_PORT_DISP_OD_W    M4U_LARB0_PORT(4)
+#define	M4U_PORT_MDP_RDMA0    M4U_LARB0_PORT(5)
+#define	M4U_PORT_MDP_WDMA     M4U_LARB0_PORT(6)
+#define	M4U_PORT_MDP_WROT0    M4U_LARB0_PORT(7)
+
+/* larb1 */
+#define	M4U_PORT_HW_VDEC_MC_EXT       M4U_LARB1_PORT(0)
+#define	M4U_PORT_HW_VDEC_PP_EXT       M4U_LARB1_PORT(1)
+#define	M4U_PORT_HW_VDEC_UFO_EXT      M4U_LARB1_PORT(2)
+#define	M4U_PORT_HW_VDEC_VLD_EXT      M4U_LARB1_PORT(3)
+#define	M4U_PORT_HW_VDEC_VLD2_EXT     M4U_LARB1_PORT(4)
+#define	M4U_PORT_HW_VDEC_AVC_MV_EXT   M4U_LARB1_PORT(5)
+#define	M4U_PORT_HW_VDEC_PRED_RD_EXT  M4U_LARB1_PORT(6)
+#define	M4U_PORT_HW_VDEC_PRED_WR_EXT  M4U_LARB1_PORT(7)
+#define	M4U_PORT_HW_VDEC_PPWRAP_EXT   M4U_LARB1_PORT(8)
+
+/* larb2 */
+#define	M4U_PORT_IMGO      M4U_LARB2_PORT(0)
+#define	M4U_PORT_RRZO      M4U_LARB2_PORT(1)
+#define	M4U_PORT_AAO       M4U_LARB2_PORT(2)
+#define	M4U_PORT_LCSO      M4U_LARB2_PORT(3)
+#define	M4U_PORT_ESFKO     M4U_LARB2_PORT(4)
+#define	M4U_PORT_IMGO_D    M4U_LARB2_PORT(5)
+#define	M4U_PORT_LSCI      M4U_LARB2_PORT(6)
+#define	M4U_PORT_LSCI_D    M4U_LARB2_PORT(7)
+#define	M4U_PORT_BPCI      M4U_LARB2_PORT(8)
+#define	M4U_PORT_BPCI_D    M4U_LARB2_PORT(9)
+#define	M4U_PORT_UFDI      M4U_LARB2_PORT(10)
+#define	M4U_PORT_IMGI      M4U_LARB2_PORT(11)
+#define	M4U_PORT_IMG2O     M4U_LARB2_PORT(12)
+#define	M4U_PORT_IMG3O     M4U_LARB2_PORT(13)
+#define	M4U_PORT_VIPI      M4U_LARB2_PORT(14)
+#define	M4U_PORT_VIP2I     M4U_LARB2_PORT(15)
+#define	M4U_PORT_VIP3I     M4U_LARB2_PORT(16)
+#define	M4U_PORT_LCEI      M4U_LARB2_PORT(17)
+#define	M4U_PORT_RB        M4U_LARB2_PORT(18)
+#define	M4U_PORT_RP        M4U_LARB2_PORT(19)
+#define	M4U_PORT_WR        M4U_LARB2_PORT(20)
+
+/* larb3 */
+#define	M4U_PORT_VENC_RCPU         M4U_LARB3_PORT(0)
+#define	M4U_PORT_VENC_REC          M4U_LARB3_PORT(1)
+#define	M4U_PORT_VENC_BSDMA        M4U_LARB3_PORT(2)
+#define	M4U_PORT_VENC_SV_COMV      M4U_LARB3_PORT(3)
+#define	M4U_PORT_VENC_RD_COMV      M4U_LARB3_PORT(4)
+#define	M4U_PORT_JPGENC_RDMA       M4U_LARB3_PORT(5)
+#define	M4U_PORT_JPGENC_BSDMA      M4U_LARB3_PORT(6)
+#define	M4U_PORT_JPGDEC_WDMA       M4U_LARB3_PORT(7)
+#define	M4U_PORT_JPGDEC_BSDMA      M4U_LARB3_PORT(8)
+#define	M4U_PORT_VENC_CUR_LUMA     M4U_LARB3_PORT(9)
+#define	M4U_PORT_VENC_CUR_CHROMA   M4U_LARB3_PORT(10)
+#define	M4U_PORT_VENC_REF_LUMA     M4U_LARB3_PORT(11)
+#define	M4U_PORT_VENC_REF_CHROMA   M4U_LARB3_PORT(12)
+#define	M4U_PORT_VENC_NBM_RDMA     M4U_LARB3_PORT(13)
+#define	M4U_PORT_VENC_NBM_WDMA     M4U_LARB3_PORT(14)
+
+/* larb4 */
+#define	M4U_PORT_DISP_OVL1        M4U_LARB4_PORT(0)
+#define	M4U_PORT_DISP_RDMA1       M4U_LARB4_PORT(1)
+#define	M4U_PORT_DISP_RDMA2       M4U_LARB4_PORT(2)
+#define	M4U_PORT_DISP_WDMA1       M4U_LARB4_PORT(3)
+#define	M4U_PORT_MDP_RDMA1        M4U_LARB4_PORT(4)
+#define	M4U_PORT_MDP_WROT1        M4U_LARB4_PORT(5)
+
+/* larb5 */
+#define	M4U_PORT_VENC_RCPU_SET2         M4U_LARB5_PORT(0)
+#define	M4U_PORT_VENC_REC_FRM_SET2      M4U_LARB5_PORT(1)
+#define	M4U_PORT_VENC_REF_LUMA_SET2     M4U_LARB5_PORT(2)
+#define	M4U_PORT_VENC_REC_CHROMA_SET2   M4U_LARB5_PORT(3)
+#define	M4U_PORT_VENC_BSDMA_SET2        M4U_LARB5_PORT(4)
+#define	M4U_PORT_VENC_CUR_LUMA_SET2     M4U_LARB5_PORT(5)
+#define	M4U_PORT_VENC_CUR_CHROMA_SET2   M4U_LARB5_PORT(6)
+#define	M4U_PORT_VENC_RD_COMA_SET2      M4U_LARB5_PORT(7)
+#define	M4U_PORT_VENC_SV_COMA_SET2      M4U_LARB5_PORT(8)
+
+/* perisys iommu */
+#define	M4U_PORT_RESERVE      M4U_PERISYS_PORT(0)
+#define	M4U_PORT_SPM          M4U_PERISYS_PORT(1)
+#define	M4U_PORT_MD32         M4U_PERISYS_PORT(2)
+#define	M4U_PORT_PTP_THERM    M4U_PERISYS_PORT(3)
+#define	M4U_PORT_PWM          M4U_PERISYS_PORT(4)
+#define	M4U_PORT_MSDC1        M4U_PERISYS_PORT(5)
+#define	M4U_PORT_MSDC2        M4U_PERISYS_PORT(6)
+#define	M4U_PORT_SPI0         M4U_PERISYS_PORT(7)
+#define	M4U_PORT_NFI          M4U_PERISYS_PORT(8)
+#define	M4U_PORT_AUDIO        M4U_PERISYS_PORT(9)
+#define	M4U_PORT_RESERVED2    M4U_PERISYS_PORT(10)
+#define	M4U_PORT_HSIC_XHCI    M4U_PERISYS_PORT(11)
+
+#define	M4U_PORT_HSIC_MAS     M4U_PERISYS_PORT(12)
+#define	M4U_PORT_HSIC_DEV     M4U_PERISYS_PORT(13)
+#define	M4U_PORT_AP_DMA       M4U_PERISYS_PORT(14)
+#define	M4U_PORT_HSIC_DMA     M4U_PERISYS_PORT(15)
+#define	M4U_PORT_MSDC0        M4U_PERISYS_PORT(16)
+#define	M4U_PORT_MSDC3        M4U_PERISYS_PORT(17)
+
+#endif
+
