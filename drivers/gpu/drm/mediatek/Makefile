@@ -24,7 +24,8 @@ obj-$(CONFIG_DRM_MEDIATEK_ROGUE) += $(DISPLAY_CONTROLLER).o
 
 ccflags-y += \
  -I$(rogue_basedir) \
- -I$(dc_basedir)
+ -I$(dc_basedir) \
+ -Idrivers/gpu/drm
 
 ccflags-y += -DPVRDRM
 

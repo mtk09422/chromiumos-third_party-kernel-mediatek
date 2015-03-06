@@ -12,6 +12,7 @@
  */
 
 #include "mediatek_drm_ddp.h"
+#include "drm_sync_helper.h"
 
 #ifdef PVRDRM
 #include <pvr_drm_display.h>
@@ -135,6 +136,13 @@ struct mtk_drm_crtc {
 	struct pvr_drm_sync_op		*flip_sync_op;
 #endif
 	struct workqueue_struct *wq;
+
+	unsigned fence_context;
+	atomic_t fence_seqno;
+	struct fence *fence;
+	struct drm_reservation_cb rcb;
+	struct fence *pending_fence;
+	bool pending_needs_vblank;
 };
 
 #define to_mtk_crtc(x) container_of(x, struct mtk_drm_crtc, base)

@@ -26,6 +26,7 @@
 
 #include "mediatek_drm_dev_if.h"
 
+
 void mtk_crtc_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
 {
 	struct drm_device *dev = mtk_crtc->base.dev;
@@ -200,6 +201,65 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	return 0;
 }
 
+static void mtk_drm_crtc_update_cb(struct drm_reservation_cb *rcb, void *params)
+{
+	struct mtk_drm_crtc *mtk_crtc = params;
+	bool needs_vblank = mtk_crtc->pending_needs_vblank;
+
+	mtk_crtc->pending_needs_vblank = false;
+	if (!needs_vblank) {
+		if (mtk_crtc->pending_fence) {
+			drm_fence_signal_and_put(&mtk_crtc->fence);
+			mtk_crtc->fence = mtk_crtc->pending_fence;
+			mtk_crtc->pending_fence = NULL;
+		}
+	}
+}
+
+static int mtk_drm_crtc_update_sync(struct mtk_drm_crtc *mtk_crtc,
+				   struct reservation_object *resv,
+				   bool needs_vblank)
+{
+	struct fence *fence;
+	int ret;
+
+	mtk_crtc->pending_needs_vblank = needs_vblank;
+	ww_mutex_lock(&resv->lock, NULL);
+	ret = reservation_object_reserve_shared(resv);
+	if (ret < 0) {
+		DRM_ERROR("Reserving space for shared fence failed: %d.\n",
+			ret);
+		goto err_mutex;
+	}
+
+	fence = drm_sw_fence_new(mtk_crtc->fence_context,
+			atomic_add_return(1, &mtk_crtc->fence_seqno));
+	if (IS_ERR(fence)) {
+		ret = PTR_ERR(fence);
+		DRM_ERROR("Failed to create fence: %d.\n", ret);
+		goto err_mutex;
+	}
+	mtk_crtc->pending_fence = fence;
+	drm_reservation_cb_init(&mtk_crtc->rcb, mtk_drm_crtc_update_cb,
+		mtk_crtc);
+	ret = drm_reservation_cb_add(&mtk_crtc->rcb, resv, false);
+	if (ret < 0) {
+		DRM_ERROR("Adding reservation to callback failed: %d.\n", ret);
+		goto err_fence;
+	}
+	drm_reservation_cb_done(&mtk_crtc->rcb);
+	reservation_object_add_shared_fence(resv, mtk_crtc->pending_fence);
+	ww_mutex_unlock(&resv->lock);
+	return 0;
+err_fence:
+	fence_put(mtk_crtc->pending_fence);
+	mtk_crtc->pending_fence = NULL;
+err_mutex:
+	ww_mutex_unlock(&resv->lock);
+
+	return ret;
+}
+
 static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 				     struct drm_framebuffer *fb,
 				     struct drm_pending_vblank_event *event,
@@ -215,6 +275,7 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	unsigned long flags;
 	int ret;
 	static int busy_count;
+	bool needs_vblank;
 
 #ifdef PVRDRM
 	if (mtk_crtc->flip_status != MTK_DRM_CRTC_FLIP_STATUS_NONE) {
@@ -302,6 +363,12 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	spin_lock_irqsave(&dev->event_lock, flags);
 	mtk_crtc->event = event;
 	spin_unlock_irqrestore(&dev->event_lock, flags);
+
+	if (mtk_fb->gem_obj[0]->dma_buf && mtk_fb->gem_obj[0]->dma_buf->resv) {
+		needs_vblank = event ? true : false;
+		mtk_drm_crtc_update_sync(mtk_crtc,
+			mtk_fb->gem_obj[0]->dma_buf->resv, needs_vblank);
+	}
 
 	return ret;
 }
@@ -644,6 +711,9 @@ int mtk_drm_crtc_create(struct drm_device *dev, unsigned int nr)
 
 	drm_crtc_init(dev, &mtk_crtc->base, &mediatek_crtc_funcs);
 	drm_crtc_helper_add(&mtk_crtc->base, &mediatek_crtc_helper_funcs);
+
+	mtk_crtc->fence_context = fence_context_alloc(1);
+	atomic_set(&mtk_crtc->fence_seqno, 0);
 
 	return 0;
 }
