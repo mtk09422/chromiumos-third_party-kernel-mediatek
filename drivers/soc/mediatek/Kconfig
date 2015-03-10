@@ -10,6 +10,12 @@ config MTK_PMIC_WRAP
 	  on the MT8135 and MT8173 SoCs. The PMIC wrapper is a proprietary
 	  hardware to connect the PMIC.
 
+config MTK_SCPSYS
+	tristate "MediaTek SCPSYS Support"
+	help
+	  Say yes here to add support for the MediaTek SCPSYS power domain
+	  driver.
+
 config MTK_SMI
         bool
 	help
