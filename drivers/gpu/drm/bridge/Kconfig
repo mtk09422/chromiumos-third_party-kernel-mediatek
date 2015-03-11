@@ -3,3 +3,12 @@ config DRM_PTN3460
 	depends on DRM
 	select DRM_KMS_HELPER
 	---help---
+
+config DRM_IT6151
+	bool "Enable IT6151FN : MIPI to eDP Converter"
+	depends on DRM
+	select DRM_KMS_HELPER
+	help
+	  Choose this option if you have IT6151 for display
+	  The IT6151 is a high-performance and low-power
+	  MIPI to eDP converter
