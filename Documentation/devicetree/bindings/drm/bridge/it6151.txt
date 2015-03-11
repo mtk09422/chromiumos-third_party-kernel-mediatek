@@ -1,17 +1,15 @@
 it6151 bridge bindings
 
 Required properties:
-	- compatible: "ite,it6151mipirx", "ite,it6151mipirx"
-	- reg: i2c address of the bridge
+	- compatible: "ite,it6151"
+	- reg: i2c address of the bridge's dp tx.
+	- rxreg: i2c address of the bridge's mipi rx.
+	- reset-gpio: OF device-tree gpio specification
 
 Example:
-	it6151dptx@5c {
-		compatible = "ite,it6151dptx";
+	ite6151: edp-bridge@5c {
+		compatible = "ite,it6151";
 		reg = <0x5c>;
+		rxreg = <0x6c>;
+		reset-gpio = <&pio 94 GPIO_ACTIVE_HIGH>;
 	};
-
-	it6151mipirx@6c {
-		compatible = "ite,it6151mipirx";
-		reg = <0x6c>;
-	};
-
