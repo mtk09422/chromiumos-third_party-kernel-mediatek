@@ -77,4 +77,17 @@ int mtk_drm_gem_dumb_map_offset(struct drm_file *file_priv,
 		struct drm_device *dev, uint32_t handle, uint64_t *offset);
 int mtk_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
+/*
+ * request gem object creation and buffer allocation as the size
+ * that it is calculated with framebuffer information such as width,
+ * height and bpp.
+ */
+int mediatek_gem_create_ioctl(struct drm_device *dev, void *data,
+			      struct drm_file *file_priv);
+
+/* get buffer offset to map to user space. */
+int mediatek_gem_map_offset_ioctl(struct drm_device *dev, void *data,
+				  struct drm_file *file_priv);
+
+
 #endif

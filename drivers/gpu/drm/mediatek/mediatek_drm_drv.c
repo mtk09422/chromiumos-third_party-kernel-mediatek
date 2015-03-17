@@ -31,6 +31,7 @@
 #include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_dev_if.h"
+#include "drm/mediatek_drm.h"
 
 #define DRIVER_NAME "mediatek-drm"
 #define DRIVER_DESC "Mediatek SoC DRM"
@@ -283,6 +284,14 @@ static const struct vm_operations_struct mediatek_drm_gem_vm_ops = {
 	.close = drm_gem_vm_close,
 };
 
+static const struct drm_ioctl_desc mtk_ioctls[] = {
+	DRM_IOCTL_DEF_DRV(MTK_GEM_CREATE, mediatek_gem_create_ioctl,
+			  DRM_UNLOCKED | DRM_AUTH),
+	DRM_IOCTL_DEF_DRV(MTK_GEM_MAP_OFFSET,
+			  mediatek_gem_map_offset_ioctl,
+			  DRM_UNLOCKED | DRM_AUTH),
+};
+
 static const struct file_operations mediatek_drm_fops = {
 	.owner = THIS_MODULE,
 	.open = drm_open,
@@ -318,7 +327,8 @@ static struct drm_driver mediatek_drm_driver = {
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.gem_prime_export = mtk_dmabuf_prime_export,
 	.gem_prime_import = mtk_dmabuf_prime_import,
-
+	.ioctls = mtk_ioctls,
+	.num_ioctls = ARRAY_SIZE(mtk_ioctls),
 	.fops = &mediatek_drm_fops,
 
 	.name = DRIVER_NAME,
