@@ -292,6 +292,8 @@ struct msdc_host {
 	int irq;		/* host interrupt */
 
 	struct clk *src_clk;	/* msdc source clock */
+	struct clk *h_clk;	/* msdc h_clk */
+	u32 sclk_enabled;	/* source clock enabled */
 	u32 mclk;		/* mmc subsystem clock */
 	u32 hclk;		/* host clock speed */
 	u32 sclk;		/* SD/MS clock speed */
@@ -537,7 +539,6 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 	dev_dbg(host->dev, "sclk: %d, ddr: %d\n", host->sclk, ddr);
 }
 
-#ifdef CONFIG_PM
 static int msdc_gate_clock(struct msdc_host *host)
 {
 	int ret = 0;
@@ -547,7 +548,10 @@ static int msdc_gate_clock(struct msdc_host *host)
 	/* disable SD/MMC/SDIO bus clock */
 	sdr_set_field(host->base + MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 	/* turn off SDHC functional clock */
-	clk_disable(host->src_clk);
+	if (host->sclk_enabled) {
+		clk_disable(host->src_clk);
+		host->sclk_enabled = 0;
+	}
 	spin_unlock_irqrestore(&host->lock, flags);
 	return ret;
 }
@@ -557,7 +561,10 @@ static void msdc_ungate_clock(struct msdc_host *host)
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->lock, flags);
-	clk_enable(host->src_clk);
+	if (!host->sclk_enabled) {
+		clk_enable(host->src_clk);
+		host->sclk_enabled = 1;
+	}
 	/* enable SD/MMC/SDIO bus clock:
 	 * it will be automatically gated when the bus is idle
 	 * (set MSDC_CFG_CKPDN bit to have it always on)
@@ -567,7 +574,6 @@ static void msdc_ungate_clock(struct msdc_host *host)
 		cpu_relax();
 	spin_unlock_irqrestore(&host->lock, flags);
 }
-#endif
 
 static inline u32 msdc_cmd_find_resp(struct msdc_host *host,
 		struct mmc_request *mrq, struct mmc_command *cmd)
@@ -1196,6 +1202,12 @@ static void msdc_deinit_hw(struct msdc_host *host)
 
 	clk_disable(host->src_clk);
 	clk_unprepare(host->src_clk);
+
+	if (!IS_ERR(host->h_clk)) {
+		clk_disable(host->h_clk);
+		clk_unprepare(host->h_clk);
+	}
+
 }
 
 /* init gpd and bd list in msdc_drv_probe */
@@ -1260,6 +1272,9 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			if (ret)
 				dev_err(host->dev, "Failed to set vqmmc power!\n");
 		}
+#ifndef CONFIG_PM_RUNTIME
+		msdc_ungate_clock(host);
+#endif
 		break;
 	case MMC_POWER_OFF:
 		if (!IS_ERR(mmc->supply.vmmc))
@@ -1267,6 +1282,9 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 		if (!IS_ERR(mmc->supply.vqmmc))
 			regulator_disable(mmc->supply.vqmmc);
+#ifndef CONFIG_PM_RUNTIME
+		msdc_gate_clock(host);
+#endif
 		break;
 	default:
 		break;
@@ -1331,6 +1349,17 @@ static int msdc_drv_probe(struct platform_device *pdev)
 				"Invalid source clock from the device tree!\n");
 		ret = PTR_ERR(host->src_clk);
 		goto host_free;
+	}
+
+	host->h_clk = devm_clk_get(&pdev->dev, "hclk");
+	if (IS_ERR(host->h_clk)) {
+		dev_err(&pdev->dev,
+				"Invalied hclk from the device tree!\n");
+	} else {
+		clk_prepare(host->h_clk);
+		clk_enable(host->h_clk);
+		dev_err(&pdev->dev,
+				"hclk rate: %d\n", clk_get_rate(host->h_clk));
 	}
 
 	host->irq = platform_get_irq(pdev, 0);

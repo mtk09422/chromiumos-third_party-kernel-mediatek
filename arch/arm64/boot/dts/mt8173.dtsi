@@ -432,8 +432,9 @@
 				     "mediatek,mt8135-mmc";
 			reg = <0 0x11230000 0 0x108>;
 			interrupts = <0 71 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg PERI_MSDC30_0>;
-			clock-names = "source";
+			clocks = <&pericfg PERI_MSDC30_0>,
+				 <&topckgen TOP_MSDC50_0_H_SEL>;
+			clock-names = "source", "hclk";
 			status = "disabled";
 		};
 
@@ -452,8 +453,9 @@
 				     "mediatek,mt8135-mmc";
 			reg = <0 0x11260000 0 0x108>;
 			interrupts = <0 74 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg PERI_MSDC30_3>;
-			clock-names = "source";
+			clocks = <&pericfg PERI_MSDC30_3>,
+				 <&topckgen TOP_MSDC50_2_H_SEL>;
+			clock-names = "source", "hclk";
 			status = "disabled";
 		};
 
