@@ -42,7 +42,6 @@ static const struct mtk_pinctrl_devdata mt6397_pinctrl_data = {
 
 static int mt6397_pinctrl_probe(struct platform_device *pdev)
 {
-
 	return mtk_pctrl_init(pdev, &mt6397_pinctrl_data);
 }
 
