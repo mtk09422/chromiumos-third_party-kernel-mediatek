@@ -67,11 +67,35 @@
 		compatible = "spi-gpio";
 		#address-cells = <0x1>;
 		#size-cells = <0>;
-		gpio-sck = <&pio 102 0>;
-		gpio-miso = <&pio 103 0>;
-		gpio-mosi = <&pio 104 0>;
-		cs-gpios = <&pio 105 0>;
+		gpio-sck = <&pio 102 GPIO_ACTIVE_HIGH>;
+		gpio-miso = <&pio 103 GPIO_ACTIVE_HIGH>;
+		gpio-mosi = <&pio 104 GPIO_ACTIVE_HIGH>;
+		cs-gpios = <&pio 105 GPIO_ACTIVE_HIGH>;
 		num-chipselects = <1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi_gpio0_pins>;
+		status = "okay";
+		/* clients */
+		cros_ec: ec@0 {
+			compatible = "google,cros-ec-spi";
+			reg = <0x0>;
+			spi-max-frequency = <18000000>;
+			interrupt-parent = <&pio>;
+			interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+			google,cros-ec-spi-msg-delay = <500>;
+			google,cros-ec-spi-pre-delay = <500>;
+
+			i2c_tunnel: i2c-tunnel {
+				compatible = "google,cros-ec-i2c-tunnel";
+				google,remote-bus = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+			};
+		};
+	};
+
+	panel: panel {
+		compatible = "lg,ld070wx3-sl01";/* for 800 x 1280 panel */
 	};
 };
 
@@ -89,8 +113,9 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 
-		syscfg_pctl_pmic: syscfg_pctl_pmic@0000C000 {
-			compatible = "mediatek,mt6397-pctl-pmic-syscfg", "syscon";
+		syscfg_pctl_pmic: syscfg_pctl_pmic@c000 {
+			compatible = "mediatek,mt6397-pctl-pmic-syscfg",
+				     "syscon";
 			reg = <0 0x0000C000 0 0x0108>;
 		};
 
@@ -101,7 +126,7 @@
 			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
-		pio6397: pinctrl@0x0000C000 {
+		pio6397: pinctrl@c000 {
 			compatible = "mediatek,mt6397-pinctrl";
 			mediatek,pctl-regmap = <&syscfg_pctl_pmic>;
 			gpio-controller;
@@ -306,16 +331,16 @@
 &pio {
 	mmc0_pins_default: mmc0default {
 		pins_cmd_dat {
-			pinmux = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
-				<MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
-				<MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
-				<MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
-				<MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD>,
-				<MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
-				<MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
-				<MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
-				<MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
-				<MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB>;
+			pinmux = <MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
+				 <MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+				 <MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+				 <MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+				 <MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+				 <MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+				 <MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+				 <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+				 <MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD>,
+				 <MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB>;
 				bias-pull-up;
 		};
 		pins_clk {
@@ -327,10 +352,10 @@
 	mmc1_pins_default: mmc1default {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
-			     <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
-			     <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>,
-			     <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
-			     <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+				 <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+				 <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+				 <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>,
+				 <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>;
 			input-enable;
 			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
@@ -351,10 +376,10 @@
 	mmc3_pins_default: mmc3default {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
-			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
-			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>,
-			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
-			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>;
+				 <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+				 <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+				 <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
+				 <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
 			input-enable;
 			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
@@ -374,16 +399,16 @@
 
 	mmc0_pins_uhs: mmc0@0{
 		pins_cmd_dat {
-			pinmux = <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
-			     <MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
-			     <MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
-			     <MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
-			     <MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD>,
-			     <MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
-			     <MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
-			     <MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
-			     <MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
-			     <MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB>;
+			pinmux = <MT8173_PIN_57_MSDC0_DAT0__FUNC_MSDC0_DAT0>,
+				 <MT8173_PIN_58_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+				 <MT8173_PIN_59_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+				 <MT8173_PIN_60_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+				 <MT8173_PIN_61_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+				 <MT8173_PIN_62_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+				 <MT8173_PIN_63_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+				 <MT8173_PIN_64_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+				 <MT8173_PIN_68_MSDC0_RST___FUNC_MSDC0_RSTB>,
+				 <MT8173_PIN_66_MSDC0_CMD__FUNC_MSDC0_CMD>;
 			input-enable;
 			drive-strength = <MTK_DRIVE_2mA>;
 			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
@@ -399,10 +424,10 @@
 	mmc1_pins_uhs: mmc1@0 {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_73_MSDC1_DAT0__FUNC_MSDC1_DAT0>,
-			     <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
-			     <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>,
-			     <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
-			     <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>;
+				 <MT8173_PIN_74_MSDC1_DAT1__FUNC_MSDC1_DAT1>,
+				 <MT8173_PIN_75_MSDC1_DAT2__FUNC_MSDC1_DAT2>,
+				 <MT8173_PIN_76_MSDC1_DAT3__FUNC_MSDC1_DAT3>,
+				 <MT8173_PIN_78_MSDC1_CMD__FUNC_MSDC1_CMD>;
 			input-enable;
 			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
@@ -418,10 +443,10 @@
 	mmc3_pins_uhs: mmc3@0 {
 		pins_cmd_dat {
 			pinmux = <MT8173_PIN_22_MSDC3_DAT0__FUNC_MSDC3_DAT0>,
-			     <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
-			     <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>,
-			     <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
-			     <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>;
+				 <MT8173_PIN_23_MSDC3_DAT1__FUNC_MSDC3_DAT1>,
+				 <MT8173_PIN_24_MSDC3_DAT2__FUNC_MSDC3_DAT2>,
+				 <MT8173_PIN_25_MSDC3_DAT3__FUNC_MSDC3_DAT3>,
+				 <MT8173_PIN_27_MSDC3_CMD__FUNC_MSDC3_CMD>;
 			input-enable;
 			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up = <MTK_PUPD_SET_R1R0_10>;
@@ -434,6 +459,37 @@
 		};
 	};
 
+	aud_i2s2: aud_i2s2 {
+		pins1 {
+			pinmux = <MT8173_PIN_128_I2S0_LRCK__FUNC_I2S0_WS>,
+				 <MT8173_PIN_129_I2S0_BCK__FUNC_I2S0_BCK>,
+				 <MT8173_PIN_130_I2S0_MCK__FUNC_I2S0_MCK>,
+				 <MT8173_PIN_131_I2S0_DATA0__FUNC_I2S0_DO>,
+				 <MT8173_PIN_132_I2S0_DATA1__FUNC_I2S0_DI>;
+			bias-pull-down;
+		};
+	};
+	max98090_irq: max98090_irq {
+		pins1 {
+			pinmux = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
+			bias-pull-up;
+		};
+	};
+
+	spi_gpio0_pins: spi@ec0 {
+		pins1 {
+			pinmux = <MT8173_PIN_102_MSDC2_DAT2__FUNC_GPIO102>,
+				 <MT8173_PIN_103_MSDC2_DAT3__FUNC_GPIO103>,
+				 <MT8173_PIN_104_MSDC2_CLK__FUNC_GPIO104>,
+				 <MT8173_PIN_105_MSDC2_CMD__FUNC_GPIO105>;
+			bias-disable;
+		};
+
+		pins2 {
+			pinmux = <MT8173_PIN_0_EINT0__FUNC_GPIO0>;
+			bias-pull-up;
+		};
+	};
 };
 
 &mmc0 {
@@ -577,67 +633,16 @@
 	};
 };
 
-&pio {
-	aud_i2s2: aud_i2s2 {
-		pins1 {
-			pinmux = <MT8173_PIN_128_I2S0_LRCK__FUNC_I2S0_WS>,
-					<MT8173_PIN_129_I2S0_BCK__FUNC_I2S0_BCK>,
-					<MT8173_PIN_130_I2S0_MCK__FUNC_I2S0_MCK>,
-					<MT8173_PIN_131_I2S0_DATA0__FUNC_I2S0_DO>,
-					<MT8173_PIN_132_I2S0_DATA1__FUNC_I2S0_DI>;
-			bias-pull-down;
-		};
-	};
-	max98090_irq: max98090_irq {
-		pins1 {
-			pinmux = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
-			bias-pull-up;
-		};
-	};
-
-	spi_gpio0_pins: spi@ec0 {
-		pins1 {
-			pinmux = <MT8173_PIN_102_MSDC2_DAT2__FUNC_GPIO102>,
-				<MT8173_PIN_103_MSDC2_DAT3__FUNC_GPIO103>,
-				<MT8173_PIN_104_MSDC2_CLK__FUNC_GPIO104>,
-				<MT8173_PIN_105_MSDC2_CMD__FUNC_GPIO105>;
-			bias-disable;
-		};
-
-		pins2 {
-			pinmux = <MT8173_PIN_0_EINT0__FUNC_GPIO0>;
-			bias-pull-up;
-		};
-	};
-
-};
-
-&spi_gpio0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi_gpio0_pins>;
-	status = "okay";
-	/* clients */
-	cros_ec: ec@0 {
-		compatible = "google,cros-ec-spi";
-		reg = <0x0>;
-		spi-max-frequency = <18000000>;
-		interrupt-parent = <&pio>;
-		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
-		google,cros-ec-spi-msg-delay = <500>;
-		google,cros-ec-spi-pre-delay = <500>;
-
-		i2c_tunnel: i2c-tunnel {
-			compatible = "google,cros-ec-i2c-tunnel";
-			google,remote-bus = <0>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-	};
-};
-
 /*in fact is a switch between micro(low to device) and type A(high to host)*/
 &u3phy {
 	p1-gpio = <&pio 3 GPIO_ACTIVE_HIGH>;
+};
+
+&drm0 {
+	mediatek,width = <1368>;
+	mediatek,height = <768>;
+	mediatek,mipi-tx-burst-freq = <150>;
+	mediatek,panel = <&panel>;
 };
 
 #include "mt8173-cros-ec-keyboard.dtsi"
