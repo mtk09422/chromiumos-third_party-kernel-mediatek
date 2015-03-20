@@ -162,4 +162,6 @@ static inline void mtk_register_reset_controller(struct device_node *np,
 }
 #endif
 
+void __init init_clk_protect_critical(const char* const clocks[], int nclocks);
+
 #endif /* __DRV_CLK_MTK_H */

@@ -195,3 +195,16 @@ err_out:
 
 	return ERR_PTR(ret);
 }
+
+void __init init_clk_protect_critical(const char* const clocks[], int nclocks)
+{
+	int i;
+
+	/* Protect the clocks that needs to stay on */
+	for (i = 0; i < nclocks; i++) {
+		struct clk *clk = __clk_lookup(clocks[i]);
+
+		if (clk)
+			clk_prepare_enable(clk);
+	}
+}

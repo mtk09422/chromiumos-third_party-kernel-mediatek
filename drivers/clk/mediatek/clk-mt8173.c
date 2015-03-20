@@ -974,6 +974,24 @@ static struct mtk_gate audio_clks[] __initdata = {
 		30, &mtk_clk_gate_ops_no_setclr_inv),
 };
 
+static const char* const mt8173_critical_topckgen_clocks[] __initconst = {
+	"mem_sel",
+	"ddrphycfg_sel",
+	"cci400_sel",
+	"rtc_sel",
+	"axi_mfg_in_sel",
+	"usb30_sel",
+};
+
+static const char* const mt8173_critical_infra_clocks[] __initconst = {
+	"infra_pmicwrap",
+	"infra_pmicspi",
+};
+
+static const char* const mt8173_critical_peri_clocks[] __initconst = {
+	"peri_uart0",
+};
+
 static void __init mtk_topckgen_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -996,6 +1014,9 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+
+	init_clk_protect_critical(mt8173_critical_topckgen_clocks,
+			ARRAY_SIZE(mt8173_critical_topckgen_clocks));
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt8173-topckgen", mtk_topckgen_init);
 
@@ -1015,6 +1036,10 @@ static void __init mtk_infrasys_init(struct device_node *node)
 			__func__, r);
 
 	mtk_register_reset_controller(node, 2, 0x30);
+
+	init_clk_protect_critical(mt8173_critical_infra_clocks,
+			ARRAY_SIZE(mt8173_critical_infra_clocks));
+
 }
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt8173-infracfg", mtk_infrasys_init);
 
@@ -1032,6 +1057,9 @@ static void __init mtk_pericfg_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+
+	init_clk_protect_critical(mt8173_critical_peri_clocks,
+			ARRAY_SIZE(mt8173_critical_peri_clocks));
 
 	mtk_register_reset_controller(node, 2, 0);
 }
