@@ -309,6 +309,14 @@
 					bias-disable;
 				};
 			};
+
+			hdmi_pin:xxx {
+				pins1 {
+					pinmux = <MT8173_PIN_21_HTPLG__FUNC_GPIO21>;
+					input-enable;
+					bias-pull-down;
+				};
+			};
 		};
 
 		i2c0: i2c@11007000 {
@@ -461,18 +469,22 @@
 
 		drm0: drm@10215000 {
 			compatible = "mediatek,mt8173-drm";
-			reg = <0 0x14000000 0 0x120>,		/* CONFIG */
-			      <0 0x1400C000 0 0x1000>,		/* OVL0 */
-			      <0 0x1400E000 0 0x1000>,		/* RDMA0 */
-			      <0 0x14013000 0 0x1000>,		/* COLOR0 */
-			      <0 0x14015000 0 0x1000>,		/* AAL */
-			      <0 0x1401A000 0 0x1000>,		/* UFOE */
-			      <0 0x1401B000 0 0x1000>,		/* DSI0 */
-			      <0 0x14020000 0 0x1000>,		/* MUTEX */
-			      <0 0x14023000 0 0x1000>,		/* OD */
-			      <0 0x10215000 0 0x1000>;		/* MIPITX */
-			#interrupts = <0 182 0x8>;		/* RDMA */
-			interrupts = <0 196 0x8>;		/* OD */
+			reg = <0 0x14000000 0 0x120>,	/* CONFIG */
+			      <0 0x1400C000 0 0x1000>,	/* OVL0 */
+			      <0 0x1400D000 0 0x1000>,	/* OVL1 */
+			      <0 0x1400E000 0 0x1000>,	/* RDMA0 */
+			      <0 0x1400F000 0 0x1000>,	/* RDMA1 */
+			      <0 0x14013000 0 0x1000>,	/* COLOR0 */
+			      <0 0x14014000 0 0x1000>,	/* COLOR1 */
+			      <0 0x14015000 0 0x1000>,	/* AAL */
+			      <0 0x14016000 0 0x1000>,	/* GAMMA */
+			      <0 0x1401A000 0 0x1000>,	/* UFOE */
+			      <0 0x1401B000 0 0x1000>,	/* DSI0 */
+			      <0 0x14020000 0 0x1000>,	/* MUTEX */
+			      <0 0x14023000 0 0x1000>,	/* OD */
+			      <0 0x10215000 0 0x1000>;  /* MIPITX */
+			#interrupts = <0 182 0x8>;	/* RDMA */
+			interrupts = <0 196 0x8>;	/* OD */
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
 				 <&iommu M4U_PORT_DISP_RDMA0>;
 			clocks = <&scpsys SCP_SYS_DIS>,
@@ -481,9 +493,13 @@
 				 <&mmsys MM_SMI_LARB4>,
 				 <&mmsys MM_MUTEX_32K>,
 				 <&mmsys MM_DISP_OVL0>,
+				 <&mmsys MM_DISP_OVL1>,
 				 <&mmsys MM_DISP_RDMA0>,
+				 <&mmsys MM_DISP_RDMA1>,
 				 <&mmsys MM_DISP_COLOR0>,
+				 <&mmsys MM_DISP_COLOR1>,
 				 <&mmsys MM_DISP_AAL>,
+				 <&mmsys MM_DISP_GAMMA>,
 				 <&mmsys MM_DISP_UFOE>,
 				 <&mmsys MM_DISP_OD>,
 				 <&mmsys MM_DSI0_ENGINE>,
@@ -494,13 +510,74 @@
 				      "smi_larb4_ck",
 				      "mutex_disp_ck",
 				      "ovl0_disp_ck",
+				      "ovl1_disp_ck",
 				      "rdma0_disp_ck",
+				      "rdma1_disp_ck",
 				      "color0_disp_ck",
+				      "color1_disp_ck",
 				      "aal_disp_ck",
+				      "gamma_disp_ck",
 				      "ufoe_disp_ck",
 				      "od_disp_ck",
 				      "dsi0_engine_disp_ck",
 				      "dsi0_digital_disp_ck";
+			connectors = <&hdmi0>;
+		};
+
+		hdmiddc0:hdmiddc@000009f0 {
+			compatible = "mediatek,8173-hdmi-ddc";
+			gpios = <&pio 19 GPIO_ACTIVE_HIGH>, /* hdmi sck */
+				<&pio 20 GPIO_ACTIVE_HIGH>; /* hdmi sd  */
+			reg = <0 0x11012000 0 0x1C>;
+		};
+
+		hdmidpi0:hdmidpi@1401d000{
+			compatible = "mediatek,mt8173-hdmi-dpi";
+			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+			reg = <0 0x1401D000 0 0xF0>;
+			clocks = <&apmixedsys APMIXED_TVDPLL>;
+		};
+
+		hdmi0:hdmi@10000168{
+			compatible = "mediatek,mt8173-drm-hdmi";
+			clocks = <&apmixedsys APMIXED_TVDPLL>,
+				 <&topckgen TOP_DPI0_SEL>,
+				 <&topckgen TOP_TVDPLL_D2>,
+				 <&topckgen TOP_TVDPLL_D4>,
+				 <&topckgen TOP_TVDPLL_D8>,
+				 <&topckgen TOP_HDMI_SEL>,
+				 <&topckgen TOP_HDMITX_DIG_CTS>,
+				 <&topckgen TOP_HDMITXPLL_D2>,
+				 <&topckgen TOP_HDMITXPLL_D3>,
+				 <&mmsys MM_HDMI_PIXEL>,
+				 <&mmsys MM_HDMI_PLLCK>,
+				 <&mmsys MM_DPI_PIXEL>,
+				 <&mmsys MM_HDMI_AUDIO>,
+				 <&mmsys MM_HDMI_SPDIF>;
+			clock-names = "tvdpll-clk",
+				      "dpi-clk-mux",
+				      "dpi-clk-div2",
+				      "dpi-clk-div4",
+				      "dpi-clk-div8",
+				      "hdmitx-clk-mux",
+				      "hdmitx-clk-div1",
+				      "hdmitx-clk-div2",
+				      "hdmitx-clk-div3",
+				      "hdmi-id-clk-gate",
+				      "hdmi-pll-clk-gate",
+				      "dpi-clk-gate",
+				      "aud-bclk-gate",
+				      "aud-spdif-gate";
+			prenode = <&hdmidpi0>;
+			i2cnode = <&hdmiddc0>;
+			gpios = <&pio 42 GPIO_ACTIVE_HIGH>, /* flt_n_5v */
+				<&pio 127 GPIO_ACTIVE_HIGH>,/* 5v enable */
+				<&pio 21 GPIO_ACTIVE_HIGH>; /* htplg */
+			reg = <0 0x14000900 0 0x8>,
+				<0 0x10209100 0 0x20>,
+				<0 0x14025000 0 0x400>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&hdmi_pin>;
 		};
 
 		mfgsys-gpu@13000000 {
