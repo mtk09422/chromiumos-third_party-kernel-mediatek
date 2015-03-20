@@ -115,13 +115,6 @@
 			reg = <0 0x0000C000 0 0x0108>;
 		};
 
-		rtc: rtc@e000 {
-			compatible = "mediatek,mt6397-rtc";
-			reg = <0xe000 0x3e>;
-			interrupt-parent = <&pmic>;
-			interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
-		};
-
 		pio6397: pinctrl@c000 {
 			compatible = "mediatek,mt6397-pinctrl";
 			mediatek,pctl-regmap = <&syscfg_pctl_pmic>;
