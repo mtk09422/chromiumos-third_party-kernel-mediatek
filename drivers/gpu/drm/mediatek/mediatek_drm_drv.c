@@ -77,6 +77,10 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	 */
 	dev->mode_config.max_width = 4096;
 	dev->mode_config.max_height = 4096;
+#if 0
+	/* FIXME: Code changes required for async support */
+	dev->mode_config.async_page_flip = true;
+#endif
 	dev->mode_config.funcs = &mediatek_drm_mode_config_funcs;
 
 	for (nr = 0; nr < MAX_CRTC; nr++) {
@@ -394,6 +398,8 @@ static struct drm_driver mediatek_drm_driver = {
 	.ioctls = mtk_ioctls,
 	.num_ioctls = ARRAY_SIZE(mtk_ioctls),
 	.fops = &mediatek_drm_fops,
+
+	.set_busid = drm_platform_set_busid,
 
 	.name = DRIVER_NAME,
 	.desc = DRIVER_DESC,

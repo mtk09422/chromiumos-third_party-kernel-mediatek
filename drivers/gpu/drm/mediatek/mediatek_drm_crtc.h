@@ -134,6 +134,8 @@ struct mtk_drm_crtc {
 #ifdef PVRDRM
 	enum mtk_drm_crtc_flip_status	flip_status;
 	struct pvr_drm_sync_op		*flip_sync_op;
+#else
+	struct mtk_drm_gem_buf *flip_buffer;
 #endif
 	struct workqueue_struct *wq;
 
