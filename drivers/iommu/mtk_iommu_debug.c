@@ -29,6 +29,7 @@
 #include <linux/debugfs.h>
 #include <asm/dma-iommu.h>
 
+#include "mtk_iommu.h"
 #include "mtk_iommu_platform.h"
 #include <linux/io.h>
 #include <linux/of_address.h>
@@ -43,100 +44,74 @@ struct device mtktest = {
 	}
 };
 
-struct device *dev_testperisys;
-struct dma_iommu_mapping *s_imu_mapping;
 struct mtk_iommu_info *ps_imu_tst;
-struct iommu_domain *testdomain;
-
-#if 0/*when test , move it to m4u_probe, add exter.n.*/
-struct mtk_iommu_info *ps_imu_tst;
-struct iommu_domain *testdomain;
-ps_imu_tst = piommu;
-testdomain = domain;
-#endif
-
 static int m4u_debug_set(void *data, u64 val)
 {
 	pr_info("m4u_debug_set:val=%llu\n", val);
 
 	switch (val) {
-	#if 0
 	case 2: {
 		int ret = 0;
-		void __iomem *va1, *va2;
-		dma_addr_t dma_addr1, dma_addr2;
+		void __iomem *va1;
+		dma_addr_t dma_addr1;
 		struct mtkmmu_drvdata testport;
-		struct device *testdev;
 		DEFINE_DMA_ATTRS(attrs);
 
 		memset(&testport, 0, sizeof(testport));
 
-		/*testdev = &mtktest;*/
-		testdev = ps_imu_tst->dev;
-
-		testport.portid = 20;
-		testdev->archdata.iommu = &testport;
+		testport.portid = 0;
+		mtktest.archdata.iommu = &testport;
 
 		pr_info("set drv data ok\n");
 
-		ret = arm_iommu_attach_device(testdev, mtk_iommu_mapping());
+		ret = arm_iommu_attach_device(&mtktest,
+					      mtk_iommu_mapping());
 		pr_info("attach device ret 0x%x\n", ret);
 
-		va1 = dma_alloc_attrs(testdev, 50*4096,
+		dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &attrs);
+
+		va1 = dma_alloc_attrs(&mtktest, 50*4096,
 				      &dma_addr1, GFP_KERNEL, &attrs);
 		pr_info("get dmaaddr1 0x%pad, va =0x%p\n",
 			&dma_addr1, va1);
 
-		va2 = dma_alloc_attrs(testdev, 100*4096,
-				      &dma_addr2, GFP_KERNEL, &attrs);
-		pr_info("get dmaaddr2 0x%pad , va2 =0x%p\n",
-			&dma_addr2, va2);
-
-		dma_free_attrs(testdev, 50*4096, va1, dma_addr1, &attrs);
-
-		dma_free_attrs(testdev, 100*4096, va2, dma_addr2, &attrs);
-
-		va1 = dma_alloc_attrs(testdev, 3*0x100000,
+		va1 = dma_alloc_attrs(&mtktest, 100*4096,
 				      &dma_addr1, GFP_KERNEL, &attrs);
-		pr_info("get dmaaddr1 0x%pad, va =0x%p\n",
-			&dma_addr1, va1);
-
-		va2 = dma_alloc_attrs(testdev, 10*256*1024,
-				      &dma_addr2, GFP_KERNEL, &attrs);
 		pr_info("get dmaaddr2 0x%pad , va2 =0x%p\n",
-			&dma_addr2, va2);
-
-		dma_free_attrs(testdev, 3*0x100000, va1, dma_addr1, &attrs);
-		dma_free_attrs(testdev, 10*256*1024, va2, dma_addr2, &attrs);
-
-		pr_info("test done\n");
+			&dma_addr1, va1);
 		}
 		break;
-	#endif
-
-	/*disp test iommu in mt8173*/
+	/*disp test iommu in mt8135*/
+	/*
 	case 3:	{
 		u32 sz = 1280*800*4;
 		u32 iovaovl = 0x1000;
 		u32 iovaovllayer3 = 0x600000;
 		u32 ovlpa, ovlpalayer3 = 0;
 		struct mtk_iommu_info *piommu = ps_imu_tst;
+		struct mtkmmu_drvdata testport;
 
-		pr_info("drv data ok\n");
+		memset(&testport, 0, sizeof(testport));
+		testport.portid = 0;
+		mtktest.archdata.iommu = &testport;
+
+		pr_info("set drv data ok\n");
 
 		ovlpa = readl(piommu->dispbase + 0xf80);
 		ovlpalayer3 = readl(piommu->dispbase + 0xfa0);
 
-		pr_info("ovl-tst addr %p 0x%x\n", piommu->dispbase, ovlpa);
+		pr_info("ovl-tst addr %p 0x%x\n",
+			piommu->dispbase, ovlpa);
 
 		pr_info("iommu test iova 0x%x-0x%x\n", iovaovl, iovaovllayer3);
 
-		iommu_map(testdomain, iovaovl, ovlpa, sz, 0);
-		iommu_map(testdomain, iovaovllayer3, ovlpalayer3, sz, 0);
+		iommu_map(piommu->domain, iovaovl, ovlpa, sz, 0);
+		iommu_map(piommu->domain, iovaovllayer3, ovlpalayer3, sz, 0);
 
 		pr_info("iommu map done\n");
 
-		arm_iommu_attach_device(dev_testperisys, s_imu_mapping);
+		arm_iommu_attach_device(&mtktest,
+					mtk_iommu_mapping());
 
 		writel(iovaovl, piommu->dispbase + 0xf80);
 		writel(iovaovllayer3, piommu->dispbase + 0xfa0);
@@ -144,7 +119,7 @@ static int m4u_debug_set(void *data, u64 val)
 		pr_info("disp set ok\n");
 		}
 		break;
-
+	*/
 	/*disp test iommu in mt8135*/
 	/*case 4:
 	{
@@ -153,16 +128,22 @@ static int m4u_debug_set(void *data, u64 val)
 		u32 cnt = 0;
 		u32 ovlpa=0;
 		struct mtk_iommu_info *piommu = ps_imu_tst;
+		struct mtkmmu_drvdata testport;
 
 		ovlpa = (u32)readl(piommu->dispbase + 0x80);
 		pr_info("ovl-tst addr 0x%p+0x40=0x%p 0x%x\n",
 			piommu->dispbase,(piommu->dispbase + 0x80), ovlpa);
 
-		pr_info("iommu test iova 0x%x port fix is 19\n", iovaovl);
+		pr_info("iommu test iova 0x%x\n", iovaovl);
 
 		iommu_map(piommu->domain, iovaovl, ovlpa, sz, 0);
 
-		arm_iommu_attach_device(dev_testperisys, s_imu_mapping);
+		memset(&testport, 0, sizeof(testport));
+		testport.portid = 19;
+		mtktest.archdata.iommu = &testport;
+
+		arm_iommu_attach_device(&mtktest,
+					mtk_iommu_mapping());
 
 		writel(1, piommu->ovl_base+0x24);
 
@@ -183,7 +164,8 @@ static int m4u_debug_set(void *data, u64 val)
 		writel(0, piommu->ovl_base+0x24);
 		pr_info("iommu test iova done\n");
 	}
-	break;*/
+	break;
+	*/
 
 	default:
 		pr_err("m4u_debug_set error,val=%llu\n", val);
@@ -201,29 +183,26 @@ static int m4u_debug_get(void *data, u64 *val)
 DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_fops, m4u_debug_get,
 			m4u_debug_set, "%llu\n");
 
-/*
-static int mtk_imudbg_probe(struct platform_device *pdev)
+/*static int mtk_imudbg_probe(struct platform_device *pdev)
 {
+	int ret =0;
 	struct device_node *np;
-	struct platform_device *pimudev;
-	struct dma_iommu_mapping *imu_mapping;
+	struct platform_device *pdevt;
+	struct of_phandle_args out_args={0};
+	int i = 0;
 
-	dev_testperisys = &pdev->dev;
+	pr_info("mtk_imudbg_probe\n");
 
-	np = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
-	if (!np)
-		return 0;
+	ret = of_parse_phandle_with_args(pdev->dev.of_node,
+					 "iommus", "iommu-cells",
+					 0, &out_args);
 
-	pimudev = of_find_device_by_node(np);
-	if (WARN_ON(!pimudev)) {
-		of_node_put(np);
-		return -EINVAL;
+	pr_info("test ret %d, cnt %d\n", ret,
+		out_args.args_count);
+
+	for( i = 0; i< out_args.args_count; i++) {
+		pr_info("<%d> %d\n", i, out_args.args[i]);
 	}
-
-	imu_mapping = pimudev->dev.archdata.mapping;
-
-	pr_debug("find dev name %s, mapping %p\n", pimudev->name, imu_mapping);
-	s_imu_mapping = imu_mapping;
 
 	return 0;
 }
@@ -240,8 +219,8 @@ static struct platform_driver mtk_imudbg_drv = {
 		.name = "mtimudbg",
 		.of_match_table = mtk_imudbg_of_ids,
 	}
-};*/
-
+};
+*/
 static int __init mtk_iommu_debug_init(void)
 {
 	struct dentry *dbg;
@@ -257,8 +236,8 @@ static int __init mtk_iommu_debug_init(void)
 		pr_err("create device error\n");
 
 	pr_debug("mtk_iommu_debug create device 0x%x\n", ret);
-
-	/*ret = platform_driver_register(&mtk_imudbg_drv);
+	/*
+	ret = platform_driver_register(&mtk_imudbg_drv);
 	if (ret) {
 		pr_err("imudbg drv fail\n");
 		return -ENODEV;

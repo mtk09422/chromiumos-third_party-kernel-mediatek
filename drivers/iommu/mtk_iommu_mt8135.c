@@ -20,6 +20,7 @@
 #include <linux/mm.h>
 #include <linux/iommu.h>
 #include <linux/errno.h>
+#include <linux/io.h>
 #include <linux/of_address.h>
 
 #include "mtk_iommu_platform.h"
@@ -28,7 +29,7 @@
 #define MTK_TFID(larbid, portid) ((larbid << 12) | (portid << 8))
 
 static const struct mtk_iommu_port
-			mtk_iommu_mt8135_port[] = {
+			mtk_iommu_mt8135_port[MTK_IOMMU_PORT_MAX_NR] = {
 	/*port name                   m4uid slaveid larbid portid tfid*/
 	/*larb0*/
 	{"M4U_PORT_VENC_REF_LUMA",        0,   0,    0,    0, MTK_TFID(6, 0)},
@@ -248,22 +249,27 @@ static int mt8135_iommu_fault_handler(struct iommu_domain *imudomain,
 				    mtk_iommu_get_port_name(piommu, m4u_port),
 				    m4u_port, faultmva);
 
-		if (faultmva < piommu->imucfg->iova_size &&
-		    faultmva > piommu->imucfg->iova_base) {
-			ptestart = (unsigned int *)(mtkdomain->pgd
-						+ (faultmva >> PAGE_SHIFT));
+		if (faultmva < piommu->iova_size &&
+		    faultmva > piommu->iova_base) {
+			ptestart = mtkdomain->pgtableva
+					+ (faultmva >> PAGE_SHIFT);
 			dev_err_ratelimited(dev, "pgt@0x%x:0x%x,0x%x,0x%x\n",
 					    faultmva, ptestart[-1],
 					    ptestart[0], ptestart[1]);
 		}
+
+		if (piommu->portcfg[m4u_port].fault_handler)
+			piommu->portcfg[m4u_port].fault_handler(
+				m4u_port, faultmva,
+				piommu->portcfg[m4u_port].faultdata);
 	}
 
 	if (intrsrc & F_INT_INVALID_PHYSICAL_ADDRESS_FAULT) {
 		if (!(intrsrc & F_INT_TRANSLATION_FAULT)) {
-			if (faultmva < piommu->imucfg->iova_size &&
-			    faultmva > piommu->imucfg->iova_base) {
-				ptestart = (unsigned int *)(mtkdomain->pgd
-						+ (faultmva >> PAGE_SHIFT));
+			if (faultmva < piommu->iova_size &&
+			    faultmva > piommu->iova_base) {
+				ptestart = mtkdomain->pgtableva
+						+ (faultmva >> PAGE_SHIFT);
 				dev_err_ratelimited(
 					dev,
 					"pagetable @ 0x%x: 0x%x,0x%x,0x%x\n",
@@ -295,11 +301,6 @@ static int mt8135_iommu_fault_handler(struct iommu_domain *imudomain,
 imufault:
 	mt8135_iommu_clear_intr(m4u_base);
 
-	return 0;
-}
-
-static int mt8135_iommu_pte_init(struct mtk_iommu_info *piommu)
-{
 	return 0;
 }
 
@@ -361,10 +362,9 @@ iommu_dts_err:
 	return -EINVAL;
 }
 
-static int mt8135_iommu_hw_init(const struct mtk_iommu_domain *mtkdomain)
+static int mt8135_iommu_hw_init(const struct mtk_iommu_info *piommu)
 {
-	struct mtk_iommu_info *piommu = mtkdomain->piommuinfo;
-	unsigned int i = 0;
+	u32 i = 0;
 	u32 regval, protectpa;
 	int ret = 0;
 
@@ -392,7 +392,7 @@ static int mt8135_iommu_hw_init(const struct mtk_iommu_domain *mtkdomain)
 
 	writel(F_MMUG_DCM_ON, piommu->m4u_g_base + REG_MMUG_DCM);
 
-	writel(mtkdomain->pgd_pa, piommu->m4u_g_base + REG_MMUG_PT_BASE);
+	writel(piommu->pgt_basepa, piommu->m4u_g_base + REG_MMUG_PT_BASE);
 
 	regval = F_L2_GDC_LOCK_TH(3);
 	writel(regval, piommu->m4u_L2_base + REG_L2_GDC_OP);
@@ -421,11 +421,11 @@ static int mt8135_iommu_map(struct mtk_iommu_domain *mtkdomain,
 {
 	unsigned int i;
 	unsigned int page_num = DIV_ROUND_UP(size, PAGE_SIZE);
-	unsigned int *pgt_base_iova;
-	unsigned int pabase = (unsigned int)paddr;
+	u32 *pgt_base_iova;
+	u32 pabase = (u32)paddr;
 
 	/*spinlock in upper function*/
-	pgt_base_iova = (unsigned int *)(mtkdomain->pgd + (iova >> PAGE_SHIFT));
+	pgt_base_iova = mtkdomain->pgtableva + (iova >> PAGE_SHIFT);
 	for (i = 0; i < page_num; i++) {
 		pgt_base_iova[i] =
 		    pabase | F_DESC_VALID | F_DESC_NONSEC(1) | F_DESC_SHARE(0);
@@ -443,7 +443,7 @@ static size_t mt8135_iommu_unmap(struct mtk_iommu_domain *mtkdomain,
 	unsigned int *pgt_base_iova;
 
 	/*spinlock in upper function*/
-	pgt_base_iova = (unsigned int *)(mtkdomain->pgd + (iova >> PAGE_SHIFT));
+	pgt_base_iova = mtkdomain->pgtableva + (iova >> PAGE_SHIFT);
 	memset(pgt_base_iova, 0x0, page_num * sizeof(int));
 
 	mt8135_iommu_invalidate_tlb(mtkdomain->piommuinfo, M4U_ID_ALL, 0,
@@ -454,9 +454,9 @@ static size_t mt8135_iommu_unmap(struct mtk_iommu_domain *mtkdomain,
 static phys_addr_t mt8135_iommu_iova_to_phys(struct mtk_iommu_domain *mtkdomain,
 					     unsigned int iova)
 {
-	unsigned int phys;
+	u32 phys;
 
-	phys = *(unsigned int *)(mtkdomain->pgd + (iova >> PAGE_SHIFT));
+	phys = *(mtkdomain->pgtableva + (iova >> PAGE_SHIFT));
 	return (phys_addr_t)phys;
 }
 
@@ -466,13 +466,11 @@ const struct mtk_iommu_cfg mtk_iommu_mt8135_cfg = {
 	.m4u1_offset = 0x800,
 	.L2_offset = 0x100,
 	.larb_nr = 5,
+	.larb_nr_real = 7,
+	.m4u_port_in_larbx = {0, 9, 16, 28, 42, 52, 53},
 	.m4u_gpu_port = 53,
-	.m4u_port_nr = sizeof(mtk_iommu_mt8135_port)/
-				sizeof(struct mtk_iommu_port),
-	.iova_base = 0,
-	.iova_size = MTK_PGT_SIZE * SZ_1K,
+	.m4u_port_nr = 54,
 	.pport = mtk_iommu_mt8135_port,
-	.pte_init = mt8135_iommu_pte_init,
 	.dt_parse = mt8135_iommu_parse_dt,
 	.hw_init = mt8135_iommu_hw_init,
 	.map = mt8135_iommu_map,

@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
@@ -20,16 +21,16 @@
 #include <linux/mm.h>
 #include <linux/iommu.h>
 #include <linux/errno.h>
+#include <linux/io.h>
 #include <linux/of_address.h>
 
 #include "mtk_iommu_platform.h"
 #include "mtk_iommu_reg_mt8173.h"
-#include "mtk_iommu_pagetable.h"
 
 #define MTK_MM_TFID(larbid, portid) ((larbid << 7) | (portid << 2))
 
 static const struct mtk_iommu_port
-			mtk_iommu_mt8173_port[] = {
+			mtk_iommu_mt8173_port[MTK_IOMMU_PORT_MAX_NR] = {
 	/*port name                   m4uid slaveid larbid portid tfid*/
 	/*larb0*/
 	{"M4U_PORT_DISP_OVL0",          0,  0,    0,  0, MTK_MM_TFID(0, 0)},
@@ -101,7 +102,7 @@ static const struct mtk_iommu_port
 	{"M4U_PORT_MDP_WROT1",             0,  0,   4,  5, MTK_MM_TFID(4, 5)},
 
 	/*larb5*/
-	{"M4U_PORT_VENC_RCPU_SET2",        0,  0,    5,  0, MTK_MM_TFID(5, 0)},
+	{"M4U_PORT_VENC_RCPU_SET2",        0,  0,    5,  0, MTK_MM_TFID(4, 0)},
 	{"M4U_PORT_VENC_REC_FRM_SET2",     0,  0,    5,  1, MTK_MM_TFID(5, 1)},
 	{"M4U_PORT_VENC_REF_LUMA_SET2",    0,  0,    5,  2, MTK_MM_TFID(5, 2)},
 	{"M4U_PORT_VENC_REC_CHROMA_SET2",  0,  0,    5,  3, MTK_MM_TFID(5, 3)},
@@ -169,7 +170,7 @@ static int mt8173_iommu_invalidate_tlb(const struct mtk_iommu_info *piommu,
 				       unsigned int iova_start,
 				       unsigned int iova_end)
 {
-	void __iomem *m4u_base = piommu->m4u[m4u_id].m4u_base;
+	void __iomem *m4u_base = piommu->m4u[0].m4u_base;
 	u32 reg;
 	unsigned int cnt = 0;
 
@@ -206,26 +207,6 @@ static int mt8173_iommu_invalidate_tlb(const struct mtk_iommu_info *piommu,
 	return 0;
 }
 
-static int mt8173_iommu_pte_init(struct mtk_iommu_info *piommu)
-{
-	piommu->imu_pte_kmem = kmem_cache_create("m4u_pte", IMU_BYTES_PER_PTE,
-						 IMU_BYTES_PER_PTE, 0, NULL);
-
-	if (IS_ERR_OR_NULL(piommu->imu_pte_kmem)) {
-		dev_err(piommu->dev, "pte cached create fail %p\n",
-			piommu->imu_pte_kmem);
-		return -1;
-	}
-	return 0;
-}
-
-static int mt8173_iommu_pte_uninit(struct mtk_iommu_info *piommu)
-{
-	kmem_cache_destroy(piommu->imu_pte_kmem);
-
-	return 0;
-}
-
 static int mt8173_iommu_parse_dt(struct platform_device *pdev,
 				 struct mtk_iommu_info *piommu)
 {
@@ -257,9 +238,12 @@ static int mt8173_iommu_parse_dt(struct platform_device *pdev,
 		}
 	}
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 7);
+
 	piommu->m4u[0].irq = platform_get_irq(pdev, 0);
-	if (piommu->m4u[0].irq < 0) {
-		dev_err(piommudev, "iommu irq err %d\n", piommu->m4u[0].irq);
+	if (piommu->m4u[0].irq < 0) {/*m4u1 irq err is allowed*/
+		dev_err(piommudev, "iommu irq err %d %d\n",
+			piommu->m4u[0].irq, piommu->m4u[1].irq);
 		goto iommu_dts_err;
 	}
 
@@ -282,12 +266,12 @@ iommu_dts_err:
 	return -EINVAL;
 }
 
-static int mt8173_iommu_hw_init(const struct mtk_iommu_domain *mtkdomain)
+static int mt8173_iommu_hw_init(const struct mtk_iommu_info *piommu)
 {
-	struct mtk_iommu_info *piommu = mtkdomain->piommuinfo;
-	void __iomem *gm4ubaseaddr = piommu->m4u[0].m4u_base;
+	u32 i = 0;
 	u32 regval, protectpa;
 	int ret = 0;
+	void __iomem *gm4ubaseaddr = piommu->m4u[i].m4u_base;
 
 	ret = clk_prepare_enable(piommu->m4u_infra_clk);
 	if (ret) {
@@ -295,10 +279,10 @@ static int mt8173_iommu_hw_init(const struct mtk_iommu_domain *mtkdomain)
 		return -ENODEV;
 	}
 
-	writel(mtkdomain->pgd_pa, gm4ubaseaddr + REG_MMUG_PT_BASE);
+	writel(piommu->pgt_basepa, piommu->m4u_g_base + REG_MMUG_PT_BASE);
 
 	/*legacy mode*/
-	/*writel(1, piommu->m4u_g_base + REG_MMU_LEGACY_4KB_MODE);*/
+	writel(1, piommu->m4u_g_base + REG_MMU_LEGACY_4KB_MODE);
 
 	protectpa = (unsigned int)virt_to_phys(piommu->protect_va);
 	protectpa = ALIGN(protectpa, MTK_PROTECT_PA_ALIGN);
@@ -314,7 +298,7 @@ static int mt8173_iommu_hw_init(const struct mtk_iommu_domain *mtkdomain)
 	/* protect memory,HW will write here while translation fault */
 	writel(F_MMU_IVRP_PA_SET(protectpa), gm4ubaseaddr + REG_MMU_IVRP_PADDR);
 
-	writel(0, gm4ubaseaddr + REG_MMU_DCM_DIS);
+	writel(0, piommu->m4u_g_base + REG_MMU_DCM_DIS);
 
 	/* 3 non-standard AXI mode */
 	writel(0, gm4ubaseaddr + REG_MMU_STANDARD_AXI_MODE);
@@ -333,6 +317,7 @@ static int mt8173_iommu_fault_handler(struct iommu_domain *imudomain,
 	unsigned int fault_mva, fault_pa;
 	struct mtk_iommu_info *piommu = pimu;
 	struct mtk_iommu_domain *mtkdomain = imudomain->priv;
+	unsigned int *ptestart;
 
 	m4u_base = piommu->m4u[m4u_index].m4u_base;
 	int_state = readl(m4u_base + REG_MMU_MAIN_FAULT_ST);
@@ -347,30 +332,26 @@ static int mt8173_iommu_fault_handler(struct iommu_domain *imudomain,
 	m4u_port = mt8173_get_port_by_tfid(piommu, m4u_index, regval);
 
 	if (int_state & F_INT_TRANSLATION_FAULT(m4u_slave_id)) {
-		struct m4u_pte_info_t pte = {0};
+		dev_err_ratelimited(dev,
+				    "fault:port=%s iova=0x%x pa=0x%x layer=%d wr=%d\n",
+				    mtk_iommu_get_port_name(piommu, m4u_port),
+				    fault_mva, fault_pa, layer, write);
 
-		m4u_get_pte_info(mtkdomain, fault_mva, &pte);
-
-		if (pte.size == MMU_SMALL_PAGE_SIZE ||
-		    pte.size == MMU_LARGE_PAGE_SIZE) {
-			dev_err_ratelimited(
-				dev,
-				"fault:port=%s iova=0x%x pa=0x%x layer=%d wr=%d;"
-				"pgd(0x%x)->pte(0x%x)->pa(%pad)sz(0x%x)Valid(%d)\n",
-				mtk_iommu_get_port_name(piommu, m4u_port),
-				fault_mva, fault_pa, layer, write,
-				imu_pgd_val(*pte.pgd), imu_pte_val(*pte.pte),
-				&pte.pa, pte.size, pte.valid);
-		} else {
-			dev_err_ratelimited(
-				dev,
-				"fault:port=%s iova=0x%x pa=0x%x layer=%d wr=%d;"
-				"pgd(0x%x)->pa(%pad)sz(0x%x)Valid(%d)\n",
-				mtk_iommu_get_port_name(piommu, m4u_port),
-				fault_mva, fault_pa, layer, write,
-				imu_pgd_val(*pte.pgd),
-				&pte.pa, pte.size, pte.valid);
+		if (fault_mva < piommu->iova_size &&
+		    fault_mva > piommu->iova_base) {
+			ptestart = mtkdomain->pgtableva
+					+ (fault_mva >> PAGE_SHIFT);
+			dev_err_ratelimited(dev,
+					    "pagetable @ 0x%x: 0x%x,0x%x,0x%x\n",
+					    fault_mva, ptestart[-1],
+					    ptestart[0], ptestart[1]);
 		}
+
+		/* call user's callback to dump user registers */
+		if (piommu->portcfg[m4u_port].fault_handler)
+			piommu->portcfg[m4u_port].fault_handler(
+				m4u_port, fault_mva,
+				piommu->portcfg[m4u_port].faultdata);
 	}
 
 	if (int_state & F_INT_MAIN_MULTI_HIT_FAULT(m4u_slave_id))
@@ -405,9 +386,19 @@ static int mt8173_iommu_fault_handler(struct iommu_domain *imudomain,
 static int mt8173_iommu_map(struct mtk_iommu_domain *mtkdomain,
 			    unsigned int iova, phys_addr_t paddr, size_t size)
 {
+	unsigned int i;
+	unsigned int page_num = DIV_ROUND_UP(size, PAGE_SIZE);
+	u32 *pgt_base_iova;
+	u32 pabase = (u32)paddr;
+
 	/*spinlock in upper function*/
-	m4u_map(mtkdomain, iova, paddr, size, 0);
-	mt8173_iommu_invalidate_tlb(mtkdomain->piommuinfo, 0, 0,
+	pgt_base_iova = mtkdomain->pgtableva + (iova >> PAGE_SHIFT);
+	for (i = 0; i < page_num; i++) {
+		pgt_base_iova[i] =
+		    pabase | F_DESC_VALID | F_DESC_NONSEC(1) | F_DESC_SHARE(0);
+		pabase += PAGE_SIZE;
+	}
+	mt8173_iommu_invalidate_tlb(mtkdomain->piommuinfo, M4U_ID_ALL, 0,
 				    iova, iova + size - 1);
 	return 0;
 }
@@ -415,21 +406,25 @@ static int mt8173_iommu_map(struct mtk_iommu_domain *mtkdomain,
 static size_t mt8173_iommu_unmap(struct mtk_iommu_domain *mtkdomain,
 				 unsigned int iova, size_t size)
 {
+	unsigned int page_num = DIV_ROUND_UP(size, PAGE_SIZE);
+	unsigned int *pgt_base_iova;
+
 	/*spinlock in upper function*/
-	m4u_unmap(mtkdomain, iova, size);
-	mt8173_iommu_invalidate_tlb(mtkdomain->piommuinfo, 0, 0,
+	pgt_base_iova = mtkdomain->pgtableva + (iova >> PAGE_SHIFT);
+	memset(pgt_base_iova, 0x0, page_num * sizeof(int));
+
+	mt8173_iommu_invalidate_tlb(mtkdomain->piommuinfo, M4U_ID_ALL, 0,
 				    iova, iova + size - 1);
-	return size;
+	return 0;
 }
 
 static phys_addr_t mt8173_iommu_iova_to_phys(struct mtk_iommu_domain *mtkdomain,
 					     unsigned int iova)
 {
-	struct m4u_pte_info_t pte = {0};
+	u32 phys;
 
-	m4u_get_pte_info(mtkdomain, iova, &pte);
-
-	return pte.pa;
+	phys = *(mtkdomain->pgtableva + (iova >> PAGE_SHIFT));
+	return (phys_addr_t)phys;
 }
 
 static int mt8173_iommu_config_port(struct mtk_iommu_info *piommu,
@@ -448,11 +443,8 @@ static int mt8173_iommu_config_port(struct mtk_iommu_info *piommu,
 	reg = reg | F_SMI_MMU_EN(larb_port);/*vir*/
 	writel(reg, larb_base + SMI_LARB_MMU_EN);
 
-	/*please make sure the clk of larb is enable while config port.
-	 *config port will fail if the clk is diable, confirm here!
-	 */
 	if (reg != readl(larb_base + SMI_LARB_MMU_EN)) {
-		dev_err(piommu->dev, "cfg port %s fail, take care the clk\n",
+		dev_err(piommu->dev, "cfg port %s fail\n",
 			mtk_iommu_get_port_name(piommu, portid));
 	}
 
@@ -462,13 +454,9 @@ static int mt8173_iommu_config_port(struct mtk_iommu_info *piommu,
 const struct mtk_iommu_cfg mtk_iommu_mt8173_cfg = {
 	.m4u_nr = 1,
 	.larb_nr = 6,
-	.m4u_port_nr = sizeof(mtk_iommu_mt8173_port)/
-				sizeof(struct mtk_iommu_port),
-	.iova_base = 0,
-	.iova_size = (SZ_2G<<1) - SZ_1K,
+	.m4u_port_in_larbx = {0, 8, 17, 38, 43, 49, 58},
+	.m4u_port_nr = 85,
 	.pport = mtk_iommu_mt8173_port,
-	.pte_init = mt8173_iommu_pte_init,
-	.pte_uninit = mt8173_iommu_pte_uninit,
 	.dt_parse = mt8173_iommu_parse_dt,
 	.hw_init = mt8173_iommu_hw_init,
 	.map = mt8173_iommu_map,
