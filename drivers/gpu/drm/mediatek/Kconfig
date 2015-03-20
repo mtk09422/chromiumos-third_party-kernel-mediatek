@@ -51,3 +51,10 @@ config DRM_MEDIATEK_IT6151
 	  The IT6151 is a high-performance and low-power
 	  MIPI to eDP converter
 	  This driver is used for test
+
+config DRM_MEDIATEK_HDMI
+	tristate "DRM HDMI Support for Mediatek SoCs"
+	depends on DRM_MEDIATEK || DRM_MEDIATEK_ROGUE
+	default y
+	help
+	  DRM/KMS HDMI driver for Mediatek SoCs
