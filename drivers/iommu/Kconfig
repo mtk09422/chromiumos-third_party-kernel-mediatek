@@ -302,20 +302,4 @@ config ARM_SMMU
 	  Say Y here if your SoC includes an IOMMU device implementing
 	  the ARM SMMU architecture.
 
-config MTK_IOMMU
-	bool "MTK IOMMU Support"
-	select IOMMU_API
-	select ARM_DMA_USE_IOMMU
-	help
-	  Support for the IOMMUs on certain Mediatek SOCs.
-	  These IOMMUs allow the multimedia hardware access discontinuous memory.
-
-	  If unsure, say N here.
-
-config MTK_IOMMU_DEBUG
-        def_bool MTK_IOMMU
-	help
-	  Support debug for the IOMMUs on certain Mediatek SOCs.
-	  If unsure, say N here.
-
 endif # IOMMU_SUPPORT
