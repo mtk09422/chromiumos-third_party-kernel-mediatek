@@ -691,7 +691,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 
 	arch_setup_dma_ops(piommu->dev, 0, (1ULL<<32) - 1, &mtk_iommu_ops, 0);
 
-	dom = get_dma_domain(piommu->dev);
+	dom = arch_get_dma_domain(piommu->dev);
 	domain = iommu_dma_raw_domain(dom);
 
 	mtk_domain = domain->priv;

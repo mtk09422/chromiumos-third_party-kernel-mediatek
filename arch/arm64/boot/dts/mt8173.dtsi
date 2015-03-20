@@ -323,7 +323,7 @@
 			compatible = "mediatek,mt8173-iommu";
 			reg = <0 0x10205000 0 0x1000>;
 			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&infrasys INFRA_M4U>;
+			clocks = <&infracfg INFRA_M4U>;
 			clock-names = "infra_m4u";
 			larb = <&larb0 &larb1 &larb2 &larb3 &larb4 &larb5>;
 			#iommu-cells = <1>;
@@ -345,7 +345,7 @@
 			clock-names = "larb_sub0", "larb_sub1", "larb_sub2";
 		};
 
-		larb2:larb@16010000 {
+		larb2:larb@15001000 {
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x15001000 0 0x1000>;
 			clocks = <&mmsys MM_SMI_COMMON>,
