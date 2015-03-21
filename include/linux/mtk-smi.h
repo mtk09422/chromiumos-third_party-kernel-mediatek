@@ -20,8 +20,7 @@
  *
  * Returns 0 if successfully, others if failed.
  */
-int mtk_smi_config_port(struct platform_device *pdev,
-			unsigned int larbportid);
+int mtk_smi_config_port(struct device *pdev, unsigned int larbportid);
 
 /*
  * The multimedia module should call the two function below
@@ -34,7 +33,7 @@ int mtk_smi_config_port(struct platform_device *pdev,
  *
  * Returns 0 if successfully, others if failed.
  */
-int mtk_smi_larb_get(struct platform_device *plarbdev);
-void mtk_smi_larb_put(struct platform_device *plarbdev);
+int mtk_smi_larb_get(struct device *larbdev);
+void mtk_smi_larb_put(struct device *larbdev);
 
 #endif

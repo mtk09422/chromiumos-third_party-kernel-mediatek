@@ -23,6 +23,7 @@
 
 struct mtk_smi_larb {
 	void __iomem *larb_base;
+	spinlock_t portlock;
 	struct clk *larb_clk[3];/* each larb has 3 clk at most */
 };
 
@@ -36,16 +37,16 @@ static const struct of_device_id mtk_smi_of_ids[] = {
 	{}
 };
 
-int mtk_smi_larb_get(struct platform_device *plarbdev)
+int mtk_smi_larb_get(struct device *larbdev)
 {
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(&plarbdev->dev);
+	struct mtk_smi_larb *larbpriv = dev_get_drvdata(larbdev);
 	int i, ret = 0;
 
 	for (i = 0; i < 3; i++)
 		if (larbpriv->larb_clk[i]) {
 			ret = clk_prepare_enable(larbpriv->larb_clk[i]);
 			if (ret) {
-				dev_err(&plarbdev->dev,
+				dev_err(larbdev,
 					"failed to enable larbclk%d:%d\n",
 					i, ret);
 				break;
@@ -54,9 +55,9 @@ int mtk_smi_larb_get(struct platform_device *plarbdev)
 	return ret;
 }
 
-void mtk_smi_larb_put(struct platform_device *plarbdev)
+void mtk_smi_larb_put(struct device *larbdev)
 {
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(&plarbdev->dev);
+	struct mtk_smi_larb *larbpriv = dev_get_drvdata(larbdev);
 	int i;
 
 	for (i = 2; i >= 0; i--)
@@ -64,23 +65,25 @@ void mtk_smi_larb_put(struct platform_device *plarbdev)
 			clk_disable_unprepare(larbpriv->larb_clk[i]);
 }
 
-int mtk_smi_config_port(struct platform_device *plarbdev,
-			unsigned int larbportid)
+int mtk_smi_config_port(struct device *larbdev,	unsigned int larbportid)
 {
-	struct mtk_smi_larb *larbpriv = dev_get_drvdata(&plarbdev->dev);
+	struct mtk_smi_larb *larbpriv = dev_get_drvdata(larbdev);
+	unsigned long flags;
 	int ret;
 	u32 reg;
 
-	ret = mtk_smi_larb_get(plarbdev);
+	ret = mtk_smi_larb_get(larbdev);
 	if (ret)
 		return ret;
 
+	spin_lock_irqsave(&larbpriv->portlock, flags);
 	reg = readl(larbpriv->larb_base + SMI_LARB_MMU_EN);
 	reg &= ~F_SMI_MMU_EN(larbportid);
 	reg |= F_SMI_MMU_EN(larbportid);
 	writel(reg, larbpriv->larb_base + SMI_LARB_MMU_EN);
+	spin_unlock_irqrestore(&larbpriv->portlock, flags);
 
-	mtk_smi_larb_put(plarbdev);
+	mtk_smi_larb_put(larbdev);
 
 	return 0;
 }
@@ -116,6 +119,7 @@ static int mtk_smi_probe(struct platform_device *pdev)
 			}
 		}
 	}
+	spin_lock_init(&larbpriv->portlock);
 	dev_set_drvdata(dev, larbpriv);
 	return 0;
 }

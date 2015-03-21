@@ -59,7 +59,6 @@ struct mtk_iommu_domain {
 	struct imu_pgd_t *pgd;
 	dma_addr_t pgd_pa;
 	spinlock_t pgtlock;	/* lock for modifying page table */
-	spinlock_t portlock;    /* lock for config port */
 	struct mtk_iommu_info *piommuinfo;
 };
 
