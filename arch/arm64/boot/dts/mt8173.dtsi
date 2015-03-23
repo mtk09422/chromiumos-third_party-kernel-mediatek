@@ -325,7 +325,7 @@
 			      <0 0x11000100 0 0x80>;
 			interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&pericfg PERI_I2C2>, <&pericfg PERI_AP_DMA>;
+			clocks = <&pericfg PERI_I2C0>, <&pericfg PERI_AP_DMA>;
 			clock-names = "main", "dma";
 			status = "disabled";
 		};
@@ -336,7 +336,7 @@
 			      <0 0x11000180 0 0x80>;
 			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <16>;
-			clocks = <&pericfg PERI_I2C2>, <&pericfg PERI_AP_DMA>;
+			clocks = <&pericfg PERI_I2C1>, <&pericfg PERI_AP_DMA>;
 			clock-names = "main", "dma";
 			status = "disabled";
 		};
