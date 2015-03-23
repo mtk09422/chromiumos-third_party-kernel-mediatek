@@ -479,6 +479,20 @@
 			bias-pull-up;
 		};
 	};
+
+	usb_pins: usb@0 {
+		pins1 {
+			pinmux = <MT8173_PIN_101_MSDC2_DAT1__FUNC_GPIO101>;
+			output-high;
+			bias-disable;
+		};
+	};
+
+};
+
+&usb{
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb_pins>;
 };
 
 &mmc0 {
