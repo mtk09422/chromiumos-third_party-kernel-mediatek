@@ -1117,6 +1117,10 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt8173-apmixedsys",
 		mtk_apmixedsys_init);
 
+static const char * const mt8173_critical_mfgsys_clocks[] __initconst = {
+	"mem_mfg_in_sel",
+};
+
 static void __init mtk_mfgsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1138,6 +1142,9 @@ static void __init mtk_mfgsys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
+
+	init_clk_protect_critical(mt8173_critical_mfgsys_clocks,
+		ARRAY_SIZE(mt8173_critical_mfgsys_clocks));
 }
 CLK_OF_DECLARE(mtk_mfgsys, "mediatek,mt8173-mfgsys", mtk_mfgsys_init);
 
