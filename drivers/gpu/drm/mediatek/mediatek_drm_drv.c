@@ -18,6 +18,7 @@
 #include <drm/drm_crtc_helper.h>
 #include <asm/dma-iommu.h>
 #include <linux/of_platform.h>
+#include <linux/component.h>
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
@@ -334,7 +335,6 @@ static void mtk_drm_disable_vblank(struct drm_device *drm, int pipe)
 
 	if (pipe >= MAX_CRTC || pipe < 0) {
 		DRM_ERROR(" - %s: invalid crtc (%d)\n", __func__, pipe);
-		return -EINVAL;
 	}
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[pipe]);
