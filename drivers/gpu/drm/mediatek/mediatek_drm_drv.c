@@ -34,7 +34,7 @@
 #include "mediatek_drm_dev_if.h"
 #include "drm/mediatek_drm.h"
 
-#define DRIVER_NAME "mediatek-drm"
+#define DRIVER_NAME "mediatek"
 #define DRIVER_DESC "Mediatek SoC DRM"
 #define DRIVER_DATE "20141031"
 #define DRIVER_MAJOR 1
