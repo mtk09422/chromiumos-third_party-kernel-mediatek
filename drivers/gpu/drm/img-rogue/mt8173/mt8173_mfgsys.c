@@ -181,7 +181,7 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 	if (IS_ERR(g_mmpll))
 		return PTR_ERR(g_mmpll);
 
-	g_vgpu = devm_regulator_get(&pdev->dev, "mfgsys-power");
+	g_vgpu = devm_regulator_get(&pdev->dev, "mfgsys-power-supply");
 	if (IS_ERR(g_vgpu))
 		return PTR_ERR(g_vgpu);
 
