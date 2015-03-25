@@ -375,6 +375,7 @@ static struct drm_driver mediatek_drm_driver = {
 	.open = mtk_drm_open,
 	.preclose = mediatek_drm_preclose,
 	.lastclose = mediatek_drm_lastclose,
+	.set_busid = drm_platform_set_busid,
 
 	.get_vblank_counter = drm_vblank_count,
 	.enable_vblank = mtk_drm_enable_vblank,
