@@ -65,9 +65,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PVR_DRM_PHYS_HEAP	PVRSRV_DEVICE_PHYS_HEAP_CPU_LOCAL
 #endif
 
+#include "module_common.h"
 #include "connection_server.h"
 #include "pvr_drm_external.h"
 #include "pvr_drm_display.h"
+#include "pvr_linux_fence.h"
 #include "sync_server.h"
 #include "pmr.h"
 
@@ -104,12 +106,6 @@ struct pvr_drm_dev_priv
 	struct pvr_drm_device_funcs funcs;
 	void *display_priv;
 
-	spinlock_t sync_op_lock;
-	struct list_head sync_op_complete_head;
-	SCP_CONTEXT *display_sync_op_context;
-
-	IMG_HANDLE display_misr;
-	IMG_HANDLE display_notify;
 	IMG_HANDLE debug_notify;
 #endif
 
@@ -139,6 +135,7 @@ struct pvr_drm_gem_object
 	void *obj;
 	SERVER_SYNC_PRIMITIVE *apsSyncPrim[PVRSRV_GEM_SYNC_TYPE_COUNT];
 	IMG_UINT32 auiSyncPrimVAddr[PVRSRV_GEM_SYNC_TYPE_COUNT];
+	struct reservation_object *resv;
 };
 
 #define to_pvr_drm_gem_object(obj) container_of(obj, struct pvr_drm_gem_object, base)
@@ -146,7 +143,7 @@ struct pvr_drm_gem_object
 extern struct drm_driver sPVRDRMDriver;
 
 int PVRSRVSystemInit(struct drm_device *pDrmDevice);
-void PVRSRVSystemDeInit(void);
+void PVRSRVSystemDeInit(LDM_DEV *pDevice);
 
 int PVRSRVOpen(struct drm_device *dev, struct drm_file *file);
 void PVRSRVRelease(struct drm_device *dev, struct drm_file *file);
@@ -168,6 +165,10 @@ int PVRDRMGEMCreate(struct drm_device *dev, void *arg, struct drm_file *file);
 int PVRDRMGEMToIMGHandle(struct drm_device *dev, void *arg, struct drm_file *file);
 int PVRDRMIMGToGEMHandle(struct drm_device *dev, void *arg, struct drm_file *file);
 int PVRDRMGEMSyncGet(struct drm_device *dev, void *arg, struct drm_file *file);
+int PVRDRMGEMCreateFenceContext(struct drm_device *dev, void *arg, struct drm_file *file);
+int PVRDRMGEMDestroyFenceContext(struct drm_device *dev, void *arg, struct drm_file *file);
+int PVRDRMGEMAttachFence(struct drm_device *dev, void *arg, struct drm_file *file);
+int PVRDRMGEMCreateFence(struct drm_device *dev, void *arg, struct drm_file *file);
 
 int PVRSRVGEMInitObject(struct drm_gem_object *obj,
 			enum pvr_drm_gem_object_type type,
@@ -200,7 +201,8 @@ PVRSRV_ERROR PVRSRVDRMDisplayCreatePMR(PVRSRV_DEVICE_NODE *psDevNode,
 				       size_t size,
 				       PVRSRV_MEMALLOCFLAGS_T uiFlags,
 				       PMR **ppsPMR,
-				       void **buffer);
+				       void **buffer,
+				       struct reservation_object **resv);
 u32 PVRSRVDRMDisplayGetVBlankCounter(struct drm_device *dev, int crtc);
 int PVRSRVDRMDisplayEnableVBlank(struct drm_device *dev, int crtc);
 void PVRSRVDRMDisplayDisableVBlank(struct drm_device *dev, int crtc);

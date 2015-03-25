@@ -56,8 +56,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PVRSRV_BRIDGE_MM_PMREXPORTPMR			PVRSRV_BRIDGE_MM_CMD_FIRST+0
 #define PVRSRV_BRIDGE_MM_PMRUNEXPORTPMR			PVRSRV_BRIDGE_MM_CMD_FIRST+1
 #define PVRSRV_BRIDGE_MM_PMRGETUID			PVRSRV_BRIDGE_MM_CMD_FIRST+2
-#define PVRSRV_BRIDGE_MM_PMRMAKESERVEREXPORTCLIENTEXPORT			PVRSRV_BRIDGE_MM_CMD_FIRST+3
-#define PVRSRV_BRIDGE_MM_PMRUNMAKESERVEREXPORTCLIENTEXPORT			PVRSRV_BRIDGE_MM_CMD_FIRST+4
+#define PVRSRV_BRIDGE_MM_PMRMAKELOCALIMPORTHANDLE			PVRSRV_BRIDGE_MM_CMD_FIRST+3
+#define PVRSRV_BRIDGE_MM_PMRUNMAKELOCALIMPORTHANDLE			PVRSRV_BRIDGE_MM_CMD_FIRST+4
 #define PVRSRV_BRIDGE_MM_PMRIMPORTPMR			PVRSRV_BRIDGE_MM_CMD_FIRST+5
 #define PVRSRV_BRIDGE_MM_DEVMEMINTPIN			PVRSRV_BRIDGE_MM_CMD_FIRST+6
 #define PVRSRV_BRIDGE_MM_DEVMEMINTUNPIN			PVRSRV_BRIDGE_MM_CMD_FIRST+7
@@ -141,42 +141,39 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRGETUID_TAG
 } __attribute__((packed)) PVRSRV_BRIDGE_OUT_PMRGETUID;
 
 /*******************************************
-            PMRMakeServerExportClientExport          
+            PMRMakeLocalImportHandle          
  *******************************************/
 
-/* Bridge in structure for PMRMakeServerExportClientExport */
-typedef struct PVRSRV_BRIDGE_IN_PMRMAKESERVEREXPORTCLIENTEXPORT_TAG
+/* Bridge in structure for PMRMakeLocalImportHandle */
+typedef struct PVRSRV_BRIDGE_IN_PMRMAKELOCALIMPORTHANDLE_TAG
 {
-	DEVMEM_SERVER_EXPORTCOOKIE hPMRServerExport;
-} __attribute__((packed)) PVRSRV_BRIDGE_IN_PMRMAKESERVEREXPORTCLIENTEXPORT;
+	IMG_HANDLE hBuffer;
+} __attribute__((packed)) PVRSRV_BRIDGE_IN_PMRMAKELOCALIMPORTHANDLE;
 
 
-/* Bridge out structure for PMRMakeServerExportClientExport */
-typedef struct PVRSRV_BRIDGE_OUT_PMRMAKESERVEREXPORTCLIENTEXPORT_TAG
+/* Bridge out structure for PMRMakeLocalImportHandle */
+typedef struct PVRSRV_BRIDGE_OUT_PMRMAKELOCALIMPORTHANDLE_TAG
 {
-	IMG_HANDLE hPMRExportOut;
-	IMG_UINT64 ui64Size;
-	IMG_UINT32 ui32Log2Contig;
-	IMG_UINT64 ui64Password;
+	IMG_HANDLE hExtMem;
 	PVRSRV_ERROR eError;
-} __attribute__((packed)) PVRSRV_BRIDGE_OUT_PMRMAKESERVEREXPORTCLIENTEXPORT;
+} __attribute__((packed)) PVRSRV_BRIDGE_OUT_PMRMAKELOCALIMPORTHANDLE;
 
 /*******************************************
-            PMRUnmakeServerExportClientExport          
+            PMRUnmakeLocalImportHandle          
  *******************************************/
 
-/* Bridge in structure for PMRUnmakeServerExportClientExport */
-typedef struct PVRSRV_BRIDGE_IN_PMRUNMAKESERVEREXPORTCLIENTEXPORT_TAG
+/* Bridge in structure for PMRUnmakeLocalImportHandle */
+typedef struct PVRSRV_BRIDGE_IN_PMRUNMAKELOCALIMPORTHANDLE_TAG
 {
-	IMG_HANDLE hPMRExport;
-} __attribute__((packed)) PVRSRV_BRIDGE_IN_PMRUNMAKESERVEREXPORTCLIENTEXPORT;
+	IMG_HANDLE hExtMem;
+} __attribute__((packed)) PVRSRV_BRIDGE_IN_PMRUNMAKELOCALIMPORTHANDLE;
 
 
-/* Bridge out structure for PMRUnmakeServerExportClientExport */
-typedef struct PVRSRV_BRIDGE_OUT_PMRUNMAKESERVEREXPORTCLIENTEXPORT_TAG
+/* Bridge out structure for PMRUnmakeLocalImportHandle */
+typedef struct PVRSRV_BRIDGE_OUT_PMRUNMAKELOCALIMPORTHANDLE_TAG
 {
 	PVRSRV_ERROR eError;
-} __attribute__((packed)) PVRSRV_BRIDGE_OUT_PMRUNMAKESERVEREXPORTCLIENTEXPORT;
+} __attribute__((packed)) PVRSRV_BRIDGE_OUT_PMRUNMAKELOCALIMPORTHANDLE;
 
 /*******************************************
             PMRImportPMR          
@@ -276,7 +273,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNPININVALIDATE_TAG
 /* Bridge in structure for DevmemIntCtxCreate */
 typedef struct PVRSRV_BRIDGE_IN_DEVMEMINTCTXCREATE_TAG
 {
-	IMG_HANDLE hDeviceNode;
+	 IMG_UINT32 ui32EmptyStructPlaceholder;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_DEVMEMINTCTXCREATE;
 
 
@@ -425,7 +422,6 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNRESERVERANGE_TAG
 /* Bridge in structure for PhysmemNewRamBackedPMR */
 typedef struct PVRSRV_BRIDGE_IN_PHYSMEMNEWRAMBACKEDPMR_TAG
 {
-	IMG_HANDLE hDeviceNode;
 	IMG_DEVMEM_SIZE_T uiSize;
 	IMG_DEVMEM_SIZE_T uiChunkSize;
 	IMG_UINT32 ui32NumPhysChunks;
@@ -549,7 +545,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMISVDEVADDRVALID_TAG
 /* Bridge in structure for HeapCfgHeapConfigCount */
 typedef struct PVRSRV_BRIDGE_IN_HEAPCFGHEAPCONFIGCOUNT_TAG
 {
-	IMG_HANDLE hDeviceNode;
+	 IMG_UINT32 ui32EmptyStructPlaceholder;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_HEAPCFGHEAPCONFIGCOUNT;
 
 
@@ -567,7 +563,6 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGCOUNT_TAG
 /* Bridge in structure for HeapCfgHeapCount */
 typedef struct PVRSRV_BRIDGE_IN_HEAPCFGHEAPCOUNT_TAG
 {
-	IMG_HANDLE hDeviceNode;
 	IMG_UINT32 ui32HeapConfigIndex;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_HEAPCFGHEAPCOUNT;
 
@@ -586,7 +581,6 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCOUNT_TAG
 /* Bridge in structure for HeapCfgHeapConfigName */
 typedef struct PVRSRV_BRIDGE_IN_HEAPCFGHEAPCONFIGNAME_TAG
 {
-	IMG_HANDLE hDeviceNode;
 	IMG_UINT32 ui32HeapConfigIndex;
 	IMG_UINT32 ui32HeapConfigNameBufSz;
 	/* Output pointer puiHeapConfigName is also an implied input */
@@ -608,7 +602,6 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGNAME_TAG
 /* Bridge in structure for HeapCfgHeapDetails */
 typedef struct PVRSRV_BRIDGE_IN_HEAPCFGHEAPDETAILS_TAG
 {
-	IMG_HANDLE hDeviceNode;
 	IMG_UINT32 ui32HeapConfigIndex;
 	IMG_UINT32 ui32HeapIndex;
 	IMG_UINT32 ui32HeapNameBufSz;

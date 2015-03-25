@@ -60,10 +60,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 

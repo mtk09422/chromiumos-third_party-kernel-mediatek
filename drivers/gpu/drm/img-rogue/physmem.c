@@ -53,20 +53,22 @@ IMG_UINT32 gPMRAllocFail = 0;
 #endif /* defined(DEBUG) */
 
 PVRSRV_ERROR
-PhysmemNewRamBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
-						IMG_DEVMEM_SIZE_T uiSize,
-						PMR_SIZE_T uiChunkSize,
-						IMG_UINT32 ui32NumPhysChunks,
-						IMG_UINT32 ui32NumVirtChunks,
-						IMG_UINT32 *pui32MappingTable,
-						IMG_UINT32 uiLog2PageSize,
-						PVRSRV_MEMALLOCFLAGS_T uiFlags,
-						PMR **ppsPMRPtr)
+PhysmemNewRamBackedPMR(CONNECTION_DATA * psConnection,
+                       PVRSRV_DEVICE_NODE *psDevNode,
+                       IMG_DEVMEM_SIZE_T uiSize,
+                       PMR_SIZE_T uiChunkSize,
+                       IMG_UINT32 ui32NumPhysChunks,
+                       IMG_UINT32 ui32NumVirtChunks,
+                       IMG_UINT32 *pui32MappingTable,
+                       IMG_UINT32 uiLog2PageSize,
+                       PVRSRV_MEMALLOCFLAGS_T uiFlags,
+                       PMR **ppsPMRPtr)
 {
 	PVRSRV_DEVICE_PHYS_HEAP ePhysHeapIdx = (uiFlags & PVRSRV_MEMALLOCFLAG_CPU_LOCAL) ? 1: 0;
 	PFN_SYS_DEV_CHECK_MEM_ALLOC_SIZE pfnCheckMemAllocSize = \
 										psDevNode->psDevConfig->pfnCheckMemAllocSize;
-#if defined(DEBUG)
+
+#if defined(DEBUG)	
 	static IMG_UINT32 ui32AllocCount = 1;
 
 	if (ui32NumVirtChunks > 1)
@@ -74,6 +76,10 @@ PhysmemNewRamBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 		PVR_ASSERT(uiLog2PageSize == OSGetPageShift());
 	}
 #endif /* defined(DEBUG) */
+
+
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	/********************************
 	 * Sanity check the cache flags *
 	 ********************************/

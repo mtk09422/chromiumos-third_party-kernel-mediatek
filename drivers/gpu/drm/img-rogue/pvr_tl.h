@@ -63,7 +63,7 @@ extern "C" {
  @Return        PVRSRV_ERROR:	for system error codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLConnect(PVRSRV_CONNECTION **ppsConnection);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLConnect(PVRSRV_DEV_CONNECTION **ppsConnection);
 
 
 /**************************************************************************/ /*!
@@ -74,7 +74,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVTLConnect(PVRSRV_CONNECTION **ppsConnection);
  @Return        PVRSRV_ERROR:	for system error codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLDisconnect(PVRSRV_CONNECTION* psConnection);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLDisconnect(PVRSRV_DEV_CONNECTION* psConnection);
 
 
 /**************************************************************************/ /*!
@@ -100,7 +100,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVTLDisconnect(PVRSRV_CONNECTION* psConnection);
  @Return		PVRSRV_ERROR:			       for other system codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLOpenStream(PVRSRV_CONNECTION* psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLOpenStream(PVRSRV_DEV_CONNECTION* psConnection,
 		IMG_PCHAR    pszName,
 		IMG_UINT32   ui32Mode,
 		PVRSRVTL_SD* phSD);
@@ -118,7 +118,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVTLOpenStream(PVRSRV_CONNECTION* psConnection,
  @Return		PVRSRV_ERROR:				  for system codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLCloseStream(PVRSRV_CONNECTION* psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLCloseStream(PVRSRV_DEV_CONNECTION* psConnection,
 		PVRSRVTL_SD hSD);
 
 
@@ -158,7 +158,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVTLCloseStream(PVRSRV_CONNECTION* psConnection,
  @Return		PVRSRV_ERROR:					   for other system codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLAcquireData(PVRSRV_CONNECTION* psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLAcquireData(PVRSRV_DEV_CONNECTION* psConnection,
 		PVRSRVTL_SD hSD,
 		IMG_PBYTE*  ppPacketBuf,
 		IMG_UINT32* puiBufLen);
@@ -178,7 +178,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVTLAcquireData(PVRSRV_CONNECTION* psConnection,
  @Return		PVRSRV_ERROR:	                 for system codes
 */ /***************************************************************************/
 IMG_EXPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVTLReleaseData(PVRSRV_CONNECTION* psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVTLReleaseData(PVRSRV_DEV_CONNECTION* psConnection,
 		PVRSRVTL_SD hSD);
 
 #if defined (__cplusplus)

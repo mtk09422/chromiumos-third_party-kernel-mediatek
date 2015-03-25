@@ -61,8 +61,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
  @Return   PVRSRV_ERROR
 ******************************************************************************/
-PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(PVRSRV_DEVICE_NODE	*psDeviceNode,
-					IMG_UINT8       ui8RegPowerIsland);
+PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(CONNECTION_DATA * psDevConnection,
+                                         PVRSRV_DEVICE_NODE	*psDeviceNode,
+                                         IMG_UINT8 ui8RegPowerIsland);
 /*!
 *******************************************************************************
  @Function	PVRSRVRGXSetRegConfigKM

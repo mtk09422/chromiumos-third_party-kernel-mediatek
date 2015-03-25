@@ -227,10 +227,19 @@ static void *PrimeKMapAtomic(struct dma_buf unref__ *psDmaBuf,
 	return NULL;
 }
 
-static int PrimeMMap(struct dma_buf unref__ *psDmaBuf,
-		     struct vm_area_struct unref__ *psVMA)
+static int PrimeMMap(struct dma_buf *psDmaBuf,
+		     struct vm_area_struct *psVMA)
 {
-	return -EINVAL;
+	struct drm_gem_object *psObj = psDmaBuf->priv;
+	struct pvr_drm_gem_object *psPVRObj = to_pvr_drm_gem_object(psObj);
+	PVRSRV_ERROR eError;
+
+	mutex_lock(&psObj->dev->struct_mutex);
+	eError = PMRMMapPMR(psPVRObj->pmr, psVMA);
+	mutex_unlock(&psObj->dev->struct_mutex);
+
+	/* Use ENOENT as this matches MMapPMR */
+	return (eError == PVRSRV_OK) ? 0 : -ENOENT;
 }
 
 static void *PrimeVMap(struct dma_buf *psDmaBuf)
@@ -315,7 +324,7 @@ struct dma_buf *PVRSRVPrimeExport(struct drm_device unref__ *dev,
 			      obj->size,
 			      flags
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)) || defined(CHROMIUMOS_WORKAROUNDS_KERNEL314)
-			      , NULL
+			      , psPVRObj->resv
 #endif
 			     );
 }
@@ -363,6 +372,8 @@ struct drm_gem_object *PVRSRVPrimeImport(struct drm_device *dev,
 	}
 
 	get_dma_buf(dma_buf);
+
+	psPVRObj->resv = dma_buf->resv;
 
 	iRet = PVRSRVGEMInitObject(psObj,
 				   PVR_DRM_GEM_IMPORT_PMR,

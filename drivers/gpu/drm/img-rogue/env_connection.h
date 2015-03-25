@@ -48,12 +48,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "handle.h"
 #include "pvr_debug.h"
+#include "device.h"
 
 #if defined(SUPPORT_ION)
 #include PVR_ANDROID_ION_HEADER
 #include "ion_sys.h"
 #include "allocmem.h"
 #endif
+
+typedef struct _ENV_CONNECTION_PRIVATE_DATA_
+{
+	struct file *psFile;
+	PVRSRV_DEVICE_NODE *psDevNode;
+} ENV_CONNECTION_PRIVATE_DATA;
 
 #if defined(SUPPORT_ION)
 #define ION_CLIENT_NAME_SIZE	50
@@ -70,6 +77,7 @@ typedef struct _ENV_ION_CONNECTION_DATA_
 typedef struct _ENV_CONNECTION_DATA_
 {
 	struct file *psFile;
+	PVRSRV_DEVICE_NODE *psDevNode;
 
 #if defined(SUPPORT_ION)
 	ENV_ION_CONNECTION_DATA *psIonData;

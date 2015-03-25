@@ -58,13 +58,14 @@ typedef struct _SERVER_SYNC_EXPORT_ SERVER_SYNC_EXPORT;
 typedef struct _SYNC_CONNECTION_DATA_ SYNC_CONNECTION_DATA;
 typedef struct SYNC_RECORD* SYNC_RECORD_HANDLE;
 
+
 PVRSRV_ERROR
 PVRSRVAllocSyncPrimitiveBlockKM(CONNECTION_DATA *psConnection,
-								PVRSRV_DEVICE_NODE *psDevNode,
+                                PVRSRV_DEVICE_NODE * psDevNode,
 								SYNC_PRIMITIVE_BLOCK **ppsSyncBlk,
 								IMG_UINT32 *puiSyncPrimVAddr,
 								IMG_UINT32 *puiSyncPrimBlockSize,
-								DEVMEM_EXPORTCOOKIE **psExportCookie);
+								PMR        **ppsSyncPMR);
 
 PVRSRV_ERROR
 PVRSRVExportSyncPrimitiveBlockKM(SYNC_PRIMITIVE_BLOCK *psSyncBlk,
@@ -100,6 +101,7 @@ PVRSRVSyncPrimServerImportKM(SERVER_SYNC_EXPORT *psExport,
 #if defined(SUPPORT_SECURE_EXPORT)
 PVRSRV_ERROR
 PVRSRVSyncPrimServerSecureExportKM(CONNECTION_DATA *psConnection,
+                                   PVRSRV_DEVICE_NODE * psDevNode,
 								   SERVER_SYNC_PRIMITIVE *psSync,
 								   IMG_SECURE_TYPE *phSecure,
 								   SERVER_SYNC_EXPORT **ppsExport,
@@ -131,7 +133,8 @@ PVRSRVSyncRecordRemoveByHandleKM(
 			SYNC_RECORD_HANDLE hRecord);
 
 PVRSRV_ERROR
-PVRSRVServerSyncAllocKM(PVRSRV_DEVICE_NODE *psDevNode,
+PVRSRVServerSyncAllocKM(CONNECTION_DATA * psConnection,
+                        PVRSRV_DEVICE_NODE *psDevNode,
 						SERVER_SYNC_PRIMITIVE **ppsSync,
 						IMG_UINT32 *pui32SyncPrimVAddr,
 						IMG_UINT32 ui32ClassNameSize,

@@ -1046,7 +1046,7 @@ static void RGXHWPerfFTraceGPUSwitchEvent(PVRSRV_RGXDEV_INFO *psDevInfo,
 	RGX_HWPERF_HW_DATA_FIELDS* psHWPerfPktData;
 	RGXFWIF_GPU_UTIL_FWCB *psGpuUtilFWCB = psDevInfo->psRGXFWIfGpuUtilFWCb;
 	RGXFWIF_TIME_CORR *psTimeCorr;
-	IMG_UINT32 ui32DVFSClock;
+	IMG_UINT32 ui32CRDeltaToOSDeltaKNs;
 	IMG_UINT64 ui64CRTimeStamp;
 	IMG_UINT64 ui64OSTimeStamp;
 
@@ -1061,11 +1061,10 @@ static void RGXHWPerfFTraceGPUSwitchEvent(PVRSRV_RGXDEV_INFO *psDevInfo,
 	 * filtered by ValidFTraceEvent() */
 
 	/* Calculate the OS timestamp given an RGX timestamp in the HWPerf event */
-	psTimeCorr      = &psGpuUtilFWCB->sTimeCorr[psHWPerfPktData->ui32TimeCorrIndex];
-	ui64CRTimeStamp = psTimeCorr->ui64CRTimeStamp;
-	ui64OSTimeStamp = psTimeCorr->ui64OSTimeStamp;
-	ui32DVFSClock   = psTimeCorr->ui32CoreClockSpeed;
-	PVR_ASSERT(ui32DVFSClock>=1000000);
+	psTimeCorr              = &psGpuUtilFWCB->sTimeCorr[psHWPerfPktData->ui32TimeCorrIndex];
+	ui64CRTimeStamp         = psTimeCorr->ui64CRTimeStamp;
+	ui64OSTimeStamp         = psTimeCorr->ui64OSTimeStamp;
+	ui32CRDeltaToOSDeltaKNs = psTimeCorr->ui32CRDeltaToOSDeltaKNs;
 
 	if(psDevInfo->ui64LastSampledTimeCorrOSTimeStamp > ui64OSTimeStamp)
 	{
@@ -1074,18 +1073,19 @@ static void RGXHWPerfFTraceGPUSwitchEvent(PVRSRV_RGXDEV_INFO *psDevInfo,
 		 * too quickly (buffer too small) and in the previous call to RGXHWPerfFTraceGPUSwitchEvent
 		 * we read one of the newest timer correlations rather than one of the oldest ones.
 		 */
-		PVR_DPF((PVR_DBG_ERROR, "RGXHWPerfFTraceGPUSwitchEvent: The timestamps computed so far could be wrong! The time correlation array size should be increased to avoid this."));
+		PVR_DPF((PVR_DBG_ERROR, "RGXHWPerfFTraceGPUSwitchEvent: The timestamps computed so far could be wrong! "
+		                        "The time correlation array size should be increased to avoid this."));
 	}
 	psDevInfo->ui64LastSampledTimeCorrOSTimeStamp = ui64OSTimeStamp;
 
 	{
-		IMG_UINT64 deltaRgxTimer = psHWPerfPkt->ui64RGXTimer - ui64CRTimeStamp;     /* RGX CR timer ticks delta */
-		IMG_UINT32 deltaRgxCycles_remainder;                                        /* Unable to use as not in a time unit */
-		IMG_UINT64 delta_nS = RGXFWIF_GET_DELTA_OSTIME_NS(deltaRgxTimer, ui32DVFSClock, deltaRgxCycles_remainder);	/* RGX time delta in nS */
-		ui64Timestamp = ui64OSTimeStamp + delta_nS;                                 /* Calculate OS time of HWPerf event */
+		IMG_UINT64 deltaRgxTimer = psHWPerfPkt->ui64RGXTimer - ui64CRTimeStamp;  /* RGX CR timer ticks delta */
+		IMG_UINT64 delta_nS =
+		    RGXFWIF_GET_DELTA_OSTIME_NS(deltaRgxTimer, ui32CRDeltaToOSDeltaKNs); /* RGX time delta in nS */
+		ui64Timestamp = ui64OSTimeStamp + delta_nS;                              /* Calculate OS time of HWPerf event */
 
 		PVR_DPF((PVR_DBG_VERBOSE, "RGXHWPerfFTraceGPUSwitchEvent: psCurrentDvfs RGX %llu, OS %llu, DVFSCLK %u",
-				ui64CRTimeStamp, ui64OSTimeStamp, ui32DVFSClock ));
+		         ui64CRTimeStamp, ui64OSTimeStamp, psTimeCorr->ui32CoreClockSpeed ));
 	}
 
 	PVR_DPF((PVR_DBG_VERBOSE, "RGXHWPerfFTraceGPUSwitchEvent: %s ui32ExtJobRef=%d, ui32IntJobRef=%d, eSwType=%d",

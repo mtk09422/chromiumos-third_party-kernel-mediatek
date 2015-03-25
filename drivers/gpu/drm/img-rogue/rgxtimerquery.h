@@ -111,16 +111,16 @@ PVRSRVRGXCurrentTime(PVRSRV_DEVICE_NODE * psDeviceNode,
 
 /* write the timestamp cmd from the helper*/
 void
-RGXWriteTimestampCommand(IMG_PBYTE            * ppui8CmdPtr,
-                         RGXFWIF_CCB_CMD_TYPE eCmdType,
-                         RGXFWIF_DEV_VIRTADDR pTimestamp);
+RGXWriteTimestampCommand(IMG_PBYTE               * ppui8CmdPtr,
+                         RGXFWIF_CCB_CMD_TYPE    eCmdType,
+                         PRGXFWIF_TIMESTAMP_ADDR pAddr);
 
 /* get the relevant data from the Kick to the helper*/
 void
-RGX_GetTimestampCmdHelper(PVRSRV_RGXDEV_INFO   * psDevInfo,
-                          RGXFWIF_DEV_VIRTADDR * ppPreTimestamp,
-                          RGXFWIF_DEV_VIRTADDR * ppPostTimestamp,
-                          PRGXFWIF_UFO_ADDR    * ppUpdate);
+RGX_GetTimestampCmdHelper(PVRSRV_RGXDEV_INFO      * psDevInfo,
+                          PRGXFWIF_TIMESTAMP_ADDR * ppPreAddr,
+                          PRGXFWIF_TIMESTAMP_ADDR * ppPostAddr,
+                          PRGXFWIF_UFO_ADDR       * ppUpdate);
 
 #endif /* _RGX_TIMERQUERIES_H_ */
 

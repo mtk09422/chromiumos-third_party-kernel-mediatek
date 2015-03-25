@@ -349,22 +349,45 @@ PMRExportPMR(PMR *psPMR,
              PMR_LOG2ALIGN_T *puiLog2Contig,
              PMR_PASSWORD_T *puiPassword);
 
-/*
- * PMRMakeServerExportClientExport()
- * 
- * This is a "special case" function for making a server export cookie
- * which went through the direct bridge into an export cookie that can
- * be passed through the client bridge.
- */
-PVRSRV_ERROR
-PMRMakeServerExportClientExport(DEVMEM_EXPORTCOOKIE *psPMRExportIn,
-								PMR_EXPORT **ppsPMRExportPtr,
-								PMR_SIZE_T *puiSize,
-								PMR_LOG2ALIGN_T *puiLog2Contig,
-								PMR_PASSWORD_T *puiPassword);
+/*!
+*******************************************************************************
 
-PVRSRV_ERROR
-PMRUnmakeServerExportClientExport(PMR_EXPORT *psPMRExport);
+ @Function	PMRMakeLocalImportHandle
+
+ @Description
+
+ Transform a general handle type into one that we are able to import.
+ Takes a PMR reference.
+
+ @Input   psPMR     The input PMR.
+ @Output  ppsPMR    The output PMR that is going to be transformed to the
+                    correct handle type.
+
+ @Return   PVRSRV_ERROR
+
+******************************************************************************/
+extern PVRSRV_ERROR
+PMRMakeLocalImportHandle(PMR *psPMR,
+                         PMR **ppsPMR);
+
+/*!
+*******************************************************************************
+
+ @Function	PMRUnmakeLocalImportHandle
+
+ @Description
+
+ Take a PMR, destroy the handle and release a reference.
+ Counterpart to PMRMakeServerExportClientExport().
+
+ @Input   psPMR       PMR to destroy.
+                      Created by PMRMakeLocalImportHandle().
+
+ @Return   PVRSRV_ERROR
+
+******************************************************************************/
+extern PVRSRV_ERROR
+PMRUnmakeLocalImportHandle(PMR *psPMR);
 
 /*
  * PMRUnexporPMRt()
@@ -479,6 +502,21 @@ PMR_WriteBytes(PMR *psPMR,
                IMG_UINT8 *pcBuffer,
                size_t uiBufSz,
                size_t *puiNumBytes);
+
+/**************************************************************************/ /*!
+@Function       PMRMMapPMR
+@Description    Performs the necessary steps to map the PMR into a user process
+                address space. The caller does not need to call
+                PMRLockSysPhysAddresses before calling this function.
+
+@Input          psPMR           PMR to map.
+
+@Input          pOSMMapData     OS specific data needed to create a mapping.
+
+@Return         PVRSRV_ERROR:   PVRSRV_OK on success or an error otherwise.
+*/ /***************************************************************************/
+extern PVRSRV_ERROR
+PMRMMapPMR(PMR *psPMR, PMR_MMAP_DATA pOSMMapData);
 
 /*
  * PMRRefPMR()

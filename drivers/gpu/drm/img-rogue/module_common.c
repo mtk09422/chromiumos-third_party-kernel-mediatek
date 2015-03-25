@@ -52,6 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debugfs.h"
 #include "private_data.h"
 #include "linkage.h"
+#include "lists.h"
 #include "power.h"
 #include "env_connection.h"
 #include "process_stats.h"
@@ -60,10 +61,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(SUPPORT_DRM)
 #include "pvr_drm.h"
-#endif
-
-#if defined(SUPPORT_AUTH)
-#include "osauth.h"
 #endif
 
 #if defined(SUPPORT_NATIVE_FENCE_SYNC)
@@ -80,6 +77,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(SUPPORT_KERNEL_SRVINIT)
 #include "srvinit.h"
+#endif
+
+#if defined(SUPPORT_DRM)
+#include "pvr_linux_fence.h"
 #endif
 
 #if defined(PVRSRV_NEED_PVR_DPF) || defined(DEBUG)
@@ -255,6 +256,16 @@ int PVRSRVDriverResume(struct device *pDevice)
 #define PRIVATE_DATA(pFile) ((pFile)->private_data)
 #endif
 
+static void *PVRSRVFindRGXDevNode(PVRSRV_DEVICE_NODE *psDevNode)
+{
+	if (psDevNode->sDevId.eDeviceType == PVRSRV_DEVICE_TYPE_RGX)
+	{
+		return psDevNode;
+	}
+
+	return NULL;
+}
+
 /*!
 ******************************************************************************
 
@@ -271,27 +282,52 @@ int PVRSRVDriverResume(struct device *pDevice)
 *****************************************************************************/
 int PVRSRVCommonOpen(struct file *pFile)
 {
+	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	ENV_CONNECTION_PRIVATE_DATA sPrivData;
 	void *pvConnectionData;
 	PVRSRV_ERROR eError;
+	int iErr;
 
 	OSAcquireBridgeLock();
+
+	if (!psPVRSRVData)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: No device data", __func__));
+		iErr = -ENODEV;
+		goto ErrorUnlock;
+	}
+
+	sPrivData.psDevNode = List_PVRSRV_DEVICE_NODE_Any(psPVRSRVData->psDeviceNodeList,
+							  PVRSRVFindRGXDevNode);
+	if (!sPrivData.psDevNode)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to get device node", __func__));
+		iErr = -ENODEV;
+		goto ErrorUnlock;
+	}
+
+	sPrivData.psFile = pFile;
 
 	/*
 	 * Here we pass the file pointer which will passed through to our
 	 * OSConnectionPrivateDataInit function where we can save it so
 	 * we can back reference the file structure from it's connection
 	 */
-	eError = PVRSRVConnectionConnect(&pvConnectionData, (void *) pFile);
+	eError = PVRSRVConnectionConnect(&pvConnectionData, (void *) &sPrivData);
 	if (eError != PVRSRV_OK)
 	{
-		OSReleaseBridgeLock();
-		return -ENOMEM;
+		iErr = -ENOMEM;
+		goto ErrorUnlock;
 	}
 
 	PRIVATE_DATA(pFile) = pvConnectionData;
 	OSReleaseBridgeLock();
 
 	return 0;
+
+ErrorUnlock:
+	OSReleaseBridgeLock();
+	return iErr;
 }
 
 /*!
@@ -341,30 +377,6 @@ struct file *LinuxFileFromConnection(CONNECTION_DATA *psConnection)
 	return psEnvConnection->psFile;
 }
 
-#if defined(SUPPORT_AUTH)
-PVRSRV_ERROR OSCheckAuthentication(CONNECTION_DATA *psConnection, IMG_UINT32 ui32Level)
-{
-	if (ui32Level != 0)
-	{
-		ENV_CONNECTION_DATA *psEnvConnection;
-
-		psEnvConnection = PVRSRVConnectionPrivateData(psConnection);
-		if (psEnvConnection == NULL)
-		{
-			return PVRSRV_ERROR_RESOURCE_UNAVAILABLE;
-		}
-
-		if (!PVR_DRM_FILE_FROM_FILE(psEnvConnection->psFile)->authenticated)
-		{
-			PVR_DPF((PVR_DBG_WARNING, "%s: PVR Services Connection not authenticated", __FUNCTION__));
-			return PVRSRV_ERROR_NOT_AUTHENTICATED;
-		}
-	}
-
-	return PVRSRV_OK;
-}
-#endif /* defined(SUPPORT_AUTH) */
-
 /*!
 *****************************************************************************
 
@@ -395,6 +407,15 @@ int PVRSRVCommonPrepare(void)
 		return -ENOMEM;
 	}
 
+#if defined(SUPPORT_DRM)
+	error = pvr_linux_fence_init();
+	if (error != 0)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "PVRSRVCommonPrepare: unable to initialise Linux fence support (%d)", error));
+		return -EBUSY;
+	}
+#endif
+
 	LinuxBridgeInit();
 
 	return 0;
@@ -411,6 +432,10 @@ int PVRSRVCommonPrepare(void)
 void PVRSRVCommonCleanup(void)
 {
 	LinuxBridgeDeInit();
+
+#if defined(SUPPORT_DRM)
+	pvr_linux_fence_deinit();
+#endif
 
 	PVROSFuncDeInit();
 

@@ -57,6 +57,7 @@ typedef void *PMR_IMPL_PRIVDATA;
 
 typedef PVRSRV_MEMALLOCFLAGS_T PMR_FLAGS_T;
 typedef struct _PMR_MAPPING_TABLE_ PMR_MAPPING_TABLE;
+typedef void *PMR_MMAP_DATA;
 
 typedef struct {
     /*
@@ -218,6 +219,18 @@ typedef struct {
     											IMG_UINT32	ui32FreePageCount,
     											IMG_UINT32	*pai32FreeIndices,
     											IMG_UINT32	*pui32Status);
+
+	/*
+	 * Maps the PMR into a user process address space.
+	 *
+	 * This callback is optional; However, it is strongly recommended
+	 * that an implementation is provided and that it performs any
+	 * necessary reference counting on the PMR. When this is not the
+	 * case a generic implementation is used instead.
+	 */
+	PVRSRV_ERROR (*pfnMMap)(PMR_IMPL_PRIVDATA pPriv,
+				const PMR *psPMR,
+				PMR_MMAP_DATA pMMapData);
     /*
      * Finalize()
      *

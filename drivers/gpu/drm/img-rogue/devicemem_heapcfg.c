@@ -50,21 +50,24 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvrsrv_error.h"
 #include "osfunc.h"
 
+#include "connection_server.h"
 
 PVRSRV_ERROR
-HeapCfgHeapConfigCount(
+HeapCfgHeapConfigCount(CONNECTION_DATA * psConnection,
     const PVRSRV_DEVICE_NODE *psDeviceNode,
     IMG_UINT32 *puiNumHeapConfigsOut
 )
 {
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
     *puiNumHeapConfigsOut = psDeviceNode->sDevMemoryInfo.uiNumHeapConfigs;
 
     return PVRSRV_OK;
 }
 
 PVRSRV_ERROR
-HeapCfgHeapCount(
+HeapCfgHeapCount(CONNECTION_DATA * psConnection,
     const PVRSRV_DEVICE_NODE *psDeviceNode,
     IMG_UINT32 uiHeapConfigIndex,
     IMG_UINT32 *puiNumHeapsOut
@@ -81,7 +84,7 @@ HeapCfgHeapCount(
 }
 
 PVRSRV_ERROR
-HeapCfgHeapConfigName(
+HeapCfgHeapConfigName(CONNECTION_DATA * psConnection,
     const PVRSRV_DEVICE_NODE *psDeviceNode,
     IMG_UINT32 uiHeapConfigIndex,
     IMG_UINT32 uiHeapConfigNameBufSz,
@@ -99,7 +102,7 @@ HeapCfgHeapConfigName(
 }
 
 PVRSRV_ERROR
-HeapCfgHeapDetails(
+HeapCfgHeapDetails(CONNECTION_DATA * psConnection,
     const PVRSRV_DEVICE_NODE *psDeviceNode,
     IMG_UINT32 uiHeapConfigIndex,
     IMG_UINT32 uiHeapIndex,

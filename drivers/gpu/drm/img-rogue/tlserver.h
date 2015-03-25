@@ -62,7 +62,7 @@ PVRSRV_ERROR TLServerDisconnectKM(CONNECTION_DATA *psConnection);
 PVRSRV_ERROR TLServerOpenStreamKM(IMG_PCHAR pszName,
 			   IMG_UINT32 ui32Mode,
 			   PTL_STREAM_DESC* ppsSD,
-			   DEVMEM_EXPORTCOOKIE** ppsBufCookie);
+			   PMR** ppsTLPMR);
 
 PVRSRV_ERROR TLServerCloseStreamKM(PTL_STREAM_DESC psSD);
 

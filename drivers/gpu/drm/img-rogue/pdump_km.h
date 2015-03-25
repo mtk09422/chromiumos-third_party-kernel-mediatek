@@ -109,8 +109,12 @@ typedef PVRSRV_ERROR (*PFN_PDUMP_TRANSITION)(void **pvData, IMG_BOOL bInto, IMG_
 
 	PVRSRV_ERROR PDumpStartInitPhaseKM(void);
 	PVRSRV_ERROR PDumpStopInitPhaseKM(IMG_MODULE_ID eModuleID);
-	PVRSRV_ERROR PDumpSetFrameKM(CONNECTION_DATA *psConnection, IMG_UINT32 ui32Frame);
-	PVRSRV_ERROR PDumpGetFrameKM(CONNECTION_DATA *psConnection, IMG_UINT32* pui32Frame);
+PVRSRV_ERROR PDumpSetFrameKM(CONNECTION_DATA *psConnection,
+                             PVRSRV_DEVICE_NODE * psDeviceNode,
+                             IMG_UINT32 ui32Frame);
+PVRSRV_ERROR PDumpGetFrameKM(CONNECTION_DATA *psConnection,
+                             PVRSRV_DEVICE_NODE * psDeviceNode,
+                             IMG_UINT32* pui32Frame);
 	PVRSRV_ERROR PDumpCommentKM(IMG_CHAR *pszComment, IMG_UINT32 ui32Flags);
 
 	PVRSRV_ERROR PDumpSetDefaultCaptureParamsKM(IMG_UINT32 ui32Mode,
@@ -129,6 +133,53 @@ typedef PVRSRV_ERROR (*PFN_PDUMP_TRANSITION)(void **pvData, IMG_BOOL bInto, IMG_
 							IMG_UINT32	ui32RegAddr,
 							IMG_UINT64	ui64RegValue,
 							IMG_UINT32	ui32Flags);
+
+	PVRSRV_ERROR PDumpRegLabelToReg64(IMG_CHAR *pszPDumpRegName,
+                                          IMG_UINT32 ui32RegDst,
+                                          IMG_UINT32 ui32RegSrc,
+                                          IMG_UINT32 ui32Flags);
+
+	PVRSRV_ERROR PDumpMemLabelToInternalVar(IMG_CHAR *pszInternalVar,
+                                                PMR *psPMR,
+                                                IMG_DEVMEM_OFFSET_T uiLogicalOffset,
+                                                IMG_UINT32 ui32Flags);
+
+	PVRSRV_ERROR PDumpWriteVarORValueOp (const IMG_CHAR *pszInternalVariable,
+                                             const IMG_UINT64 ui64Value,
+                                             const IMG_UINT32 ui32PDumpFlags);
+
+	PVRSRV_ERROR PDumpWriteVarANDValueOp (const IMG_CHAR *pszInternalVariable,
+                                              const IMG_UINT64 ui64Value,
+                                              const IMG_UINT32 ui32PDumpFlags);
+
+	PVRSRV_ERROR PDumpInternalVarToReg32(IMG_CHAR *pszPDumpRegName,
+                                             IMG_UINT32	ui32Reg,
+                                             IMG_CHAR *pszInternalVar,
+                                             IMG_UINT32	ui32Flags);
+
+	PVRSRV_ERROR PDumpMemLabelToMem32(PMR *psPMRSource,
+                                          PMR *psPMRDest,
+                                          IMG_DEVMEM_OFFSET_T uiLogicalOffsetSource,
+                                          IMG_DEVMEM_OFFSET_T uiLogicalOffsetDest,
+                                          IMG_UINT32 ui32Flags);
+
+	PVRSRV_ERROR PDumpMemLabelToMem64(PMR *psPMRSource,
+									  PMR *psPMRDest,
+									  IMG_DEVMEM_OFFSET_T uiLogicalOffsetSource,
+									  IMG_DEVMEM_OFFSET_T uiLogicalOffsetDest,
+									  IMG_UINT32	ui32Flags);
+
+	PVRSRV_ERROR PDumpRegLabelToMem32(IMG_CHAR *pszPDumpRegName,
+                                          IMG_UINT32 ui32Reg,
+                                          PMR *psPMR,
+	                                  IMG_DEVMEM_OFFSET_T uiLogicalOffset,
+                                          IMG_UINT32 ui32Flags);
+
+	PVRSRV_ERROR PDumpRegLabelToMem64(IMG_CHAR *pszPDumpRegName,
+									  IMG_UINT32 ui32Reg,
+									  PMR *psPMR,
+									  IMG_DEVMEM_OFFSET_T uiLogicalOffset,
+									  IMG_UINT32 ui32Flags);
 
 	PVRSRV_ERROR PDumpLDW(IMG_CHAR      *pcBuffer,
 	                      IMG_CHAR      *pszDevSpaceName,
@@ -354,7 +405,23 @@ extern void PDumpUnregisterTransitionCallback(void *pvHandle);
 
 /* Notify PDump of a Transition into/out of capture range */
 extern PVRSRV_ERROR PDumpTransition(PDUMP_CONNECTION_DATA *psPDumpConnectionData, IMG_BOOL bInto, IMG_BOOL bContinuous);
-   
+
+/* Wires-up a MIPS TLB in the page table*/
+extern PVRSRV_ERROR PdumpWireUpMipsTLB(PMR *psPMRSource,
+						PMR *psPMRDest,
+						IMG_DEVMEM_OFFSET_T uiLogicalOffsetSource,
+						IMG_DEVMEM_OFFSET_T uiLogicalOffsetDest,
+						IMG_UINT32 ui32AllocationFlags,
+						IMG_UINT32 ui32Flags);
+
+/*Invalidate a MIPS TLB in the page table */
+PVRSRV_ERROR PdumpInvalidateMipsTLB(PMR *psPMRDest,
+									IMG_DEVMEM_OFFSET_T uiLogicalOffsetDest,
+									IMG_UINT32 ui32MipsTLBValidClearMask,
+									IMG_UINT32 ui32Flags);
+
+
+
 	#define PDUMP_LOCK				PDumpLockKM
 	#define PDUMP_UNLOCK			PDumpUnlockKM
 
@@ -472,7 +539,9 @@ PDumpStopInitPhaseKM(IMG_MODULE_ID eModuleID)
 #pragma inline(PDumpSetFrameKM)
 #endif
 static INLINE PVRSRV_ERROR
-PDumpSetFrameKM(CONNECTION_DATA *psConnection, IMG_UINT32 ui32Frame)
+PDumpSetFrameKM(CONNECTION_DATA *psConnection,
+                PVRSRV_DEVICE_NODE *psDevNode,
+                IMG_UINT32 ui32Frame)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	PVR_UNREFERENCED_PARAMETER(ui32Frame);

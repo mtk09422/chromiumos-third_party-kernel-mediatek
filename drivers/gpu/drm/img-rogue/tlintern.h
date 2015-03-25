@@ -102,7 +102,6 @@ typedef struct _TL_STREAM_
 
 	PTL_SNODE 			psNode;					/*!< Ptr to parent stream node */
 	DEVMEM_MEMDESC 		*psStreamMemDesc;		/*!< MemDescriptor used to allocate buffer space through PMR */
-	DEVMEM_EXPORTCOOKIE sExportCookie; 			/*!< Export cookie for stream DEVMEM */
 
 	IMG_HANDLE			hProducerEvent;			/*!< Handle to wait on if there is not enough space */
 	IMG_HANDLE			hProducerEventObj;		/*!< Handle to signal blocked reserve calls */
@@ -246,7 +245,7 @@ IMG_BOOL  TLRemoveDescAndTryFreeStreamNode(PTL_SNODE psRemove);
 IMG_UINT32 TLStreamAcquireReadPos(PTL_STREAM psStream, IMG_UINT32* puiReadOffset);
 void TLStreamAdvanceReadPos(PTL_STREAM psStream, IMG_UINT32 uiReadLen);
 
-DEVMEM_EXPORTCOOKIE* TLStreamGetBufferCookie(PTL_STREAM psStream);
+DEVMEM_MEMDESC* TLStreamGetBufferPointer(PTL_STREAM psStream);
 IMG_BOOL TLStreamEOS(PTL_STREAM psStream);
 
 /****************************************************************************************

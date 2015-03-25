@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -78,37 +74,20 @@ PVRSRVBridgeRGXSetRegConfigType(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXSETREGCONFIGTYPE *psRGXSetRegConfigTypeOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 
 
 
 
 
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXSetRegConfigTypeOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXSetRegConfigTypeIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXSetRegConfigTypeOUT->eError != PVRSRV_OK)
-					{
-						goto RGXSetRegConfigType_exit;
-					}
-				}
 
 
 	psRGXSetRegConfigTypeOUT->eError =
-		PVRSRVRGXSetRegConfigTypeKM(
-					hDevNodeInt,
+		PVRSRVRGXSetRegConfigTypeKM(psConnection, OSGetDevData(psConnection),
 					psRGXSetRegConfigTypeIN->ui8RegPowerIsland);
 
 
 
 
-RGXSetRegConfigType_exit:
 
 	return 0;
 }

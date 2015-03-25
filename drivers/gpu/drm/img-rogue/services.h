@@ -124,6 +124,11 @@ extern "C" {
 
 #define EVENTOBJNAME_MAXLENGTH (50) /*!< Max length of an event object name */
 
+/*
+ * Specifies to PVRSRVConnectionCreate that an existing OS connection should
+ * not be used.
+ */
+#define IMG_OS_CONNECTION_NONE (-1)
 
 /*!
 	Flags for Services connection.
@@ -194,25 +199,10 @@ typedef enum
  *****************************************************************************/
 
 /*!
- * Forward declaration
- */
-typedef struct _PVRSRV_DEV_DATA_ *PPVRSRV_DEV_DATA;
-/*!
  * Forward declaration (look on connection.h)
  */
-typedef struct _PVRSRV_CONNECTION_ PVRSRV_CONNECTION;
+typedef struct _PVRSRV_DEV_CONNECTION_ PVRSRV_DEV_CONNECTION;
 
-/*!
- ******************************************************************************
- * This structure allows the user mode glue code to have an OS independent
- * set of prototypes.
- *****************************************************************************/
-typedef struct _PVRSRV_DEV_DATA_
-{
-	PVRSRV_CONNECTION	 *psConnection;	/*!< Services connection info */
-	IMG_HANDLE			hDevCookie;				/*!< Dev cookie */
-
-} PVRSRV_DEV_DATA;
 
 /*************************************************************************/ /*! 
     PVR Client Event handling in Services
@@ -226,14 +216,14 @@ typedef enum _PVRSRV_CLIENT_EVENT_
 @Function       PVRSRVClientEvent
 @Description    Handles timeouts occurring in client drivers
 @Input          eEvent          event type
-@Input          psDevData       pointer to the PVRSRV_DEV_DATA context
+@Input          psDevConnection       pointer to the PVRSRV_DEV_CONNECTION context
 @Input          pvData          client-specific data
 @Return                         PVRSRV_OK on success. Otherwise, a PVRSRV_ 
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
 PVRSRV_ERROR IMG_CALLCONV PVRSRVClientEvent(const PVRSRV_CLIENT_EVENT eEvent,
-											PVRSRV_DEV_DATA *psDevData,
+											PVRSRV_DEV_CONNECTION *psDevConnection,
 											void *pvData);
 
 /******************************************************************************
@@ -245,15 +235,43 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVClientEvent(const PVRSRV_CLIENT_EVENT eEvent,
 @Description    Creates a services connection from an application to the
                 services module.
 @Output         ppsConnection   on Success, *ppsConnection is set to the new 
-                                PVRSRV_CONNECTION instance.
+                                PVRSRV_DEV_CONNECTION instance.
 @Input          ui32SrvFlags    a bit-wise OR of the following:
                                 SRV_FLAGS_PERSIST
 @Return                         PVRSRV_OK on success. Otherwise, a PVRSRV_ 
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVConnect(PVRSRV_CONNECTION **ppsConnection,
-					IMG_UINT32 ui32SrvFlags);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVConnect(PVRSRV_DEV_CONNECTION **ppsConnection,
+                                        IMG_UINT32 ui32SrvFlags);
+
+/**************************************************************************/ /*!
+@Function       PVRSRVConnectionCreate
+@Description    Creates a services connection from an application to the
+                services module using an existing OS connection.
+
+                NOTE: If additional calls are made to this function then it is
+                expected that the OS connection will be the same otherwise an
+                error will be returned. However, if all connections have been
+                closed, i.e. PVRSRVDisconnect has been called the appropriate
+                number of times, then a different OS connection can be used.
+                Likewise, if PVRSRVConnect has been called then calls to this
+                function must be made IMG_OS_CONNECTION_NONE.
+@Output         ppsConnection   on Success, *ppsConnection is set to the new 
+                                PVRSRV_DEV_CONNECTION instance.
+@Input          hOSConnection   An existing OS connection to the services module
+                                or IMG_OS_CONNECTION_NONE if an existing OS
+                                connection should not be used (this is
+                                equivalent to calling PVRSRVConnect)
+@Input          ui32SrvFlags    a bit-wise OR of the following:
+                                SRV_FLAGS_PERSIST
+@Return                         PVRSRV_OK on success. Otherwise, a PVRSRV_ 
+                                error code
+ */ /**************************************************************************/
+IMG_IMPORT
+PVRSRV_ERROR IMG_CALLCONV PVRSRVConnectionCreate(PVRSRV_DEV_CONNECTION **ppsConnection,
+                                                 IMG_OS_CONNECTION hOSConnection,
+                                                 IMG_UINT32 ui32SrvFlags);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVDisconnect 
@@ -263,71 +281,8 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVConnect(PVRSRV_CONNECTION **ppsConnection,
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVDisconnect(PVRSRV_CONNECTION *psConnection);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVDisconnect(PVRSRV_DEV_CONNECTION *psConnection);
 
-/**************************************************************************/ /*!
-@Function       PVRSRVEnumerateDevices
-@Description    Enumerate all services managed devices in the 
-                system.
-
-                The function returns a list of the device IDs stored either
-                in the services (or constructed in the user mode glue 
-                component in certain environments). The number of devices 
-                in the list is also returned.
-
-                The user is required to provide a buffer large enough to 
-                receive an array of MAX_NUM_DEVICE_IDS *
-                PVRSRV_DEVICE_IDENTIFIER structures.
-
-                In a binary layered component which does not support dynamic
-                runtime selection, the glue code should compile to return 
-                the supported devices statically, e.g. multiple instances of
-                the same device if multiple devices are supported
-
-                In the case of an environment (for instance) where one 
-                services managed device may connect to two display devices
-                this code would enumerate all three devices and even
-                non-dynamic device selection code should retain the facility
-                to parse the list to find the index of a given device.}
-
-@Input          psConnection    Services connection
-@Output         puiNumDevices   Number of devices present in the system
-@Output         puiDevIDs       Pointer to called supplied array of
-                                PVRSRV_DEVICE_IDENTIFIER structures. The
-                                array is assumed to be at least
-                                PVRSRV_MAX_DEVICES long.
-@Return                         PVRSRV_OK on success. Otherwise, a PVRSRV_
-                                error code
- */ /**************************************************************************/
-IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVEnumerateDevices(const PVRSRV_CONNECTION 	*psConnection,
-													IMG_UINT32 					*puiNumDevices,
-													PVRSRV_DEVICE_IDENTIFIER 	*puiDevIDs);
-
-/**************************************************************************/ /*!
-@Function       PVRSRVAcquireDeviceData
-@Description    Returns device info structure pointer for the requested device.
-                This populates a PVRSRV_DEV_DATA structure with appropriate 
-                pointers to the DevInfo structure for the device requested.
-
-                In a non-plug-and-play the first call to GetDeviceInfo for a
-                device causes device initialisation
-
-                Calls to GetDeviceInfo are reference counted
-@Input          psConnection    Services connection
-@Input          uiDevIndex      Index to the required device obtained from the 
-                                PVRSRVEnumerateDevice function 
-@Output         psDevData       The returned Device Data
-@Input          eDeviceType     Required device type. If type is unknown use 
-                                uiDevIndex to locate device data
-@Return                         PVRSRV_OK on success. Otherwise, a PVRSRV_
-                                error code
- */ /**************************************************************************/
-IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVAcquireDeviceData(PVRSRV_CONNECTION 	*psConnection,
-													IMG_UINT32			uiDevIndex,
-													PVRSRV_DEV_DATA		*psDevData,
-													PVRSRV_DEVICE_TYPE	eDeviceType);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVPollForValue
@@ -346,7 +301,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVAcquireDeviceData(PVRSRV_CONNECTION 	*psConnecti
                                     PVRSRV_ error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR PVRSRVPollForValue(const PVRSRV_CONNECTION	*psConnection,
+PVRSRV_ERROR PVRSRVPollForValue(const PVRSRV_DEV_CONNECTION	*psConnection,
 								IMG_HANDLE				hOSEvent,
 								volatile IMG_UINT32		*pui32LinMemAddr,
 								IMG_UINT32				ui32Value,
@@ -359,7 +314,7 @@ PVRSRV_ERROR PVRSRVPollForValue(const PVRSRV_CONNECTION	*psConnection,
  * correctly handles the differences between the different platforms.
  */
 IMG_IMPORT
-PVRSRV_ERROR PVRSRVWaitForValue(const PVRSRV_CONNECTION	*psConnection,
+PVRSRV_ERROR PVRSRVWaitForValue(const PVRSRV_DEV_CONNECTION	*psConnection,
                                 IMG_HANDLE				hOSEvent,
                                 volatile IMG_UINT32		*pui32LinMemAddr,
                                 IMG_UINT32				ui32Value,
@@ -410,7 +365,7 @@ PVRSRV_ERROR (*PVRSRVConditionCheckCallback)(
  */ /**************************************************************************/
 IMG_IMPORT
 PVRSRV_ERROR IMG_CALLCONV PVRSRVWaitForCondition(
-        const PVRSRV_CONNECTION*     psConnection,
+        const PVRSRV_DEV_CONNECTION*     psConnection,
         IMG_HANDLE                   hEvent,
         PVRSRVConditionCheckCallback pfnCallback,
         void                         *pvUserData);
@@ -432,7 +387,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVWaitForCondition(
  */ /**************************************************************************/
 IMG_IMPORT
 PVRSRV_ERROR IMG_CALLCONV PVRSRVWaitUntilSyncPrimOpReady(
-        const PVRSRV_CONNECTION* psConnection,
+        const PVRSRV_DEV_CONNECTION* psConnection,
         IMG_HANDLE               hEvent,
         PSYNC_OP_COOKIE          psOpCookie);
 
@@ -449,7 +404,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVWaitUntilSyncPrimOpReady(
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpInit(const PVRSRV_CONNECTION *psConnection);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpInit(const PVRSRV_DEV_CONNECTION *psConnection);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVPDumpStartInitPhase
@@ -459,7 +414,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpInit(const PVRSRV_CONNECTION *psConnection)
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStartInitPhase(const PVRSRV_CONNECTION *psConnection);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStartInitPhase(const PVRSRV_DEV_CONNECTION *psConnection);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVPDumpStopInitPhase
@@ -470,7 +425,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStartInitPhase(const PVRSRV_CONNECTION *psC
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStopInitPhase(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStopInitPhase(const PVRSRV_DEV_CONNECTION *psConnection,
 												IMG_MODULE_ID eModuleID);
 
 /**************************************************************************/ /*!
@@ -482,7 +437,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpStopInitPhase(const PVRSRV_CONNECTION *psCo
                                 error code
 */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetFrame(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetFrame(const PVRSRV_DEV_CONNECTION *psConnection,
 											  IMG_UINT32 ui32Frame);
 
 /**************************************************************************/ /*!
@@ -493,7 +448,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetFrame(const PVRSRV_CONNECTION *psConnect
 @Return         PVRSRV_OK on success. Otherwise, a PVRSRV_error code
 */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpGetFrame(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpGetFrame(const PVRSRV_DEV_CONNECTION *psConnection,
 											  IMG_UINT32 *pui32Frame);
 
 /**************************************************************************/ /*!
@@ -504,7 +459,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpGetFrame(const PVRSRV_CONNECTION *psConnect
                                 IMG_FALSE otherwise
 */ /**************************************************************************/
 IMG_IMPORT
-IMG_BOOL IMG_CALLCONV PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_CONNECTION *psConnection);
+IMG_BOOL IMG_CALLCONV PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_DEV_CONNECTION *psConnection);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVPDumpAfterRender
@@ -512,7 +467,7 @@ IMG_BOOL IMG_CALLCONV PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_CONNECTION *psC
 @Input          psDevData       Device data
 */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpAfterRender(PVRSRV_DEV_DATA *psDevData);
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpAfterRender(PVRSRV_DEV_CONNECTION *psDevConnection);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVPDumpComment
@@ -524,7 +479,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpAfterRender(PVRSRV_DEV_DATA *psDevData);
                                     error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpComment(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpComment(const PVRSRV_DEV_CONNECTION *psConnection,
 											 const IMG_CHAR *pszComment,
 											 IMG_BOOL bContinuous);
 
@@ -539,7 +494,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpComment(const PVRSRV_CONNECTION *psConnecti
                                     error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentf(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentf(const PVRSRV_DEV_CONNECTION *psConnection,
 											  IMG_BOOL bContinuous,
 											  const IMG_CHAR *pszFormat, ...)
 											  IMG_FORMAT_PRINTF(3, 4);
@@ -555,7 +510,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentf(const PVRSRV_CONNECTION *psConnect
                                     error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentWithFlagsf(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentWithFlagsf(const PVRSRV_DEV_CONNECTION *psConnection,
 													   IMG_UINT32 ui32Flags,
 													   const IMG_CHAR *pszFormat, ...)
 													   IMG_FORMAT_PRINTF(3, 4);
@@ -571,7 +526,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpCommentWithFlagsf(const PVRSRV_CONNECTION *
                                     error code
  */ /**************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpIsCapturing(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpIsCapturing(const PVRSRV_DEV_CONNECTION *psConnection,
 								 				IMG_BOOL *pbIsCapturing);
 
 
@@ -582,10 +537,10 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpIsCapturing(const PVRSRV_CONNECTION *psConn
 @Return         IMG_BOOL
  */ /**************************************************************************/
 IMG_IMPORT
-IMG_BOOL IMG_CALLCONV PVRSRVPDumpIsCapturingTest(const PVRSRV_CONNECTION *psConnection);
+IMG_BOOL IMG_CALLCONV PVRSRVPDumpIsCapturingTest(const PVRSRV_DEV_CONNECTION *psConnection);
 
 IMG_IMPORT
-PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetDefaultCaptureParams(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetDefaultCaptureParams(const PVRSRV_DEV_CONNECTION *psConnection,
                                                              IMG_UINT32 ui32Mode,
                                                              IMG_UINT32 ui32Start,
                                                              IMG_UINT32 ui32End,
@@ -598,7 +553,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPDumpSetDefaultCaptureParams(const PVRSRV_CONNEC
 #pragma inline(PVRSRVPDumpInit)
 #endif
 static INLINE PVRSRV_ERROR 
-PVRSRVPDumpInit(const PVRSRV_CONNECTION *psConnection)
+PVRSRVPDumpInit(const PVRSRV_DEV_CONNECTION *psConnection)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	return PVRSRV_OK;
@@ -608,7 +563,7 @@ PVRSRVPDumpInit(const PVRSRV_CONNECTION *psConnection)
 #pragma inline(PVRSRVPDumpStartInitPhase)
 #endif
 static INLINE PVRSRV_ERROR 
-PVRSRVPDumpStartInitPhase(const PVRSRV_CONNECTION *psConnection)
+PVRSRVPDumpStartInitPhase(const PVRSRV_DEV_CONNECTION *psConnection)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	return PVRSRV_OK;
@@ -618,7 +573,7 @@ PVRSRVPDumpStartInitPhase(const PVRSRV_CONNECTION *psConnection)
 #pragma inline(PVRSRVPDumpStopInitPhase)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpStopInitPhase(const PVRSRV_CONNECTION *psConnection)
+PVRSRVPDumpStopInitPhase(const PVRSRV_DEV_CONNECTION *psConnection)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	return PVRSRV_OK;
@@ -628,7 +583,7 @@ PVRSRVPDumpStopInitPhase(const PVRSRV_CONNECTION *psConnection)
 #pragma inline(PVRSRVPDumpSetFrame)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpSetFrame(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpSetFrame(const PVRSRV_DEV_CONNECTION *psConnection,
 					IMG_UINT32 ui32Frame)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
@@ -640,7 +595,7 @@ PVRSRVPDumpSetFrame(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpGetFrame)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpGetFrame(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpGetFrame(const PVRSRV_DEV_CONNECTION *psConnection,
 					IMG_UINT32 *pui32Frame)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
@@ -653,7 +608,7 @@ PVRSRVPDumpGetFrame(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpIsLastCaptureFrame)
 #endif
 static INLINE IMG_BOOL
-PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_CONNECTION *psConnection)
+PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_DEV_CONNECTION *psConnection)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	return IMG_FALSE;
@@ -663,9 +618,9 @@ PVRSRVPDumpIsLastCaptureFrame(const PVRSRV_CONNECTION *psConnection)
 #pragma inline(PVRSRVPDumpAfterRender)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpAfterRender(PVRSRV_DEV_DATA *psDevData)
+PVRSRVPDumpAfterRender(PVRSRV_DEV_CONNECTION *psDevConnection)
 {
-	PVR_UNREFERENCED_PARAMETER(psDevData);
+	PVR_UNREFERENCED_PARAMETER(psDevConnection);
 	return PVRSRV_OK;
 }
 
@@ -673,7 +628,7 @@ PVRSRVPDumpAfterRender(PVRSRV_DEV_DATA *psDevData)
 #pragma inline(PVRSRVPDumpComment)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpComment(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpComment(const PVRSRV_DEV_CONNECTION *psConnection,
 				   const IMG_CHAR *pszComment,
 				   IMG_BOOL bContinuous)
 {
@@ -687,7 +642,7 @@ PVRSRVPDumpComment(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpCommentf)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpCommentf(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpCommentf(const PVRSRV_DEV_CONNECTION *psConnection,
 					IMG_BOOL bContinuous,
 					const IMG_CHAR *pszFormat, ...)
 {
@@ -701,7 +656,7 @@ PVRSRVPDumpCommentf(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpCommentWithFlagsf)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpCommentWithFlagsf(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpCommentWithFlagsf(const PVRSRV_DEV_CONNECTION *psConnection,
 							 IMG_UINT32 ui32Flags,
 							 const IMG_CHAR *pszFormat, ...)
 {
@@ -716,7 +671,7 @@ PVRSRVPDumpCommentWithFlagsf(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpIsCapturing)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpIsCapturing(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpIsCapturing(const PVRSRV_DEV_CONNECTION *psConnection,
 					   IMG_BOOL *pbIsCapturing)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
@@ -728,7 +683,7 @@ PVRSRVPDumpIsCapturing(const PVRSRV_CONNECTION *psConnection,
 #pragma inline(PVRSRVPDumpIsCapturingTest)
 #endif
 static INLINE IMG_BOOL
-PVRSRVPDumpIsCapturingTest(const PVRSRV_CONNECTION *psConnection)
+PVRSRVPDumpIsCapturingTest(const PVRSRV_DEV_CONNECTION *psConnection)
 {
 	PVR_UNREFERENCED_PARAMETER(psConnection);
 	return IMG_FALSE;
@@ -738,7 +693,7 @@ PVRSRVPDumpIsCapturingTest(const PVRSRV_CONNECTION *psConnection)
 #pragma inline(PDumpSetPidCapRange)
 #endif
 static INLINE PVRSRV_ERROR
-PVRSRVPDumpSetDefaultCaptureParams(const PVRSRV_CONNECTION *psConnection,
+PVRSRVPDumpSetDefaultCaptureParams(const PVRSRV_DEV_CONNECTION *psConnection,
                                    IMG_UINT32 ui32Mode,
                                    IMG_UINT32 ui32Start,
                                    IMG_UINT32 ui32End,
@@ -1174,30 +1129,29 @@ IMG_IMPORT void * IMG_CALLCONV PVRSRVReallocUserModeMemTracking(void *pvMem,
 @Return         void
  */ /**************************************************************************/
 IMG_IMPORT void
-PVRSRVDumpDebugInfo(const PVRSRV_CONNECTION *psConnection, IMG_UINT32 ui32VerbLevel);
+PVRSRVDumpDebugInfo(const PVRSRV_DEV_CONNECTION *psConnection, IMG_UINT32 ui32VerbLevel);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVGetDevClockSpeed
 @Description    Gets the clock speed
 @Input          psConnection		Services connection
-@Input          psDevData			Pointer to the PVRSRV_DEV_DATA context
+@Input          psDevConnection			Pointer to the PVRSRV_DEV_CONNECTION context
 @Output         pui32ClockSpeed     Variable for storing clock speed
 @Return         IMG_BOOL			True if the operation was successful
  */ /**************************************************************************/
-IMG_IMPORT IMG_BOOL IMG_CALLCONV PVRSRVGetDevClockSpeed(const PVRSRV_CONNECTION *psConnection,
-														PVRSRV_DEV_DATA  *psDevData,
+IMG_IMPORT IMG_BOOL IMG_CALLCONV PVRSRVGetDevClockSpeed(const PVRSRV_DEV_CONNECTION  *psDevConnection,
 														IMG_PUINT32 pui32ClockSpeed);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVResetHWRLogs
 @Description    Resets the HWR Logs buffer (the hardware recovery count is not reset)
 @Input          psConnection		Services connection
-@Input          psDevData			Pointer to the PVRSRV_DEV_DATA context
+@Input          psDevConnection			Pointer to the PVRSRV_DEV_CONNECTION context
 @Return         PVRSRV_ERROR		PVRSRV_OK on success. Otherwise, a PVRSRV_
                                 	error code
  */ /**************************************************************************/
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVResetHWRLogs(const PVRSRV_CONNECTION *psConnection, PVRSRV_DEV_DATA  *psDevData);
+PVRSRVResetHWRLogs(const PVRSRV_DEV_CONNECTION  *psDevConnection);
 
 
 /******************************************************************************
@@ -1214,7 +1168,7 @@ PVRSRVResetHWRLogs(const PVRSRV_CONNECTION *psConnection, PVRSRV_DEV_DATA  *psDe
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVAcquireGlobalEventHandle(const PVRSRV_CONNECTION *psConnection,
+PVRSRVAcquireGlobalEventHandle(const PVRSRV_DEV_CONNECTION *psConnection,
                                IMG_HANDLE *phEvent);
 
 /**************************************************************************/ /*!
@@ -1226,7 +1180,7 @@ PVRSRVAcquireGlobalEventHandle(const PVRSRV_CONNECTION *psConnection,
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVReleaseGlobalEventHandle(const PVRSRV_CONNECTION *psConnection,
+PVRSRVReleaseGlobalEventHandle(const PVRSRV_DEV_CONNECTION *psConnection,
                                IMG_HANDLE hEvent);
 
 /**************************************************************************/ /*!
@@ -1238,7 +1192,7 @@ PVRSRVReleaseGlobalEventHandle(const PVRSRV_CONNECTION *psConnection,
                                 error code
  */ /**************************************************************************/
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVEventObjectWait(const PVRSRV_CONNECTION *psConnection,
+PVRSRVEventObjectWait(const PVRSRV_DEV_CONNECTION *psConnection,
                       IMG_HANDLE hEvent);
 
 /******************************************************************************
@@ -1247,14 +1201,14 @@ PVRSRVEventObjectWait(const PVRSRV_CONNECTION *psConnection,
 
 
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVKickDevices(const PVRSRV_CONNECTION *psConnection);
+PVRSRVKickDevices(const PVRSRV_DEV_CONNECTION *psConnection);
 
 
 /**************************************************************************/ /*!
 @Function       PVRSRVSoftReset
 @Description    Resets some modules of the device
 @Input          psConnection    Services connection
-@Input          psDevData		Pointer to the PVRSRV_DEV_DATA context
+@Input          psDevConnection		Pointer to the PVRSRV_DEV_CONNECTION context
 @Input          ui64ResetValue1 A mask for which each bit set corresponds
                                 to a module to reset (via the SOFT_RESET
                                 register).
@@ -1264,8 +1218,7 @@ PVRSRVKickDevices(const PVRSRV_CONNECTION *psConnection);
 @Return         PVRSRV_ERROR
 */ /***************************************************************************/
 IMG_IMPORT PVRSRV_ERROR
-PVRSRVSoftReset(const PVRSRV_CONNECTION *psConnection,
-				PVRSRV_DEV_DATA  *psDevData,
+PVRSRVSoftReset(const PVRSRV_DEV_CONNECTION  *psDevConnection,
 				IMG_UINT64 ui64ResetValue1,
 				IMG_UINT64 ui64ResetValue2);
 

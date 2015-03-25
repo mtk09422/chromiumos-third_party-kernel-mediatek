@@ -60,10 +60,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -107,7 +103,7 @@ PVRSRVBridgePMRSecureExportPMR(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psPMRSecureExportPMROUT->eError =
-		PMRSecureExportPMR(psConnection,
+		PMRSecureExportPMR(psConnection, OSGetDevData(psConnection),
 					psPMRInt,
 					&psPMRSecureExportPMROUT->Export,
 					&psPMROutInt, &psSecureConnection);

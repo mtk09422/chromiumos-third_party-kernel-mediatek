@@ -160,7 +160,7 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 	g_mfgclk_sys = devm_clk_get(&pdev->dev, "scp_sys_mfg");
 	if (IS_ERR(g_mfgclk_sys))
 		return PTR_ERR(g_mfgclk_sys);
-		
+
 	g_mfgclk_axi = devm_clk_get(&pdev->dev, "mfg_axi");
 	if (IS_ERR(g_mfgclk_axi))
 		return PTR_ERR(g_mfgclk_axi);
@@ -180,7 +180,7 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 	g_mmpll = devm_clk_get(&pdev->dev, "mmpll_clk");
 	if (IS_ERR(g_mmpll))
 		return PTR_ERR(g_mmpll);
-	
+
 	g_vgpu = devm_regulator_get(&pdev->dev, "mfgsys-power");
 	if (IS_ERR(g_vgpu))
 		return PTR_ERR(g_vgpu);

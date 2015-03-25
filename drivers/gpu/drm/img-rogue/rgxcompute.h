@@ -141,6 +141,7 @@ IMG_EXPORT
 PVRSRV_ERROR PVRSRVRGXFlushComputeDataKM(RGX_SERVER_COMPUTE_CONTEXT *psComputeContext);
 
 PVRSRV_ERROR PVRSRVRGXSetComputeContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                  PVRSRV_DEVICE_NODE * psDeviceNode,
 												  RGX_SERVER_COMPUTE_CONTEXT *psComputeContext,
 												  IMG_UINT32 ui32Priority);
 

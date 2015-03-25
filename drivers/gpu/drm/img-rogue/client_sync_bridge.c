@@ -53,30 +53,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeAllocSyncPrimitiveBlock(IMG_HANDLE hBridge,
-								     IMG_HANDLE hDevNode,
 								     IMG_HANDLE *phSyncHandle,
 								     IMG_UINT32 *pui32SyncPrimVAddr,
 								     IMG_UINT32 *pui32SyncPrimBlockSize,
-								     DEVMEM_SERVER_EXPORTCOOKIE *phExportCookie)
+								     IMG_HANDLE *phhSyncPMR)
 {
 	PVRSRV_ERROR eError;
-	IMG_HANDLE hDevNodeInt;
 	SYNC_PRIMITIVE_BLOCK * psSyncHandleInt;
-	DEVMEM_EXPORTCOOKIE * psExportCookieInt;
+	PMR * pshSyncPMRInt;
 
-	hDevNodeInt = (IMG_HANDLE) hDevNode;
 
 	eError =
-		PVRSRVAllocSyncPrimitiveBlockKM(hBridge
+		PVRSRVAllocSyncPrimitiveBlockKM(IMG_NULL, (PVRSRV_DEVICE_NODE *)((void*) hBridge)
 		,
-					hDevNodeInt,
 					&psSyncHandleInt,
 					pui32SyncPrimVAddr,
 					pui32SyncPrimBlockSize,
-					&psExportCookieInt);
+					&pshSyncPMRInt);
 
 	*phSyncHandle = psSyncHandleInt;
-	*phExportCookie = psExportCookieInt;
+	*phhSyncPMR = pshSyncPMRInt;
 	return eError;
 }
 
@@ -181,22 +177,18 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeSyncRecordAdd(IMG_HANDLE hBridge,
 }
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeServerSyncAlloc(IMG_HANDLE hBridge,
-							     IMG_HANDLE hDevNode,
 							     IMG_HANDLE *phSyncHandle,
 							     IMG_UINT32 *pui32SyncPrimVAddr,
 							     IMG_UINT32 ui32ClassNameSize,
 							     const IMG_CHAR *puiClassName)
 {
 	PVRSRV_ERROR eError;
-	IMG_HANDLE hDevNodeInt;
 	SERVER_SYNC_PRIMITIVE * psSyncHandleInt;
-	PVR_UNREFERENCED_PARAMETER(hBridge);
 
-	hDevNodeInt = (IMG_HANDLE) hDevNode;
 
 	eError =
-		PVRSRVServerSyncAllocKM(
-					hDevNodeInt,
+		PVRSRVServerSyncAllocKM(IMG_NULL, (PVRSRV_DEVICE_NODE *)((void*) hBridge)
+		,
 					&psSyncHandleInt,
 					pui32SyncPrimVAddr,
 					ui32ClassNameSize,

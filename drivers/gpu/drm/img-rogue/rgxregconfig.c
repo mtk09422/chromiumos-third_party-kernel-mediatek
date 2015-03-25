@@ -49,15 +49,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "sync_internal.h"
 #include "pdump_km.h"
 #include "pvrsrv.h"
-PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(PVRSRV_DEVICE_NODE	 *psDeviceNode,
+PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(CONNECTION_DATA * psDevConnection,
+                                         PVRSRV_DEVICE_NODE	 *psDeviceNode,
                                          IMG_UINT8           ui8RegCfgType)
-{
+{	
 #if defined(SUPPORT_USER_REGISTER_CONFIGURATION)
 	PVRSRV_ERROR          eError       = PVRSRV_OK;
 	PVRSRV_RGXDEV_INFO 	  *psDevInfo   = psDeviceNode->pvDevice;
 	RGX_REG_CONFIG        *psRegCfg    = &psDevInfo->sRegCongfig;
 	RGXFWIF_REG_CFG_TYPE  eRegCfgType  = (RGXFWIF_REG_CFG_TYPE) ui8RegCfgType;
 
+	PVR_UNREFERENCED_PARAMETER(psDevConnection);
 
 	if (eRegCfgType < psRegCfg->eRegCfgTypeToPush)
 	{
@@ -73,6 +75,8 @@ PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(PVRSRV_DEVICE_NODE	 *psDeviceNode,
 
 	return eError;
 #else
+	PVR_UNREFERENCED_PARAMETER(psDevConnection);
+		
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXSetRegConfigTypeKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif

@@ -1185,6 +1185,8 @@ static PMR_IMPL_FUNCTAB _sPMRLMAFuncTab = {
 	&PMRChangeSparseMemLocalMem,
 	/* pfnChangeSparseMemCPUMap */
 	&PMRChangeSparseMemCPUMapLocalMem,
+	/* pfnMMap */
+	NULL,
 	/* pfnFinalize */
 	&PMRFinalizeLocalMem
 };

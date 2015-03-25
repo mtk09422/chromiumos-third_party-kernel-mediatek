@@ -43,6 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
 #if defined(SUPPORT_DRM)
+#include <drmP.h>
 #include "pvr_drm.h"
 #endif
 
@@ -61,6 +62,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pmr_impl.h"
 #include "physmem_dmabuf.h"
 #include "hash.h"
+#include "private_data.h"
 
 #if defined(PVR_RI_DEBUG)
 #include "ri_server.h"
@@ -365,6 +367,26 @@ static void PMRReleaseKernelMappingDataDmaBuf(PMR_IMPL_PRIVDATA pvPriv,
 	dma_buf_end_cpu_access(psDmaBuf, 0, psDmaBuf->size, DMA_BIDIRECTIONAL);
 }
 
+static PVRSRV_ERROR PMRMMapDmaBuf(PMR_IMPL_PRIVDATA pvPriv,
+				  const PMR *psPMR,
+				  PMR_MMAP_DATA pOSMMapData)
+{
+	PMR_DMA_BUF_DATA *psPrivData = pvPriv;
+	struct dma_buf *psDmaBuf = psPrivData->psAttachment->dmabuf;
+	struct vm_area_struct *psVma = pOSMMapData;
+	int err;
+
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+
+	err = dma_buf_mmap(psDmaBuf, psVma, 0);
+	if (err)
+	{
+		return (err == -EINVAL) ? PVRSRV_ERROR_NOT_SUPPORTED : PVRSRV_ERROR_BAD_MAPPING;
+	}
+
+	return PVRSRV_OK;
+}
+
 static PMR_IMPL_FUNCTAB _sPMRDmaBufFuncTab =
 {
 	.pfnLockPhysAddresses		= PMRLockPhysAddressesDmaBuf,
@@ -372,6 +394,7 @@ static PMR_IMPL_FUNCTAB _sPMRDmaBufFuncTab =
 	.pfnDevPhysAddr			= PMRDevPhysAddrDmaBuf,
 	.pfnAcquireKernelMappingData	= PMRAcquireKernelMappingDataDmaBuf,
 	.pfnReleaseKernelMappingData	= PMRReleaseKernelMappingDataDmaBuf,
+	.pfnMMap			= PMRMMapDmaBuf,
 	.pfnFinalize			= PMRFinalizeDmaBuf,
 };
 
@@ -572,12 +595,18 @@ static PVRSRV_ERROR PhysmemDestroyDmaBuf(PHYS_HEAP *psHeap,
 
 PVRSRV_ERROR
 PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
+		    PVRSRV_DEVICE_NODE *psDevNode,
 		    IMG_INT fd,
 		    PVRSRV_MEMALLOCFLAGS_T uiFlags,
 		    PMR **ppsPMRPtr,
 		    IMG_DEVMEM_SIZE_T *puiSize,
 		    IMG_DEVMEM_ALIGN_T *puiAlign)
 {
+#if defined(SUPPORT_DRM)
+	struct file *psFile;
+	struct drm_file *psFilePriv;
+#endif
+	struct device *psDev;
 	PMR *psPMR;
 	struct dma_buf_attachment *psAttachment;
 	struct dma_buf *psDmaBuf;
@@ -589,6 +618,15 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 		eError = PVRSRV_ERROR_INVALID_PARAMS;
 		goto fail_params;
 	}
+
+#if defined(SUPPORT_DRM)
+	psFile = LinuxFileFromConnection(psConnection);
+	psFilePriv = psFile->private_data;
+	psDev = psFilePriv->minor->dev->dev;
+#else
+	/* Use a fake device */
+	psDev = (void *)0x1;
+#endif
 
 	/* Get the buffer handle */
 	psDmaBuf = dma_buf_get(fd);
@@ -618,8 +656,7 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 		}
 	}
 
-	/* Attach a fake device to to the dmabuf */
-	psAttachment = dma_buf_attach(psDmaBuf, (void *)0x1);
+	psAttachment = dma_buf_attach(psDmaBuf, psDev);
 	if (IS_ERR_OR_NULL(psAttachment))
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: dma_buf_get failed", __func__));
@@ -694,5 +731,5 @@ fail_params:
 	PVR_ASSERT(eError != PVRSRV_OK);
 	return eError;
 }
-#endif /* defined(SUPPORT_DMABUF) */
+#endif /* #if defined(SUPPORT_DMABUF) */
 #endif /* !defined(SUPPORT_DRM) || defined(PVR_DRM_USE_PRIME) */

@@ -49,6 +49,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debug.h"
 #include "pvrsrv_error.h"
 
+#include "connection_server.h"
+
 #include "pmr.h"
 
 typedef struct _DEVMEMINT_CTX_ DEVMEMINT_CTX;
@@ -167,7 +169,7 @@ DevmemServerGetHeapHandle(DEVMEMINT_RESERVATION *psReservation,
  * that will be created by this call.
  */
 extern PVRSRV_ERROR
-DevmemIntCtxCreate(
+DevmemIntCtxCreate(CONNECTION_DATA * psConnection,
                  PVRSRV_DEVICE_NODE *psDeviceNode,
                  /* devnode / perproc etc */
 
@@ -368,18 +370,19 @@ extern IMG_UINT32
 DevmemIntMMUContextID(DEVMEMINT_CTX *psDevMemContext);
 
 extern PVRSRV_ERROR
-DevmemIntPDumpBitmap(PVRSRV_DEVICE_NODE *psDeviceNode,
-						IMG_CHAR *pszFileName,
-						IMG_UINT32 ui32FileOffset,
-						IMG_UINT32 ui32Width,
-						IMG_UINT32 ui32Height,
-						IMG_UINT32 ui32StrideInBytes,
-						IMG_DEV_VIRTADDR sDevBaseAddr,
-						DEVMEMINT_CTX *psDevMemContext,
-						IMG_UINT32 ui32Size,
-						PDUMP_PIXEL_FORMAT ePixelFormat,
-						IMG_UINT32 ui32AddrMode,
-						IMG_UINT32 ui32PDumpFlags);
+DevmemIntPDumpBitmap(CONNECTION_DATA * psConnection,
+                     PVRSRV_DEVICE_NODE *psDeviceNode,
+                     IMG_CHAR *pszFileName,
+                     IMG_UINT32 ui32FileOffset,
+                     IMG_UINT32 ui32Width,
+                     IMG_UINT32 ui32Height,
+                     IMG_UINT32 ui32StrideInBytes,
+                     IMG_DEV_VIRTADDR sDevBaseAddr,
+                     DEVMEMINT_CTX *psDevMemContext,
+                     IMG_UINT32 ui32Size,
+                     PDUMP_PIXEL_FORMAT ePixelFormat,
+                     IMG_UINT32 ui32AddrMode,
+                     IMG_UINT32 ui32PDumpFlags);
 #else	/* PDUMP */
 
 #ifdef INLINE_IS_PRAGMA
@@ -408,19 +411,21 @@ DevmemIntPDumpSaveToFileVirtual(DEVMEMINT_CTX *psDevmemCtx,
 #pragma inline(PVRSRVSyncPrimPDumpPolKM)
 #endif
 static INLINE PVRSRV_ERROR
-DevmemIntPDumpBitmap(PVRSRV_DEVICE_NODE *psDeviceNode,
-						IMG_CHAR *pszFileName,
-						IMG_UINT32 ui32FileOffset,
-						IMG_UINT32 ui32Width,
-						IMG_UINT32 ui32Height,
-						IMG_UINT32 ui32StrideInBytes,
-						IMG_DEV_VIRTADDR sDevBaseAddr,
-						DEVMEMINT_CTX *psDevMemContext,
-						IMG_UINT32 ui32Size,
-						PDUMP_PIXEL_FORMAT ePixelFormat,
-						IMG_UINT32 ui32AddrMode,
-						IMG_UINT32 ui32PDumpFlags)
+DevmemIntPDumpBitmap(CONNECTION_DATA * psConnection,
+                     PVRSRV_DEVICE_NODE *psDeviceNode,
+                     IMG_CHAR *pszFileName,
+                     IMG_UINT32 ui32FileOffset,
+                     IMG_UINT32 ui32Width,
+                     IMG_UINT32 ui32Height,
+                     IMG_UINT32 ui32StrideInBytes,
+                     IMG_DEV_VIRTADDR sDevBaseAddr,
+                     DEVMEMINT_CTX *psDevMemContext,
+                     IMG_UINT32 ui32Size,
+                     PDUMP_PIXEL_FORMAT ePixelFormat,
+                     IMG_UINT32 ui32AddrMode,
+                     IMG_UINT32 ui32PDumpFlags)
 {
+	PVR_UNREFERENCED_PARAMETER(psConnection);
 	PVR_UNREFERENCED_PARAMETER(psDeviceNode);
 	PVR_UNREFERENCED_PARAMETER(pszFileName);
 	PVR_UNREFERENCED_PARAMETER(ui32FileOffset);

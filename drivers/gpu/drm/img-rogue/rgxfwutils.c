@@ -53,6 +53,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devicemem.h"
 #include "devicemem_pdump.h"
 #include "devicemem_server.h"
+#include "devicemem_utils.h"
+
 #include "pvr_debug.h"
 #include "rgxfwutils.h"
 #include "rgx_fwif.h"
@@ -77,7 +79,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "tlstream.h"
 #include "devicemem_server_utils.h"
 
-#if defined(TDMETACODE)
+#if defined(SUPPORT_TRUSTED_DEVICE)
 #include "physmem_osmem.h"
 #endif
 
@@ -314,6 +316,7 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 {
 	PVRSRV_ERROR		eError;
 	IMG_DEV_VIRTADDR	psDevVirtAddr;
+#if defined(RGX_FEATURE_META)
 	IMG_UINT64			ui64Offset;
 	IMG_BOOL            bCachedInMETA;
 	DEVMEM_FLAGS_T      uiDevFlags;
@@ -331,7 +334,7 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 	DevmemGetFlags(psSrc, &uiDevFlags);
 
 	/* Honour the META cache flags */	
-	bCachedInMETA = (PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) & uiDevFlags) != 0;
+	bCachedInMETA = (PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) & uiDevFlags) != 0;
 	
 #if defined(HW_ERN_45914)
 	/* We only cache in META if it's also cached in the SLC */
@@ -355,6 +358,15 @@ void RGXSetFirmwareAddress(RGXFWIF_DEV_VIRTADDR	*ppDest,
 	{
 		DevmemReleaseDevVirtAddr(psSrc);
 	}
+#else
+	eError = DevmemAcquireDevVirtAddr(psSrc, &psDevVirtAddr);
+	PVR_ASSERT(eError == PVRSRV_OK);
+	ppDest->ui32Addr = (IMG_UINT32)((psDevVirtAddr.uiAddr + uiExtraOffset) & 0xFFFFFFFF);
+	if (ui32Flags & RFW_FWADDR_NOREF_FLAG)
+	{
+		DevmemReleaseDevVirtAddr(psSrc);
+	}
+#endif
 }
 
 #if defined(RGX_FEATURE_META_DMA)
@@ -715,7 +727,7 @@ static PVRSRV_ERROR RGXSetupKernelCCB(PVRSRV_RGXDEV_INFO 	*psDevInfo,
 
 	/* Allocation flags for Kernel CCB */
 	uiCCBMemAllocFlags = PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-						 PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+						 PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 						 PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 						 PVRSRV_MEMALLOCFLAG_CPU_READABLE |
 						 PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
@@ -1040,6 +1052,7 @@ static PVRSRV_ERROR RGXSetupFaultReadRegister(PVRSRV_DEVICE_NODE	*psDeviceNode, 
 		goto failFaultAddressDescAlloc;
 	}
 
+
 	eError = DevmemAcquireCpuVirtAddr(psDevInfo->psRGXFaultAddressMemDesc,
 									  (void **)&pui32MemoryVirtAddr);
 	if (eError != PVRSRV_OK)
@@ -1227,13 +1240,14 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 							     IMG_UINT32			ui32JonesDisableMask,
 							     IMG_UINT32			ui32HWRDebugDumpLimit,
 								 IMG_UINT32			ui32HWPerfCountersDataSize,
+							     PMR				**ppsHWPerfPMR,
 							     RGXFWIF_DEV_VIRTADDR	*psRGXFWInitFWAddr,
-							     RGX_RD_POWER_ISLAND_CONF eRGXRDPowerIslandConf)
+								 RGX_RD_POWER_ISLAND_CONF eRGXRDPowerIslandConf)
 
 {
 	PVRSRV_ERROR		eError;
 	DEVMEM_FLAGS_T		uiMemAllocFlags;
-	RGXFWIF_INIT		*psRGXFWInit;
+	RGXFWIF_INIT		*psRGXFWInit = NULL;
 	PVRSRV_RGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
 	IMG_UINT32			dm;
 
@@ -1243,7 +1257,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 
 	/* Fw init data */
 	uiMemAllocFlags =	PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-						PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+						PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 						PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 						PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 						PVRSRV_MEMALLOCFLAG_CPU_READABLE |
@@ -1252,6 +1266,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 						PVRSRV_MEMALLOCFLAG_UNCACHED |
 						PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC;
 						/* FIXME: Change to Cached */
+
 
 	PDUMPCOMMENT("Allocate RGXFWIF_INIT structure");
 	eError = DevmemFwAllocate(psDevInfo,
@@ -1364,7 +1379,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 
 	/* Meta cached flag removed from this allocation as it was found
 	 * FW performance was better without it. */
-	RGXSetFirmwareAddress(&psRGXFWInit->psHWPerfInfoCtl,
+	RGXSetFirmwareAddress(&psRGXFWInit->pui8HWPerfBuf,
 						  psDevInfo->psRGXFWIfHWPerfBufMemDesc,
 						  0, RFW_FWADDR_NOREF_FLAG);
 
@@ -1386,6 +1401,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 						PVRSRV_MEMALLOCFLAG_UNCACHED |
 						PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC;
 
+#if defined(RGX_META_COREMEM)
 	/* Allocate buffer to store FW data */
 	eError = DevmemFwAllocate(psDevInfo,
 							  RGX_META_COREMEM_DATA_SIZE,
@@ -1400,6 +1416,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		goto fail;
 	}
 
+
 #if defined(RGX_FEATURE_META_DMA)
 	RGXSetFirmwareAddress(&sRGXTmpCorememDataStoreFWAddr,
 						  psDevInfo->psRGXFWIfCorememDataStoreMemDesc,
@@ -1413,6 +1430,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	RGXSetFirmwareAddress(&psRGXFWInit->sCorememDataStore.pbyFWAddr,
 						  psDevInfo->psRGXFWIfCorememDataStoreMemDesc,
 						  0, RFW_FWADDR_NOREF_FLAG);
+#endif
 #endif
 
 	/* init HW frame info */
@@ -1456,6 +1474,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	psDevInfo->psRGXFWIfTraceBuf->ui32HWPerfDropCount = 0;
 	psDevInfo->psRGXFWIfTraceBuf->ui32FirstDropOrdinal = 0;
 	psDevInfo->psRGXFWIfTraceBuf->ui32LastDropOrdinal = 0;
+	psDevInfo->psRGXFWIfTraceBuf->ui32PowMonEnergy = 0;
 
 	
 	/* Initialise the HWPerf module in the Rogue device driver.
@@ -1600,23 +1619,15 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		goto fail;
 	}
 
-	eError = DevmemExport(psDevInfo->psRGXFWIfHWPerfCountersMemDesc,
-	                      &psDevInfo->sRGXFWHWPerfCountersExportCookie);
-	if (eError != PVRSRV_OK)
-	{
-		PVR_DPF((PVR_DBG_ERROR,"Failed to export fw hwperf ctl (%u)",
-				eError));
-		goto fail;
-	}
+	DevmemLocalGetImportHandle(psDevInfo->psRGXFWIfHWPerfCountersMemDesc, (void**) ppsHWPerfPMR);
 
 	RGXSetFirmwareAddress(&psRGXFWInit->psHWPerfCtl,
 						psDevInfo->psRGXFWIfHWPerfCountersMemDesc,
 						0, 0);
 	
 	/* Allocate a sync for power management */
-	eError = SyncPrimContextCreate(NULL,
-									psDevInfo->psDeviceNode,
-						  			&psDevInfo->hSyncPrimContext);
+	eError = SyncPrimContextCreate(psDevInfo->psDeviceNode,
+	                               &psDevInfo->hSyncPrimContext);
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR,"RGXSetupFirmware: Failed to allocate sync primitive context with error (%u)", eError));
@@ -1892,7 +1903,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	*/
 	PDUMPCOMMENT("Allocate timer query arrays (FW)");
 	eError = DevmemFwAllocate(psDevInfo,
-	                          sizeof(RGXFWIF_TIMESTAMP) * RGX_MAX_TIMER_QUERIES,
+	                          sizeof(IMG_UINT64) * RGX_MAX_TIMER_QUERIES,
 	                          uiMemAllocFlags,
 	                          "FwStartTimesArray",
 	                          & psDevInfo->psStartTimeMemDesc);
@@ -1903,7 +1914,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	}
 
 	eError = DevmemAcquireCpuVirtAddr(psDevInfo->psStartTimeMemDesc,
-	                                  (void **)& psDevInfo->pasStartTimeById);
+	                                  (void **)& psDevInfo->pui64StartTimeById);
 
 	if (eError != PVRSRV_OK)
 	{
@@ -1912,7 +1923,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	}
 
 	eError = DevmemFwAllocate(psDevInfo,
-	                          sizeof(RGXFWIF_TIMESTAMP) * RGX_MAX_TIMER_QUERIES,
+	                          sizeof(IMG_UINT64) * RGX_MAX_TIMER_QUERIES,
 	                          uiMemAllocFlags,
 	                          "FwEndTimesArray",
 	                          & psDevInfo->psEndTimeMemDesc);
@@ -1923,7 +1934,7 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	}
 
 	eError = DevmemAcquireCpuVirtAddr(psDevInfo->psEndTimeMemDesc,
-	                                  (void **)& psDevInfo->pasEndTimeById);
+	                                  (void **)& psDevInfo->pui64EndTimeById);
 
 	if (eError != PVRSRV_OK)
 	{
@@ -2033,12 +2044,13 @@ PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
 						0,
 						sizeof(RGXFWIF_INIT),
 						PDUMP_FLAGS_CONTINUOUS);
-
+#if defined(RGX_META_COREMEM)
 	PDUMPCOMMENT("Dump rgxfw coremem data store");
 	DevmemPDumpLoadMem(	psDevInfo->psRGXFWIfCorememDataStoreMemDesc,
 						0,
 						RGX_META_COREMEM_DATA_SIZE,
 						PDUMP_FLAGS_CONTINUOUS);
+#endif
 
 	PDUMPCOMMENT("RTCONF: run-time configuration");
 
@@ -2301,13 +2313,13 @@ void RGXFreeFirmware(PVRSRV_RGXDEV_INFO 	*psDevInfo)
 		DevmemFwFree(psDevInfo->psRGXFWIfHWPerfBufMemDesc);
 		psDevInfo->psRGXFWIfHWPerfBufMemDesc = NULL;
 	}
-
+#if defined(RGX_META_COREMEM)
 	if (psDevInfo->psRGXFWIfCorememDataStoreMemDesc)
 	{
 		DevmemFwFree(psDevInfo->psRGXFWIfCorememDataStoreMemDesc);
 		psDevInfo->psRGXFWIfCorememDataStoreMemDesc = NULL;
 	}
-
+#endif
 	if (psDevInfo->psRGXFWIfTraceBufCtlMemDesc)
 	{
 		if (psDevInfo->psRGXFWIfTraceBuf != NULL)
@@ -2328,14 +2340,6 @@ void RGXFreeFirmware(PVRSRV_RGXDEV_INFO 	*psDevInfo)
 	if (psDevInfo->psRGXFWIfHWPerfCountersMemDesc)
 	{
 		RGXUnsetFirmwareAddress(psDevInfo->psRGXFWIfHWPerfCountersMemDesc);
-		if (DevmemIsValidExportCookie(&psDevInfo->sRGXFWHWPerfCountersExportCookie))
-		{
-			/* if the export cookie is valid, the init sequence failed */
-			PVR_DPF((PVR_DBG_ERROR, "RGXFreeFirmware: FW HWPerf Export cookie"
-			         "still valid (should have been unexported at init time)"));
-			DevmemUnexport(psDevInfo->psRGXFWIfHWPerfCountersMemDesc,
-			               &psDevInfo->sRGXFWHWPerfCountersExportCookie);
-		}
 		DevmemFwFree(psDevInfo->psRGXFWIfHWPerfCountersMemDesc);
 		psDevInfo->psRGXFWIfHWPerfCountersMemDesc = NULL;
 	}
@@ -2361,10 +2365,10 @@ void RGXFreeFirmware(PVRSRV_RGXDEV_INFO 	*psDevInfo)
 	}
 	if (psDevInfo->psEndTimeMemDesc)
 	{
-		if (psDevInfo->pasEndTimeById)
+		if (psDevInfo->pui64EndTimeById)
 		{
 			DevmemReleaseCpuVirtAddr(psDevInfo->psEndTimeMemDesc);
-			psDevInfo->pasEndTimeById = NULL;
+			psDevInfo->pui64EndTimeById = NULL;
 		}
 
 		DevmemFwFree(psDevInfo->psEndTimeMemDesc);
@@ -2372,10 +2376,10 @@ void RGXFreeFirmware(PVRSRV_RGXDEV_INFO 	*psDevInfo)
 	}
 	if (psDevInfo->psStartTimeMemDesc)
 	{
-		if (psDevInfo->pasStartTimeById)
+		if (psDevInfo->pui64StartTimeById)
 		{
 			DevmemReleaseCpuVirtAddr(psDevInfo->psStartTimeMemDesc);
-			psDevInfo->pasStartTimeById = NULL;
+			psDevInfo->pui64StartTimeById = NULL;
 		}
 
 		DevmemFwFree(psDevInfo->psStartTimeMemDesc);
@@ -3933,6 +3937,51 @@ PVRSRV_ERROR RGXResetHWRLogs(PVRSRV_DEVICE_NODE *psDevNode)
 	psHWRInfoBuf->ui32DDReqCount = 0;
 
 	return PVRSRV_OK;
+}
+
+PVRSRV_ERROR RGXGetPhyAddr(PMR *psPMR,
+						   IMG_DEV_PHYADDR *psPhyAddr,
+						   IMG_UINT32 ui32LogicalOffset,
+						   IMG_UINT32 ui32Log2PageSize,
+						   IMG_UINT32 ui32NumOfPages,
+						   IMG_BOOL *bValid)
+{
+
+	PVRSRV_ERROR eError;
+
+	eError = PMRLockSysPhysAddresses(psPMR,
+										 ui32Log2PageSize);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"RGXGetPhyAddr: PMRLockSysPhysAddresses failed (%u)",
+				eError));
+		return eError;
+	}
+
+	eError = PMR_DevPhysAddr(psPMR,
+								 ui32Log2PageSize,
+								 ui32NumOfPages,
+								 ui32LogicalOffset,
+								 psPhyAddr,
+								 bValid);
+
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"RGXGetPhyAddr: PMR_DevPhysAddr failed (%u)",
+				eError));
+		return eError;
+	}
+
+
+	eError = PMRUnlockSysPhysAddresses(psPMR);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"RGXGetPhyAddr: PMRUnLockSysPhysAddresses failed (%u)",
+				eError));
+		return eError;
+	}
+
+	return eError;
 }
 
 

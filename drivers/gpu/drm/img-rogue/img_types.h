@@ -107,6 +107,10 @@ typedef int64_t			IMG_INT64,	*IMG_PINT64;
 #define IMG_UINT32_MAX	UINT32_MAX
 #define IMG_UINT64_MAX	UINT64_MAX
 
+#define IMG_INT16_MAX	INT16_MAX
+#define IMG_INT32_MAX	INT32_MAX
+#define IMG_INT64_MAX	INT64_MAX
+
 typedef IMG_UINT16 const* IMG_PCUINT16;
 typedef IMG_INT16 const* IMG_PCINT16;
 typedef IMG_UINT32 const* IMG_PCUINT32;
@@ -157,6 +161,9 @@ typedef IMG_UINT64      IMG_SID;
 
 /* Process IDs */
 typedef IMG_UINT32      IMG_PID;
+
+/* OS connection type */
+typedef int             IMG_OS_CONNECTION;
 
 
 /*

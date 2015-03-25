@@ -52,6 +52,9 @@ PVRSRV_ERROR OSConnectionPrivateDataInit(IMG_HANDLE *phOsPrivateData, void *pvOS
 PVRSRV_ERROR OSConnectionPrivateDataDeInit(IMG_HANDLE hOsPrivateData);
 
 PVRSRV_ERROR OSConnectionSetHandleOptions(PVRSRV_HANDLE_BASE *psHandleBase);
+
+PVRSRV_DEVICE_NODE* OSGetDevData(CONNECTION_DATA *psConnection);
+
 #else	/* defined(__linux__) */
 #ifdef INLINE_IS_PRAGMA
 #pragma inline(OSConnectionPrivateDataInit)
@@ -82,6 +85,16 @@ static INLINE PVRSRV_ERROR OSConnectionSetHandleOptions(PVRSRV_HANDLE_BASE *psHa
 	PVR_UNREFERENCED_PARAMETER(psHandleBase);
 
 	return PVRSRV_OK;
+}
+
+#ifdef INLINE_IS_PRAGMA
+#pragma inline(OSGetDevData)
+#endif
+static INLINE PVRSRV_DEVICE_NODE* OSGetDevData(CONNECTION_DATA *psConnection)
+{
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+
+	return IMG_NULL;
 }
 #endif	/* defined(__linux__) */
 

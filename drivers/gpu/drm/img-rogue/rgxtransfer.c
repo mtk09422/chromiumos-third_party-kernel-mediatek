@@ -457,9 +457,9 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 	PVRSRV_ERROR eError;
 	PVRSRV_ERROR eError2;
 
-	RGXFWIF_DEV_VIRTADDR pPreTimestamp;
-	RGXFWIF_DEV_VIRTADDR pPostTimestamp;
-	PRGXFWIF_UFO_ADDR    pRMWUFOAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPreAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPostAddr;
+	PRGXFWIF_UFO_ADDR       pRMWUFOAddr;
 
 
 #if defined(SUPPORT_NATIVE_FENCE_SYNC)
@@ -629,8 +629,8 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 #endif
 
 		RGX_GetTimestampCmdHelper((PVRSRV_RGXDEV_INFO*) psTransferContext->psDeviceNode->pvDevice,
-		                          & pPreTimestamp,
-		                          & pPostTimestamp,
+		                          & pPreAddr,
+		                          & pPostAddr,
 		                          & pRMWUFOAddr);
 
 		/*
@@ -648,8 +648,8 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		                                papapsServerSyncs[i],
 		                                paui32FWCommandSize[i],
 		                                papaui8FWCommand[i],
-		                                & pPreTimestamp,
-		                                & pPostTimestamp,
+		                                & pPreAddr,
+		                                & pPostAddr,
 		                                & pRMWUFOAddr,
 		                                eType,
 		                                bPDumpContinuous,
@@ -844,10 +844,13 @@ fail_alloc3dhelper:
 }
 
 PVRSRV_ERROR PVRSRVRGXSetTransferContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                   PVRSRV_DEVICE_NODE * psDevNode,
 												   RGX_SERVER_TQ_CONTEXT *psTransferContext,
 												   IMG_UINT32 ui32Priority)
 {
 	PVRSRV_ERROR eError;
+
+	PVR_UNREFERENCED_PARAMETER(psDevNode);
 
 	if (psTransferContext->s2DData.ui32Priority != ui32Priority)
 	{

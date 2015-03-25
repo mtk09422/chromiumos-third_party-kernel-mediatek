@@ -49,6 +49,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "img_defs.h"
+#include "km/rgxdefs_km.h"
+
 
 /************************************************************************
 * META registers and MACROS 
@@ -78,15 +80,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define META_CR_PERF_ICORE0						(0x0480FFD0)
 #define META_CR_PERF_ICORE1						(0x0480FFD8)
 #define META_CR_PERF_ICORE_DCACHEMISS			(0x8)
-
-typedef enum
-{
-	META_PERF_CONF_NONE = 0,
-	META_PERF_CONF_ICACHE = 1,
-	META_PERF_CONF_DCACHE = 2,
-	META_PERF_CONF_POLLS = 3,
-	META_PERF_CONF_CUSTOM_TIMER = 4
-} META_PERF_CONF;
 
 #define META_CR_PERF_COUNT(CTRL, THR)			((META_CR_PERF_COUNT_CTRL_##CTRL << META_CR_PERF_COUNT_CTRL_SHIFT) | \
 												 (THR << META_CR_PERF_COUNT_THR_SHIFT))
@@ -295,10 +288,18 @@ typedef struct
 /* Bootloader configuration offset is in dwords (512 bytes) */
 #define RGXFW_BOOTLDR_CONF_OFFSET	(0x80)
 
+
+/* Firmware to host interrupts defines */
+#define RGXFW_CR_IRQ_STATUS           RGX_CR_META_SP_MSLVIRQSTATUS
+#define RGXFW_CR_IRQ_STATUS_EVENT_EN  RGX_CR_META_SP_MSLVIRQSTATUS_TRIGVECT2_EN
+#define RGXFW_CR_IRQ_CLEAR            RGX_CR_META_SP_MSLVIRQSTATUS
+#define RGXFW_CR_IRQ_CLEAR_MASK       RGX_CR_META_SP_MSLVIRQSTATUS_TRIGVECT2_CLRMSK
+
+
 /************************************************************************
 * RGX META Stack
 ************************************************************************/
-#define RGX_META_STACK_SIZE  (0xC00)
+#define RGX_META_STACK_SIZE  (0x1000)
 
 /************************************************************************
 * RGX META Core memory
@@ -356,6 +357,20 @@ typedef struct
 #else
 #error "Unknown META ID"
 #endif
+
+#define FW_CORE_ID_VALUE	    RGX_CR_META_CORE_ID_VALUE
+#define RGXFW_PROCESSOR             "META"
+
+
+typedef enum
+{
+	FW_PERF_CONF_NONE = 0,
+	FW_PERF_CONF_ICACHE = 1,
+	FW_PERF_CONF_DCACHE = 2,
+	FW_PERF_CONF_POLLS = 3,
+	FW_PERF_CONF_CUSTOM_TIMER = 4
+} FW_PERF_CONF;
+
 
 #endif /*  __RGX_META_H__ */
 

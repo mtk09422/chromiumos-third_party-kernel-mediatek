@@ -88,9 +88,9 @@ typedef struct _RGX_CCB_CMD_HELPER_DATA_ {
 	IMG_UINT32				ui32UnfencedUpdateCmdSize;
 
 	/* timestamp commands */
-	RGXFWIF_DEV_VIRTADDR    pPreTimestamp;
+	PRGXFWIF_TIMESTAMP_ADDR pPreTimestampAddr;
 	IMG_UINT32              ui32PreTimeStampCmdSize;
-	RGXFWIF_DEV_VIRTADDR    pPostTimestamp;
+	PRGXFWIF_TIMESTAMP_ADDR pPostTimestampAddr;
 	IMG_UINT32              ui32PostTimeStampCmdSize;
 	PRGXFWIF_UFO_ADDR       pRMWUFOAddr;
 	IMG_UINT32              ui32RMWUFOCmdSize;
@@ -197,8 +197,8 @@ PVRSRV_ERROR RGXCmdHelperInitCmdCCB(RGX_CLIENT_CCB          *psClientCCB,
                                     SERVER_SYNC_PRIMITIVE   **pasServerSyncs,
                                     IMG_UINT32              ui32CmdSize,
                                     IMG_UINT8               *pui8DMCmd,
-                                    RGXFWIF_DEV_VIRTADDR    *ppPreTimestamp,
-                                    RGXFWIF_DEV_VIRTADDR    *ppPostTimestamp,
+                                    PRGXFWIF_TIMESTAMP_ADDR *ppPreAddr,
+                                    PRGXFWIF_TIMESTAMP_ADDR *ppPostAddr,
                                     RGXFWIF_DEV_VIRTADDR    *ppRMWUFOAddr,
                                     RGXFWIF_CCB_CMD_TYPE    eType,
                                     IMG_BOOL                bPDumpContinuous,

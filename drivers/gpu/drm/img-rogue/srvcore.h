@@ -119,6 +119,7 @@ typedef struct _PVRSRV_BRIDGE_DISPATCH_TABLE_ENTRY
 
 extern PVRSRV_BRIDGE_DISPATCH_TABLE_ENTRY g_BridgeDispatchTable[BRIDGE_DISPATCH_TABLE_ENTRY_COUNT];
 
+void BridgeDispatchTableStartOffsetsInit(void);
 
 void
 _SetDispatchTableEntry(IMG_UINT32 ui32BridgeGroup,
@@ -165,6 +166,7 @@ IMG_INT BridgedDispatchKM(CONNECTION_DATA * psConnection,
 
 PVRSRV_ERROR
 PVRSRVConnectKM(CONNECTION_DATA *psConnection,
+                PVRSRV_DEVICE_NODE * psDeviceNode,
 				IMG_UINT32 ui32Flags,
 				IMG_UINT32 ui32ClientBuildOptions,
 				IMG_UINT32 ui32ClientDDKVersion,
@@ -177,6 +179,7 @@ PVRSRVDisconnectKM(void);
 
 PVRSRV_ERROR
 PVRSRVInitSrvDisconnectKM(CONNECTION_DATA *psConnection,
+                          PVRSRV_DEVICE_NODE *psDeviceNode,
 							IMG_BOOL bInitSuccesful,
 							IMG_UINT32 ui32ClientBuildOptions);
 

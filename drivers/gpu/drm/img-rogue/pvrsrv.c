@@ -91,6 +91,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "devicemem_history_server.h"
 #endif
 
+#if defined(PVR_DVFS)
+#include "pvr_dvfs_device.h"
+#endif
+
 /*! Wait 100ms before retrying deferred clean-up again */
 #define CLEANUP_THREAD_WAIT_RETRY_TIMEOUT 0x00000064
 
@@ -620,6 +624,12 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVInit(void *hDevice)
 		return eError;
 	}
 
+	if (psSysConfig->uiDeviceCount > 1)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "PVRSRVInit: System config contains too many devices"));
+		return PVRSRV_ERROR_INVALID_DEVICE;
+	}
+
 	/* Save to global pointer for later */
 	gpsSysConfig = psSysConfig;
 
@@ -824,15 +834,24 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVInit(void *hDevice)
 	TUtilsInit();
 #endif
 
+#if defined(PVR_DVFS)
+	eError = InitDVFS(gpsPVRSRVData, hDevice);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"PVRSRVInit: Failed to start DVFS"));
+		goto Error;
+	}
+#endif
+
 	return eError;
 
 Error:
-	PVRSRVDeInit();
+	PVRSRVDeInit(hDevice);
 	return eError;
 }
 
 
-void IMG_CALLCONV PVRSRVDeInit(void)
+void IMG_CALLCONV PVRSRVDeInit(void *hDevice)
 {
 	PVRSRV_DATA		*psPVRSRVData = PVRSRVGetPVRSRVData();
 	PVRSRV_ERROR	eError;
@@ -938,6 +957,14 @@ void IMG_CALLCONV PVRSRVDeInit(void)
 		psPVRSRVData->apsRegisteredDevNodes[i] = NULL;
 	}
 	SysDestroyConfigData(gpsSysConfig);
+
+#if defined(PVR_DVFS)
+	eError = DeinitDVFS(gpsPVRSRVData, hDevice);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"PVRSRVInit: Failed to suspend DVFS"));
+	}
+#endif
 
 	/* Clean up Transport Layer resources that remain. 
 	 * Done after RGX node clean up as HWPerf stream is destroyed during 
@@ -1276,6 +1303,13 @@ static PVRSRV_ERROR IMG_CALLCONV PVRSRVRegisterDevice(PVRSRV_DEVICE_CONFIG *psDe
 	PVRSRV_ERROR			eError;
 	PVRSRV_DEVICE_NODE		*psDeviceNode;
 	PVRSRV_DEVICE_PHYS_HEAP	physHeapIndex;
+
+	if (psDevConfig->eDeviceType != PVRSRV_DEVICE_TYPE_RGX)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "PVRSRVRegisterDevice : Unsupported device type %d",
+			 psDevConfig->eDeviceType));
+		return PVRSRV_ERROR_INVALID_DEVICE;
+	}
 
 	/* Allocate device node */
 	psDeviceNode = OSAllocMem(sizeof(PVRSRV_DEVICE_NODE));
@@ -1640,8 +1674,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVFinaliseSystem(IMG_BOOL bInitSuccessful, IMG_UIN
 			{
 				psRGXDeviceNode = psDeviceNode; 
 			}
-			eError = SyncPrimContextCreate(NULL,
-								  psDeviceNode,
+			eError = SyncPrimContextCreate(psDeviceNode,
 								  &psDeviceNode->hSyncPrimContext);
 			if (eError != PVRSRV_OK)
 			{

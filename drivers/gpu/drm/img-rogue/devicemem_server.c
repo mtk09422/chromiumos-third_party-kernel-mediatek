@@ -296,7 +296,7 @@ DevmemServerGetHeapHandle(DEVMEMINT_RESERVATION *psReservation,
                 PVRSRV_ERROR failure code
 */ /**************************************************************************/
 PVRSRV_ERROR
-DevmemIntCtxCreate(
+DevmemIntCtxCreate(CONNECTION_DATA *psConnection,
                    PVRSRV_DEVICE_NODE *psDeviceNode,
                    DEVMEMINT_CTX **ppsDevmemCtxPtr,
                    IMG_HANDLE *hPrivData
@@ -308,6 +308,8 @@ DevmemIntCtxCreate(
 
 	PVR_DPF((PVR_DBG_MESSAGE, "%s", __FUNCTION__));
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	/* allocate a Devmem context */
     psDevmemCtx = OSAllocMem(sizeof *psDevmemCtx);
     if (psDevmemCtx == NULL)
@@ -922,22 +924,25 @@ DevmemIntPDumpSaveToFileVirtual(DEVMEMINT_CTX *psDevmemCtx,
 
 
 PVRSRV_ERROR
-DevmemIntPDumpBitmap(PVRSRV_DEVICE_NODE *psDeviceNode,
-						IMG_CHAR *pszFileName,
-						IMG_UINT32 ui32FileOffset,
-						IMG_UINT32 ui32Width,
-						IMG_UINT32 ui32Height,
-						IMG_UINT32 ui32StrideInBytes,
-						IMG_DEV_VIRTADDR sDevBaseAddr,
-						DEVMEMINT_CTX *psDevMemContext,
-						IMG_UINT32 ui32Size,
-						PDUMP_PIXEL_FORMAT ePixelFormat,
-						IMG_UINT32 ui32AddrMode,
-						IMG_UINT32 ui32PDumpFlags)
+DevmemIntPDumpBitmap(CONNECTION_DATA * psConnection,
+                     PVRSRV_DEVICE_NODE *psDeviceNode,
+                     IMG_CHAR *pszFileName,
+                     IMG_UINT32 ui32FileOffset,
+                     IMG_UINT32 ui32Width,
+                     IMG_UINT32 ui32Height,
+                     IMG_UINT32 ui32StrideInBytes,
+                     IMG_DEV_VIRTADDR sDevBaseAddr,
+                     DEVMEMINT_CTX *psDevMemContext,
+                     IMG_UINT32 ui32Size,
+                     PDUMP_PIXEL_FORMAT ePixelFormat,
+                     IMG_UINT32 ui32AddrMode,
+                     IMG_UINT32 ui32PDumpFlags)
 {
 	IMG_UINT32 ui32ContextID;
 	PVRSRV_ERROR eError;
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	eError = MMU_AcquirePDumpMMUContext(psDevMemContext->psMMUContext, &ui32ContextID);
 
 	if (eError != PVRSRV_OK)

@@ -48,6 +48,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
 #include <drm/drm_gem.h>
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
+#include <linux/reservation.h>
+#endif
 
 #define	PVR_DRM_MAKENAME_HELPER(x, y)	x ## y
 #define	PVR_DRM_MAKENAME(x, y)		PVR_DRM_MAKENAME_HELPER(x, y)
@@ -56,9 +59,6 @@ typedef irqreturn_t (*pvr_drm_irq_handler)(void *data);
 
 #if defined(SUPPORT_DRM_DC_MODULE)
 struct pvr_drm_display_buffer;
-struct pvr_drm_sync_op;
-
-typedef void (*pvr_drm_sync_op_func)(struct drm_gem_object *bo, void *data, struct pvr_drm_sync_op *sync_op);
 
 struct pvr_drm_device_funcs
 {
@@ -71,8 +71,6 @@ struct pvr_drm_device_funcs
 	int (*pvr_drm_gem_cpu_addr)(struct drm_gem_object *bo, off_t offset, uint64_t *cpu_addr_out);
 	int (*pvr_drm_gem_dev_addr)(struct drm_gem_object *bo, off_t offset, uint64_t *dev_addr_out);
 	struct pvr_drm_display_buffer *(*pvr_drm_gem_buffer)(struct drm_gem_object *bo);
-	int (*pvr_drm_gem_sync_op_take)(struct drm_gem_object *bo, pvr_drm_sync_op_func sync_op_cb, void *data);
-	int (*pvr_drm_gem_sync_op_complete)(struct pvr_drm_sync_op *sync_op);
 	int (*pvr_drm_heap_acquire)(uint32_t heap_id, void **heap_out);
 	void (*pvr_drm_heap_release)(void *heap);
 	int (*pvr_drm_heap_info)(void *heap, uint64_t *cpu_phys_base, uint64_t *dev_phys_base, size_t *size);
@@ -141,20 +139,6 @@ static inline struct pvr_drm_display_buffer *pvr_drm_gem_buffer(struct drm_gem_o
 	return funcs->pvr_drm_gem_buffer(bo);
 }
 
-static inline int pvr_drm_gem_sync_op_take(struct drm_gem_object *bo, pvr_drm_sync_op_func sync_op_cb, void *data)
-{
-	struct pvr_drm_device_funcs *funcs = (struct pvr_drm_device_funcs *)bo->dev->dev_private;
-
-	return funcs->pvr_drm_gem_sync_op_take(bo, sync_op_cb, data);
-}
-
-static inline int pvr_drm_gem_sync_op_complete(struct drm_device *dev, struct pvr_drm_sync_op *sync_op)
-{
-	struct pvr_drm_device_funcs *funcs = (struct pvr_drm_device_funcs *)dev->dev_private;
-
-	return funcs->pvr_drm_gem_sync_op_complete(sync_op);
-}
-
 static inline int pvr_drm_heap_acquire(struct drm_device *dev, uint32_t heap_id, void **heap_out)
 {
 	struct pvr_drm_device_funcs *funcs = (struct pvr_drm_device_funcs *)dev->dev_private;
@@ -180,7 +164,7 @@ int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _init)(struct drm_device *dev, void **d
 int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _configure)(void *display_priv);
 void PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _cleanup)(void *display_priv);
 
-int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _buffer_alloc)(void *display_priv, size_t size, struct pvr_drm_display_buffer **buffer_out);
+int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _buffer_alloc)(void *display_priv, size_t size, struct pvr_drm_display_buffer **buffer_out, struct reservation_object **resv_out);
 int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _buffer_free)(struct pvr_drm_display_buffer *buffer);
 uint64_t *PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _buffer_acquire)(struct pvr_drm_display_buffer *buffer);
 int PVR_DRM_MAKENAME(DISPLAY_CONTROLLER, _buffer_release)(struct pvr_drm_display_buffer *buffer, uint64_t *dev_paddr_array);

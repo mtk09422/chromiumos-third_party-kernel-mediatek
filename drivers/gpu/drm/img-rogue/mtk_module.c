@@ -74,9 +74,9 @@ MODULE_SUPPORTED_DEVICE(DEVNAME);
 EXPORT_SYMBOL(RGXInitSLC);
 #endif
 
-extern int MTKMFGGetClocks(LDM_DEV* pDevice);
-static int PVRSRVDriverRemove(LDM_DEV *device);
-static int PVRSRVDriverProbe(LDM_DEV *device);
+extern int MTKMFGGetClocks(struct platform_device* pDevice);
+static int PVRSRVDriverRemove(struct platform_device *device);
+static int PVRSRVDriverProbe(struct platform_device *device);
 
 static struct dev_pm_ops powervr_dev_pm_ops = {
 	.suspend	= PVRSRVDriverSuspend,
@@ -133,7 +133,7 @@ static IMG_BOOL	bDriverProbeSucceeded = IMG_FALSE;
 *****************************************************************************/
 int PVRSRVSystemInit(struct drm_device *pDrmDevice)
 {
-	LDM_DEV *pDevice = pDrmDevice->platformdev;
+	struct platform_device *pDevice = pDrmDevice->platformdev;
 
 	PVR_TRACE(("PVRSRVSystemInit (pDevice=%p)", pDevice));
 
@@ -161,15 +161,15 @@ int PVRSRVSystemInit(struct drm_device *pDrmDevice)
 
  Wrapper for PVRSRVDeInit.
 
- @input none
+ @input pDevice - the device for which a probe is requested
  @Return nothing.
 
 *****************************************************************************/
-void PVRSRVSystemDeInit(void)
+void PVRSRVSystemDeInit(struct platform_device *pDevice)
 {
 	PVR_TRACE(("PVRSRVSystemDeInit"));
 
-	PVRSRVDeInit();
+	PVRSRVDeInit(pDevice);
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0))
 	gpsPVRLDMDev = IMG_NULL;
@@ -190,7 +190,7 @@ void PVRSRVSystemDeInit(void)
  @Return 0 for success or <0 for an error.
 
 *****************************************************************************/
-static int PVRSRVDriverProbe(LDM_DEV *pDevice)
+static int PVRSRVDriverProbe(struct platform_device *pDevice)
 {
 	int result = 0;
 	PVR_TRACE(("PVRSRVDriverProbe (pDevice=%p)", pDevice));
@@ -198,8 +198,6 @@ static int PVRSRVDriverProbe(LDM_DEV *pDevice)
 	if (OSStringCompare(pDevice->name,DEVNAME) != 0)
 	{
 		result = MTKMFGGetClocks(pDevice);
-		if(result != 0 )
-			return result;
 	}
 
 	result = drm_platform_init(&sPVRDRMDriver, pDevice);
@@ -223,7 +221,7 @@ static int PVRSRVDriverProbe(LDM_DEV *pDevice)
  @Return 0, or no return value at all, depending on the device type.
 
 *****************************************************************************/
-static int PVRSRVDriverRemove(LDM_DEV *pDevice)
+static int PVRSRVDriverRemove(struct platform_device *pDevice)
 {
 	PVR_TRACE(("PVRSRVDriverRemove (pDevice=%p)", pDevice));
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0))

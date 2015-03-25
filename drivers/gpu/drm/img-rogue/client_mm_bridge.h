@@ -63,15 +63,12 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRGetUID(IMG_HANDLE hBridge,
 						       IMG_HANDLE hPMR,
 						       IMG_UINT64 *pui64UID);
 
-IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRMakeServerExportClientExport(IMG_HANDLE hBridge,
-									     DEVMEM_SERVER_EXPORTCOOKIE hPMRServerExport,
-									     IMG_HANDLE *phPMRExportOut,
-									     IMG_UINT64 *pui64Size,
-									     IMG_UINT32 *pui32Log2Contig,
-									     IMG_UINT64 *pui64Password);
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRMakeLocalImportHandle(IMG_HANDLE hBridge,
+								      IMG_HANDLE hBuffer,
+								      IMG_HANDLE *phExtMem);
 
-IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRUnmakeServerExportClientExport(IMG_HANDLE hBridge,
-									       IMG_HANDLE hPMRExport);
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRUnmakeLocalImportHandle(IMG_HANDLE hBridge,
+									IMG_HANDLE hExtMem);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePMRImportPMR(IMG_HANDLE hBridge,
 							  IMG_HANDLE hPMRExport,
@@ -95,7 +92,6 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntUnpinInvalidate(IMG_HANDLE
 								      IMG_HANDLE hPMR);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntCtxCreate(IMG_HANDLE hBridge,
-								IMG_HANDLE hDeviceNode,
 								IMG_HANDLE *phDevMemServerContext,
 								IMG_HANDLE *phPrivData);
 
@@ -132,7 +128,6 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIntUnreserveRange(IMG_HANDLE 
 								     IMG_HANDLE hReservation);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgePhysmemNewRamBackedPMR(IMG_HANDLE hBridge,
-								    IMG_HANDLE hDeviceNode,
 								    IMG_DEVMEM_SIZE_T uiSize,
 								    IMG_DEVMEM_SIZE_T uiChunkSize,
 								    IMG_UINT32 ui32NumPhysChunks,
@@ -172,22 +167,18 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeDevmemIsVDevAddrValid(IMG_HANDLE hB
 								   IMG_DEV_VIRTADDR sAddress);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeHeapCfgHeapConfigCount(IMG_HANDLE hBridge,
-								    IMG_HANDLE hDeviceNode,
 								    IMG_UINT32 *pui32NumHeapConfigs);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeHeapCfgHeapCount(IMG_HANDLE hBridge,
-							      IMG_HANDLE hDeviceNode,
 							      IMG_UINT32 ui32HeapConfigIndex,
 							      IMG_UINT32 *pui32NumHeaps);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeHeapCfgHeapConfigName(IMG_HANDLE hBridge,
-								   IMG_HANDLE hDeviceNode,
 								   IMG_UINT32 ui32HeapConfigIndex,
 								   IMG_UINT32 ui32HeapConfigNameBufSz,
 								   IMG_CHAR *puiHeapConfigName);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeHeapCfgHeapDetails(IMG_HANDLE hBridge,
-								IMG_HANDLE hDeviceNode,
 								IMG_UINT32 ui32HeapConfigIndex,
 								IMG_UINT32 ui32HeapIndex,
 								IMG_UINT32 ui32HeapNameBufSz,

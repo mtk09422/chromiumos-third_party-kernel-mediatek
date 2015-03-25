@@ -65,7 +65,7 @@ PVRSRV_ERROR
 TLServerOpenStreamKM(IMG_PCHAR  	 	   pszName,
 			   	     IMG_UINT32 		   ui32Mode,
 			   	     PTL_STREAM_DESC* 	   ppsSD,
-			   	     DEVMEM_EXPORTCOOKIE** ppsBufCookie)
+			   	     PMR** 				   ppsTLPMR)
 {
 	PVRSRV_ERROR 	eError = PVRSRV_OK;
 	PVRSRV_ERROR 	eErrorEO = PVRSRV_OK;
@@ -165,7 +165,7 @@ TLServerOpenStreamKM(IMG_PCHAR  	 	   pszName,
 
 	// Copy the export cookie back to the user mode API to enable access to
 	// the stream buffer from user-mode process.
-	*ppsBufCookie = TLStreamGetBufferCookie(psNode->psStream);
+	DevmemLocalGetImportHandle(TLStreamGetBufferPointer(psNode->psStream), (void**) ppsTLPMR);
 
 	*ppsSD = psNewSD;
 

@@ -47,6 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "img_defs.h"
 
 #include "rgxinit.h"
+#include "pmr.h"
 
 
 #include "common_rgxinit_bridge.h"
@@ -59,32 +60,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
-static PVRSRV_ERROR ReleaseFWCodeAllocServerExportCookie(void *pvData)
+static PVRSRV_ERROR ReleaseFWCodePMR(void *pvData)
 {
 	PVR_UNREFERENCED_PARAMETER(pvData);
 
 	return PVRSRV_OK;
 }
-static PVRSRV_ERROR ReleaseFWDataAllocServerExportCookie(void *pvData)
+static PVRSRV_ERROR ReleaseFWDataPMR(void *pvData)
 {
 	PVR_UNREFERENCED_PARAMETER(pvData);
 
 	return PVRSRV_OK;
 }
-static PVRSRV_ERROR ReleaseFWCorememAllocServerExportCookie(void *pvData)
+static PVRSRV_ERROR ReleaseFWCorememPMR(void *pvData)
 {
 	PVR_UNREFERENCED_PARAMETER(pvData);
 
 	return PVRSRV_OK;
 }
-static PVRSRV_ERROR ReleaseHWPerfDataAllocServerExportCookie(void *pvData)
+static PVRSRV_ERROR ReleaseHWPerfPMR(void *pvData)
 {
 	PVR_UNREFERENCED_PARAMETER(pvData);
 
@@ -102,42 +99,26 @@ PVRSRVBridgeRGXInitAllocFWImgMem(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXINITALLOCFWIMGMEM *psRGXInitAllocFWImgMemOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWCodeAllocServerExportCookieInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWDataAllocServerExportCookieInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWCorememAllocServerExportCookieInt = NULL;
+	PMR * psFWCodePMRInt = NULL;
+	PMR * psFWDataPMRInt = NULL;
+	PMR * psFWCorememPMRInt = NULL;
 
 
 
 
 
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXInitAllocFWImgMemOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXInitAllocFWImgMemIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXInitAllocFWImgMemOUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitAllocFWImgMem_exit;
-					}
-				}
 
 
 	psRGXInitAllocFWImgMemOUT->eError =
-		PVRSRVRGXInitAllocFWImgMemKM(
-					hDevNodeInt,
+		PVRSRVRGXInitAllocFWImgMemKM(psConnection, OSGetDevData(psConnection),
 					psRGXInitAllocFWImgMemIN->uiFWCodeLen,
 					psRGXInitAllocFWImgMemIN->uiFWDataLen,
 					psRGXInitAllocFWImgMemIN->uiFWCoremem,
-					&psFWCodeAllocServerExportCookieInt,
+					&psFWCodePMRInt,
 					&psRGXInitAllocFWImgMemOUT->sFWCodeDevVAddrBase,
-					&psFWDataAllocServerExportCookieInt,
+					&psFWDataPMRInt,
 					&psRGXInitAllocFWImgMemOUT->sFWDataDevVAddrBase,
-					&psFWCorememAllocServerExportCookieInt,
+					&psFWCorememPMRInt,
 					&psRGXInitAllocFWImgMemOUT->sFWCorememDevVAddrBase,
 					&psRGXInitAllocFWImgMemOUT->sFWCorememMetaVAddrBase);
 	/* Exit early if bridged call fails */
@@ -148,11 +129,11 @@ PVRSRVBridgeRGXInitAllocFWImgMem(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXInitAllocFWImgMemOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
-							&psRGXInitAllocFWImgMemOUT->hFWCodeAllocServerExportCookie,
-							(void *) psFWCodeAllocServerExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psRGXInitAllocFWImgMemOUT->hFWCodePMR,
+							(void *) psFWCodePMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
-							,(PFN_HANDLE_RELEASE)&ReleaseFWCodeAllocServerExportCookie);
+							,(PFN_HANDLE_RELEASE)&ReleaseFWCodePMR);
 	if (psRGXInitAllocFWImgMemOUT->eError != PVRSRV_OK)
 	{
 		goto RGXInitAllocFWImgMem_exit;
@@ -160,11 +141,11 @@ PVRSRVBridgeRGXInitAllocFWImgMem(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXInitAllocFWImgMemOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
-							&psRGXInitAllocFWImgMemOUT->hFWDataAllocServerExportCookie,
-							(void *) psFWDataAllocServerExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psRGXInitAllocFWImgMemOUT->hFWDataPMR,
+							(void *) psFWDataPMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
-							,(PFN_HANDLE_RELEASE)&ReleaseFWDataAllocServerExportCookie);
+							,(PFN_HANDLE_RELEASE)&ReleaseFWDataPMR);
 	if (psRGXInitAllocFWImgMemOUT->eError != PVRSRV_OK)
 	{
 		goto RGXInitAllocFWImgMem_exit;
@@ -172,11 +153,11 @@ PVRSRVBridgeRGXInitAllocFWImgMem(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXInitAllocFWImgMemOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
-							&psRGXInitAllocFWImgMemOUT->hFWCorememAllocServerExportCookie,
-							(void *) psFWCorememAllocServerExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psRGXInitAllocFWImgMemOUT->hFWCorememPMR,
+							(void *) psFWCorememPMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
-							,(PFN_HANDLE_RELEASE)&ReleaseFWCorememAllocServerExportCookie);
+							,(PFN_HANDLE_RELEASE)&ReleaseFWCorememPMR);
 	if (psRGXInitAllocFWImgMemOUT->eError != PVRSRV_OK)
 	{
 		goto RGXInitAllocFWImgMem_exit;
@@ -200,9 +181,8 @@ PVRSRVBridgeRGXInitFirmware(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXINITFIRMWARE *psRGXInitFirmwareOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	IMG_UINT32 *ui32RGXFWAlignChecksInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psHWPerfDataAllocServerExportCookieInt = NULL;
+	PMR * psHWPerfPMRInt = NULL;
 
 
 
@@ -230,23 +210,8 @@ PVRSRVBridgeRGXInitFirmware(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psRGXInitFirmwareOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXInitFirmwareIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXInitFirmwareOUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitFirmware_exit;
-					}
-				}
-
-
 	psRGXInitFirmwareOUT->eError =
-		PVRSRVRGXInitFirmwareKM(
-					hDevNodeInt,
+		PVRSRVRGXInitFirmwareKM(psConnection, OSGetDevData(psConnection),
 					&psRGXInitFirmwareOUT->spsRGXFwInit,
 					psRGXInitFirmwareIN->bEnableSignatureChecks,
 					psRGXInitFirmwareIN->ui32SignatureChecksBufSize,
@@ -261,7 +226,7 @@ PVRSRVBridgeRGXInitFirmware(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXInitFirmwareIN->ui32ui32HWRDebugDumpLimit,
 					&psRGXInitFirmwareIN->sClientBVNC,
 					psRGXInitFirmwareIN->ui32HWPerfCountersDataSize,
-					&psHWPerfDataAllocServerExportCookieInt,
+					&psHWPerfPMRInt,
 					psRGXInitFirmwareIN->eRGXRDPowerIslandConf);
 	/* Exit early if bridged call fails */
 	if(psRGXInitFirmwareOUT->eError != PVRSRV_OK)
@@ -271,11 +236,11 @@ PVRSRVBridgeRGXInitFirmware(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXInitFirmwareOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
-							&psRGXInitFirmwareOUT->hHWPerfDataAllocServerExportCookie,
-							(void *) psHWPerfDataAllocServerExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psRGXInitFirmwareOUT->hHWPerfPMR,
+							(void *) psHWPerfPMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
-							,(PFN_HANDLE_RELEASE)&ReleaseHWPerfDataAllocServerExportCookie);
+							,(PFN_HANDLE_RELEASE)&ReleaseHWPerfPMR);
 	if (psRGXInitFirmwareOUT->eError != PVRSRV_OK)
 	{
 		goto RGXInitFirmware_exit;
@@ -354,7 +319,7 @@ PVRSRVBridgeRGXInitLoadFWImage(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXInitLoadFWImageOUT->eError =
-		PVRSRVRGXInitLoadFWImageKM(
+		PVRSRVRGXInitLoadFWImageKM(psConnection, OSGetDevData(psConnection),
 					psImgDestImportInt,
 					psImgSrcImportInt,
 					psRGXInitLoadFWImageIN->ui64ImgLen,
@@ -375,15 +340,14 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXINITDEVPART2 *psRGXInitDevPart2OUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	RGX_INIT_COMMAND *psInitScriptInt = NULL;
 	RGX_INIT_COMMAND *psDbgScriptInt = NULL;
 	RGX_INIT_COMMAND *psDbgBusScriptInt = NULL;
 	RGX_INIT_COMMAND *psDeinitScriptInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWCodeAllocServerExportCookieInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWDataAllocServerExportCookieInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psFWCorememAllocServerExportCookieInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psHWPerfDataAllocServerExportCookieInt = NULL;
+	PMR * psFWCodePMRInt = NULL;
+	PMR * psFWDataPMRInt = NULL;
+	PMR * psFWCorememPMRInt = NULL;
+	PMR * psHWPerfPMRInt = NULL;
 
 
 
@@ -471,79 +435,8 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psRGXInitDevPart2OUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXInitDevPart2IN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXInitDevPart2OUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitDevPart2_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXInitDevPart2OUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &psFWCodeAllocServerExportCookieInt,
-											psRGXInitDevPart2IN->hFWCodeAllocServerExportCookie,
-											PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
-					if(psRGXInitDevPart2OUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitDevPart2_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXInitDevPart2OUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &psFWDataAllocServerExportCookieInt,
-											psRGXInitDevPart2IN->hFWDataAllocServerExportCookie,
-											PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
-					if(psRGXInitDevPart2OUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitDevPart2_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXInitDevPart2OUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &psFWCorememAllocServerExportCookieInt,
-											psRGXInitDevPart2IN->hFWCorememAllocServerExportCookie,
-											PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
-					if(psRGXInitDevPart2OUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitDevPart2_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXInitDevPart2OUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &psHWPerfDataAllocServerExportCookieInt,
-											psRGXInitDevPart2IN->hHWPerfDataAllocServerExportCookie,
-											PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
-					if(psRGXInitDevPart2OUT->eError != PVRSRV_OK)
-					{
-						goto RGXInitDevPart2_exit;
-					}
-				}
-
-
 	psRGXInitDevPart2OUT->eError =
-		PVRSRVRGXInitDevPart2KM(
-					hDevNodeInt,
+		PVRSRVRGXInitDevPart2KM(psConnection, OSGetDevData(psConnection),
 					psInitScriptInt,
 					psDbgScriptInt,
 					psDbgBusScriptInt,
@@ -557,16 +450,16 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXInitDevPart2IN->ui64KernelCatBaseMask,
 					psRGXInitDevPart2IN->ui32DeviceFlags,
 					psRGXInitDevPart2IN->ui32RGXActivePMConf,
-					psFWCodeAllocServerExportCookieInt,
-					psFWDataAllocServerExportCookieInt,
-					psFWCorememAllocServerExportCookieInt,
-					psHWPerfDataAllocServerExportCookieInt);
+					psFWCodePMRInt,
+					psFWDataPMRInt,
+					psFWCorememPMRInt,
+					psHWPerfPMRInt);
 
 
 	psRGXInitDevPart2OUT->eError =
 		PVRSRVReleaseHandle(psConnection->psHandleBase,
-					(IMG_HANDLE) psRGXInitDevPart2IN->hFWCodeAllocServerExportCookie,
-					PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
+					(IMG_HANDLE) psRGXInitDevPart2IN->hFWCodePMR,
+					PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE);
 	if ((psRGXInitDevPart2OUT->eError != PVRSRV_OK) && (psRGXInitDevPart2OUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
@@ -575,8 +468,8 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 
 	psRGXInitDevPart2OUT->eError =
 		PVRSRVReleaseHandle(psConnection->psHandleBase,
-					(IMG_HANDLE) psRGXInitDevPart2IN->hFWDataAllocServerExportCookie,
-					PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
+					(IMG_HANDLE) psRGXInitDevPart2IN->hFWDataPMR,
+					PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE);
 	if ((psRGXInitDevPart2OUT->eError != PVRSRV_OK) && (psRGXInitDevPart2OUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
@@ -585,8 +478,8 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 
 	psRGXInitDevPart2OUT->eError =
 		PVRSRVReleaseHandle(psConnection->psHandleBase,
-					(IMG_HANDLE) psRGXInitDevPart2IN->hFWCorememAllocServerExportCookie,
-					PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
+					(IMG_HANDLE) psRGXInitDevPart2IN->hFWCorememPMR,
+					PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE);
 	if ((psRGXInitDevPart2OUT->eError != PVRSRV_OK) && (psRGXInitDevPart2OUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
@@ -595,8 +488,8 @@ PVRSRVBridgeRGXInitDevPart2(IMG_UINT32 ui32DispatchTableEntry,
 
 	psRGXInitDevPart2OUT->eError =
 		PVRSRVReleaseHandle(psConnection->psHandleBase,
-					(IMG_HANDLE) psRGXInitDevPart2IN->hHWPerfDataAllocServerExportCookie,
-					PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
+					(IMG_HANDLE) psRGXInitDevPart2IN->hHWPerfPMR,
+					PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE);
 	if ((psRGXInitDevPart2OUT->eError != PVRSRV_OK) && (psRGXInitDevPart2OUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
@@ -624,7 +517,6 @@ PVRSRVBridgeGPUVIRTPopulateLMASubArenas(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_GPUVIRTPOPULATELMASUBARENAS *psGPUVIRTPopulateLMASubArenasOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	IMG_UINT32 *ui32ElementsInt = NULL;
 
 
@@ -653,23 +545,8 @@ PVRSRVBridgeGPUVIRTPopulateLMASubArenas(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psGPUVIRTPopulateLMASubArenasOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psGPUVIRTPopulateLMASubArenasIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psGPUVIRTPopulateLMASubArenasOUT->eError != PVRSRV_OK)
-					{
-						goto GPUVIRTPopulateLMASubArenas_exit;
-					}
-				}
-
-
 	psGPUVIRTPopulateLMASubArenasOUT->eError =
-		PVRSRVGPUVIRTPopulateLMASubArenasKM(
-					hDevNodeInt,
+		PVRSRVGPUVIRTPopulateLMASubArenasKM(psConnection, OSGetDevData(psConnection),
 					psGPUVIRTPopulateLMASubArenasIN->ui32NumElements,
 					ui32ElementsInt);
 

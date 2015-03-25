@@ -133,6 +133,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 
 IMG_EXPORT
 PVRSRV_ERROR PVRSRVRGXSetTransferContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                   PVRSRV_DEVICE_NODE * psDevNode,
 												   RGX_SERVER_TQ_CONTEXT *psTransferContext,
 												   IMG_UINT32 ui32Priority);
 

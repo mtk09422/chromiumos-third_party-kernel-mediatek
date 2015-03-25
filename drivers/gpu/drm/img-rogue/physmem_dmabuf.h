@@ -67,11 +67,12 @@ PhysmemCreateNewDmaBufBackedPMR(PHYS_HEAP *psHeap,
 #if defined(SUPPORT_DMABUF)
 PVRSRV_ERROR
 PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
-					IMG_INT fd,
-					PVRSRV_MEMALLOCFLAGS_T uiFlags,
-					PMR **ppsPMRPtr,
-					IMG_DEVMEM_SIZE_T *puiSize,
-					IMG_DEVMEM_ALIGN_T *puiAlign);
+		    PVRSRV_DEVICE_NODE *psDevNode,
+		    IMG_INT fd,
+		    PVRSRV_MEMALLOCFLAGS_T uiFlags,
+		    PMR **ppsPMRPtr,
+		    IMG_DEVMEM_SIZE_T *puiSize,
+		    IMG_DEVMEM_ALIGN_T *puiAlign);
 #endif
 
 #endif /* !defined(_PHYSMEM_DMABUF_H_) */

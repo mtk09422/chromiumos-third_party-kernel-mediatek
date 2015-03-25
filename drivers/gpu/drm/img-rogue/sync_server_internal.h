@@ -46,10 +46,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "img_types.h"
 
+typedef struct _SERVER_SYNC_PRIMITIVE_ SERVER_SYNC_PRIMITIVE;
+
 void
 ServerSyncRef(SERVER_SYNC_PRIMITIVE *psSync);
 
 void
 ServerSyncUnref(SERVER_SYNC_PRIMITIVE *psSync);
+
+IMG_BOOL
+ServerSyncFenceWasMet(SERVER_SYNC_PRIMITIVE *psSync,
+				 IMG_UINT32 ui32FenceValue);
+
+void
+ServerSyncCompletePassedFenceOp(SERVER_SYNC_PRIMITIVE *psSync);
 
 #endif	/*_SYNC_SERVER_INTERNAL_H_ */

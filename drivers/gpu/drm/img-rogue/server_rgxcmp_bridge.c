@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -78,7 +74,6 @@ PVRSRVBridgeRGXCreateComputeContext(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATECOMPUTECONTEXT *psRGXCreateComputeContextOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	IMG_BYTE *psFrameworkCmdInt = NULL;
 	IMG_HANDLE hPrivDataInt = NULL;
 	RGX_SERVER_COMPUTE_CONTEXT * psComputeContextInt = NULL;
@@ -113,20 +108,6 @@ PVRSRVBridgeRGXCreateComputeContext(IMG_UINT32 ui32DispatchTableEntry,
 					/* Look up the address from the handle */
 					psRGXCreateComputeContextOUT->eError =
 						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateComputeContextIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateComputeContextOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateComputeContext_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXCreateComputeContextOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
 											(void **) &hPrivDataInt,
 											psRGXCreateComputeContextIN->hPrivData,
 											PVRSRV_HANDLE_TYPE_DEV_PRIV_DATA);
@@ -138,8 +119,7 @@ PVRSRVBridgeRGXCreateComputeContext(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXCreateComputeContextOUT->eError =
-		PVRSRVRGXCreateComputeContextKM(psConnection,
-					hDevNodeInt,
+		PVRSRVRGXCreateComputeContextKM(psConnection, OSGetDevData(psConnection),
 					psRGXCreateComputeContextIN->ui32Priority,
 					psRGXCreateComputeContextIN->sMCUFenceAddr,
 					psRGXCreateComputeContextIN->ui32FrameworkCmdize,
@@ -529,7 +509,7 @@ PVRSRVBridgeRGXSetComputeContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXSetComputeContextPriorityOUT->eError =
-		PVRSRVRGXSetComputeContextPriorityKM(psConnection,
+		PVRSRVRGXSetComputeContextPriorityKM(psConnection, OSGetDevData(psConnection),
 					psComputeContextInt,
 					psRGXSetComputeContextPriorityIN->ui32Priority);
 

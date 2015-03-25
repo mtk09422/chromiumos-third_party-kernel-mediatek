@@ -66,7 +66,7 @@ PhysmemNewLocalRamBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 							IMG_DEVMEM_SIZE_T uiChunkSize,
 							IMG_UINT32 ui32NumPhysChunks,
 							IMG_UINT32 ui32NumVirtChunks,
-							IMG_BOOL *pabMappingTable,
+							IMG_UINT32 *pui32MappingTable,
 							IMG_UINT32 uiLog2PageSize,
 							PVRSRV_MEMALLOCFLAGS_T uiFlags,
 							PMR **ppsPMRPtr);

@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -80,7 +76,7 @@ PVRSRVBridgeTLOpenStream(IMG_UINT32 ui32DispatchTableEntry,
 {
 	IMG_CHAR *uiNameInt = NULL;
 	TL_STREAM_DESC * psSDInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psClientBUFExportCookieInt = NULL;
+	PMR * psTLPMRInt = NULL;
 
 
 
@@ -114,7 +110,7 @@ PVRSRVBridgeTLOpenStream(IMG_UINT32 ui32DispatchTableEntry,
 					uiNameInt,
 					psTLOpenStreamIN->ui32Mode,
 					&psSDInt,
-					&psClientBUFExportCookieInt);
+					&psTLPMRInt);
 	/* Exit early if bridged call fails */
 	if(psTLOpenStreamOUT->eError != PVRSRV_OK)
 	{
@@ -135,9 +131,9 @@ PVRSRVBridgeTLOpenStream(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psTLOpenStreamOUT->eError = PVRSRVAllocSubHandle(psConnection->psHandleBase,
-							&psTLOpenStreamOUT->hClientBUFExportCookie,
-							(void *) psClientBUFExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psTLOpenStreamOUT->hTLPMR,
+							(void *) psTLPMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
 							,psTLOpenStreamOUT->hSD);
 	if (psTLOpenStreamOUT->eError != PVRSRV_OK)

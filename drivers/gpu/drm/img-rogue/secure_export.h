@@ -49,6 +49,7 @@ typedef struct _SECURE_CLEANUP_DATA_ {
 } SECURE_CLEANUP_DATA;
 
 PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
+                                PVRSRV_DEVICE_NODE * psDevNode,
 								PMR *psPMR,
 								IMG_SECURE_TYPE *phSecure,
 								PMR **ppsPMR,

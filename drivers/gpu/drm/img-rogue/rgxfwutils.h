@@ -51,8 +51,54 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvrsrv.h"
 #include "connection_server.h"
 #include "rgxta3d.h"
+#if defined(RGX_FEATURE_MIPS)
+#include "rgxmipsmmu.h"
+#endif
 
+#if defined(RGX_FEATURE_MIPS)
+static INLINE PVRSRV_ERROR DevmemMapToMipsFw(PVRSRV_DEVICE_NODE *psDeviceNode,
+										   DEVMEM_MEMDESC *psMemDesc,
+										   IMG_DEVMEM_SIZE_T uiSize,
+										   DEVMEM_FLAGS_T uiFlags)
+{
 
+	PVRSRV_ERROR eError = PVRSRV_OK;
+	/* Flags translation to proper MIPS TLB flags*/
+	IMG_UINT32 ui32MipsFwFlags = 0;
+
+	if (uiFlags & PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE)
+	{
+		ui32MipsFwFlags |= PVRSRV_MIPSFWMEMALLOCFLAG_WRITABLE;
+	}
+	if (!(uiFlags & PVRSRV_MEMALLOCFLAG_GPU_READABLE))
+	{
+		ui32MipsFwFlags |= PVRSRV_MIPSFWMEMALLOCFLAG_READ_INHIBIT;
+	}
+	if (!(uiFlags & PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED)))
+	{
+		ui32MipsFwFlags |= PVRSRV_MIPSFWMEMALLOCFLAG_UNCACHED;
+	}
+	else
+	{
+		ui32MipsFwFlags |= PVRSRV_MIPSFWMEMALLOCFLAG_CACHED;
+	}
+	ui32MipsFwFlags |= PVRSRV_MIPSFWMEMALLOCFLAG_VALID;
+
+	eError = RGXMipsMmu_DevmemMapToMipsFW(psDeviceNode,
+											  psMemDesc,
+											  uiSize,
+											  ui32MipsFwFlags);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR,"DevmemMapToMipsFw: RGXMipsMmu_DevmemMapToMipsFW failed (%u)", eError));
+	}
+	return eError;
+}
+static INLINE void DevmemUnmapFromMipsFw(DEVMEM_MEMDESC *psMemDesc)
+{
+	RGXMipsMmu_DevmemUnmapFromMipsFW(psMemDesc);
+}
+#endif
 
 /*
  * Firmware-only allocation (which are initialised by the host) must be aligned to the SLC cache line size.
@@ -92,7 +138,21 @@ static INLINE PVRSRV_ERROR DevmemFwAllocate(PVRSRV_RGXDEV_INFO *psDevInfo,
 	eError = DevmemMapToDevice(*ppsMemDescPtr,
 							   psDevInfo->psFirmwareHeap,
 							   &sTmpDevVAddr);
-	PVR_DPF_RETURN_RC1(eError, *ppsMemDescPtr);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF_RETURN_RC(eError);
+	}
+
+#if defined(RGX_FEATURE_MIPS)
+{
+	DevmemMapToMipsFw(psDevInfo->psDeviceNode,
+					*ppsMemDescPtr,
+					uiSize,
+					uiFlags);
+}
+#endif
+
+	PVR_DPF_RETURN_RC(eError);
 }
 
 static INLINE PVRSRV_ERROR DevmemFwAllocateExportable(PVRSRV_DEVICE_NODE *psDeviceNode,
@@ -111,8 +171,7 @@ static INLINE PVRSRV_ERROR DevmemFwAllocateExportable(PVRSRV_DEVICE_NODE *psDevi
 			(pszText[0] == 'F') && (pszText[1] == 'w') &&
 			(pszText[2] == 'E') && (pszText[3] == 'x'));
 
-	eError = DevmemAllocateExportable(NULL,
-									  (IMG_HANDLE) psDeviceNode,
+	eError = DevmemAllocateExportable(psDeviceNode,
 									  uiSize,
 									  64,
 									  uiFlags,
@@ -135,13 +194,25 @@ static INLINE PVRSRV_ERROR DevmemFwAllocateExportable(PVRSRV_DEVICE_NODE *psDevi
 	{
 		PVR_DPF((PVR_DBG_ERROR,"FW DevmemMapToDevice failed (%u)", eError));
 	}
+
+#if defined(RGX_FEATURE_MIPS)
+{
+	DevmemMapToMipsFw(psDeviceNode,
+					*ppsMemDescPtr,
+					uiSize,
+					uiFlags);
+}
+#endif
+
 	PVR_DPF_RETURN_RC1(eError, *ppsMemDescPtr);
 }
 
 static INLINE void DevmemFwFree(DEVMEM_MEMDESC *psMemDesc)
 {
 	PVR_DPF_ENTERED1(psMemDesc);
-
+#if defined(RGX_FEATURE_MIPS)
+	DevmemUnmapFromMipsFw(psMemDesc);
+#endif
 	DevmemReleaseDevVirtAddr(psMemDesc);
 	DevmemFree(psMemDesc);
 
@@ -178,7 +249,7 @@ static INLINE IMG_UINT64 RGXReadHWTimerReg(PVRSRV_RGXDEV_INFO *psDevInfo)
  * and write-combine is suffice on the CPU side (WC buffer will be flushed at the first kick)
  */
 #define RGX_FWCOMCTX_ALLOCFLAGS	(PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) | \
-                                 PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) | \
+								 PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) | \
 								 PVRSRV_MEMALLOCFLAG_GPU_READABLE | \
 								 PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE | \
 								 PVRSRV_MEMALLOCFLAG_GPU_CACHE_INCOHERENT | \
@@ -196,21 +267,22 @@ static INLINE IMG_UINT64 RGXReadHWTimerReg(PVRSRV_RGXDEV_INFO *psDevInfo)
 												  otherwise RGXUnsetFirmwareAddress() must be call when finished. */
 
 
-PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode, 
-							     IMG_BOOL				bEnableSignatureChecks,
-							     IMG_UINT32			ui32SignatureChecksBufSize,
-							     IMG_UINT32			ui32HWPerfFWBufSizeKB,
-							     IMG_UINT64			ui64HWPerfFilter,
-							     IMG_UINT32			ui32RGXFWAlignChecksSize,
-							     IMG_UINT32			*pui32RGXFWAlignChecks,
-							     IMG_UINT32			ui32ConfigFlags,
-							     IMG_UINT32			ui32LogType,
-							     IMG_UINT32            ui32NumTilingCfgs,
-							     IMG_UINT32            *pui32BIFTilingXStrides,
-							     IMG_UINT32			ui32FilterMode,
-							     IMG_UINT32			ui32JonesDisableMask,
-							     IMG_UINT32			ui32HWRDebugDumpLimit,
+PVRSRV_ERROR RGXSetupFirmware(PVRSRV_DEVICE_NODE	*psDeviceNode,
+								 IMG_BOOL				bEnableSignatureChecks,
+								 IMG_UINT32			ui32SignatureChecksBufSize,
+								 IMG_UINT32			ui32HWPerfFWBufSizeKB,
+								 IMG_UINT64			ui64HWPerfFilter,
+								 IMG_UINT32			ui32RGXFWAlignChecksSize,
+								 IMG_UINT32			*pui32RGXFWAlignChecks,
+								 IMG_UINT32			ui32ConfigFlags,
+								 IMG_UINT32			ui32LogType,
+								 IMG_UINT32            ui32NumTilingCfgs,
+								 IMG_UINT32            *pui32BIFTilingXStrides,
+								 IMG_UINT32			ui32FilterMode,
+								 IMG_UINT32			ui32JonesDisableMask,
+								 IMG_UINT32			ui32HWRDebugDumpLimit,
 								 IMG_UINT32			ui32HWPerfCountersDataSize,
+							     PMR				**ppsHWPerfPMR,
 							     RGXFWIF_DEV_VIRTADDR	*psRGXFWInitFWAddr,
 							     RGX_RD_POWER_ISLAND_CONF eRGXRDPowerIslandingConf);
 
@@ -697,6 +769,31 @@ void AttachKickResourcesCleanupCtls(PRGXFWIF_CLEANUP_CTL *apsCleanupCtl,
                                 	error code
  ******************************************************************************/
 PVRSRV_ERROR RGXResetHWRLogs(PVRSRV_DEVICE_NODE *psDevNode);
+
+
+/*!
+******************************************************************************
+
+ @Function			RGXGetPhyAddr
+
+ @Description 		Get the physical address of a certain PMR at a certain offset within it
+
+ @Input 			psPMR	    PMR of the allocation
+
+ @Input 			ui32LogicalOffset	    Logical offset
+
+ @Output			psPhyAddr	    Physical address of the allocation
+
+ @Return			PVRSRV_ERROR	PVRSRV_OK on success. Otherwise, a PVRSRV_
+									error code
+ ******************************************************************************/
+PVRSRV_ERROR RGXGetPhyAddr(PMR *psPMR,
+						   IMG_DEV_PHYADDR *psPhyAddr,
+						   IMG_UINT32 ui32LogicalOffset,
+						   IMG_UINT32 ui32Log2PageSize,
+						   IMG_UINT32 ui32NumOfPages,
+						   IMG_BOOL *bValid);
+
 
 #endif /* __RGXFWUTILS_H__ */
 /******************************************************************************

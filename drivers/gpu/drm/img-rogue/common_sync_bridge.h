@@ -84,7 +84,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* Bridge in structure for AllocSyncPrimitiveBlock */
 typedef struct PVRSRV_BRIDGE_IN_ALLOCSYNCPRIMITIVEBLOCK_TAG
 {
-	IMG_HANDLE hDevNode;
+	 IMG_UINT32 ui32EmptyStructPlaceholder;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_ALLOCSYNCPRIMITIVEBLOCK;
 
 
@@ -94,7 +94,7 @@ typedef struct PVRSRV_BRIDGE_OUT_ALLOCSYNCPRIMITIVEBLOCK_TAG
 	IMG_HANDLE hSyncHandle;
 	IMG_UINT32 ui32SyncPrimVAddr;
 	IMG_UINT32 ui32SyncPrimBlockSize;
-	DEVMEM_SERVER_EXPORTCOOKIE hExportCookie;
+	IMG_HANDLE hhSyncPMR;
 	PVRSRV_ERROR eError;
 } __attribute__((packed)) PVRSRV_BRIDGE_OUT_ALLOCSYNCPRIMITIVEBLOCK;
 
@@ -199,7 +199,6 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCRECORDADD_TAG
 /* Bridge in structure for ServerSyncAlloc */
 typedef struct PVRSRV_BRIDGE_IN_SERVERSYNCALLOC_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_UINT32 ui32ClassNameSize;
 	const IMG_CHAR * puiClassName;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_SERVERSYNCALLOC;

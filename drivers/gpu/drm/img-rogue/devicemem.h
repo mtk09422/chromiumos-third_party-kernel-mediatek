@@ -109,6 +109,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "pdump.h"
 
+#include "device_connection.h"
+
+
 /* Use GET and SET function to access this */
 IMG_INTERNAL extern IMG_UINT32  g_uiLog2PageSize;
 
@@ -122,6 +125,10 @@ IMG_INTERNAL extern IMG_UINT32  g_uiLog2PageSize;
 typedef IMG_UINT32 DEVMEM_HEAPCFGID;
 #define DEVMEM_HEAPCFG_FORCLIENTS 0
 #define DEVMEM_HEAPCFG_META 1
+
+
+
+
 
 /*
   In order to call the server side functions, we need a bridge handle.
@@ -198,8 +205,7 @@ DevmemPin(DEVMEM_MEMDESC *psMemDesc);
  * object thusly created.
  */
 extern PVRSRV_ERROR
-DevmemCreateContext(DEVMEM_BRIDGE_HANDLE hBridge,
-                    IMG_HANDLE hDeviceNode,
+DevmemCreateContext(SHARED_DEV_CONNECTION hDevConnection,
                     DEVMEM_HEAPCFGID uiHeapBlueprintID,
                     DEVMEM_CONTEXT **ppsCtxPtr);
 
@@ -325,8 +331,7 @@ PVRSRV_ERROR DevmemAllocate(DEVMEM_HEAP *psHeap,
                             DEVMEM_MEMDESC **ppsMemDescPtr);
 
 PVRSRV_ERROR
-DevmemAllocateExportable(IMG_HANDLE hBridge,
-						 IMG_HANDLE hDeviceNode,
+DevmemAllocateExportable(SHARED_DEV_CONNECTION hDevConnection,
 						 IMG_DEVMEM_SIZE_T uiSize,
 						 IMG_DEVMEM_ALIGN_T uiAlign,
 						 DEVMEM_FLAGS_T uiFlags,
@@ -343,8 +348,7 @@ DeviceMemChangeSparse(DEVMEM_MEMDESC *psMemDesc,
 					  IMG_UINT32 *pui32Status);
 
 PVRSRV_ERROR
-DevmemAllocateSparse(IMG_HANDLE hBridge,
-					 IMG_HANDLE hDeviceNode,
+DevmemAllocateSparse(SHARED_DEV_CONNECTION hDevConnection,
 					 IMG_DEVMEM_SIZE_T uiSize,
 					 IMG_DEVMEM_SIZE_T uiChunkSize,
 					 IMG_UINT32 ui32NumPhysChunks,
@@ -425,6 +429,7 @@ PVRSRV_ERROR DevmemAcquireCpuVirtAddr(DEVMEM_MEMDESC *psMemDesc,
 extern void
 DevmemReleaseCpuVirtAddr(DEVMEM_MEMDESC *psMemDesc);
 
+#if defined(SUPPORT_INSECURE_EXPORT)
 /*
  * DevmemExport()
  *
@@ -446,37 +451,32 @@ void DevmemUnexport(DEVMEM_MEMDESC *psMemDesc,
 					DEVMEM_EXPORTCOOKIE *psExportCookie);
 
 PVRSRV_ERROR
-DevmemImport(IMG_HANDLE hBridge,
+DevmemImport(SHARED_DEV_CONNECTION hDevConnection,
 			 DEVMEM_EXPORTCOOKIE *psCookie,
 			 DEVMEM_FLAGS_T uiFlags,
 			 DEVMEM_MEMDESC **ppsMemDescPtr);
+#endif /* SUPPORT_INSECURE_EXPORT */
 
 /*
- * DevmemIsValidExportCookie()
- * Check whether the Export Cookie contains a valid export */
-IMG_BOOL
-DevmemIsValidExportCookie(DEVMEM_EXPORTCOOKIE *psExportCookie);
-
-/*
- * DevmemMakeServerExportClientExport()
+ * DevmemMakeLocalImportHandle()
  * 
  * This is a "special case" function for making a server export cookie
  * which went through the direct bridge into an export cookie that can
  * be passed through the client bridge.
  */
 PVRSRV_ERROR
-DevmemMakeServerExportClientExport(DEVMEM_BRIDGE_HANDLE hBridge,
-                                   DEVMEM_SERVER_EXPORTCOOKIE hServerExportCookie,
-                                   DEVMEM_EXPORTCOOKIE *psExportCookie);
+DevmemMakeLocalImportHandle(SHARED_DEV_CONNECTION hDevConnection,
+                            IMG_HANDLE hServerExport,
+                            IMG_HANDLE *hClientExport);
 
 /*
- * DevmemUnmakeServerExportClientExport()
+ * DevmemUnmakeLocalImportHandle()
  * 
  * Free any resource associated with the Make operation
  */
 PVRSRV_ERROR
-DevmemUnmakeServerExportClientExport(DEVMEM_BRIDGE_HANDLE hBridge,
-                                   DEVMEM_EXPORTCOOKIE *psExportCookie);
+DevmemUnmakeLocalImportHandle(SHARED_DEV_CONNECTION hDevConnection,
+                              IMG_HANDLE hClientExport);
 
 /*
  *
@@ -491,8 +491,7 @@ DevmemUnmakeServerExportClientExport(DEVMEM_BRIDGE_HANDLE hBridge,
    required, as this data is guaranteed to be constant for the
    lifetime of the device node */
 extern PVRSRV_ERROR
-DevmemHeapConfigCount(DEVMEM_BRIDGE_HANDLE hBridge,
-                      IMG_HANDLE hDeviceNode,
+DevmemHeapConfigCount(SHARED_DEV_CONNECTION hDevConnection,
                       IMG_UINT32 *puiNumHeapConfigsOut);
 
 /* Devmem_HeapCount: returns the number of heaps that a given heap
@@ -500,8 +499,7 @@ DevmemHeapConfigCount(DEVMEM_BRIDGE_HANDLE hBridge,
    semantics required, as this data is guaranteed to be constant for
    the lifetime of the device node */
 extern PVRSRV_ERROR
-DevmemHeapCount(DEVMEM_BRIDGE_HANDLE hBridge,
-                IMG_HANDLE hDeviceNode,
+DevmemHeapCount(SHARED_DEV_CONNECTION hDevConnection,
                 IMG_UINT32 uiHeapConfigIndex,
                 IMG_UINT32 *puiNumHeapsOut);
 /* Devmem_HeapConfigName: return the name of the given heap config.
@@ -512,8 +510,7 @@ DevmemHeapCount(DEVMEM_BRIDGE_HANDLE hBridge,
    the lifetime of the device node.
  */
 extern PVRSRV_ERROR
-DevmemHeapConfigName(DEVMEM_BRIDGE_HANDLE hBridge,
-                     IMG_HANDLE hDeviceNode,
+DevmemHeapConfigName(SHARED_DEV_CONNECTION hsDevConnection,
                      IMG_UINT32 uiHeapConfigIndex,
                      IMG_CHAR *pszConfigNameOut,
                      IMG_UINT32 uiConfigNameBufSz);
@@ -527,8 +524,7 @@ DevmemHeapConfigName(DEVMEM_BRIDGE_HANDLE hBridge,
    data is guaranteed to be constant for the lifetime of the device
    node. */
 extern PVRSRV_ERROR
-DevmemHeapDetails(DEVMEM_BRIDGE_HANDLE hBridge,
-                  IMG_HANDLE hDeviceNode,
+DevmemHeapDetails(SHARED_DEV_CONNECTION hDevConnection,
                   IMG_UINT32 uiHeapConfigIndex,
                   IMG_UINT32 uiHeapIndex,
                   IMG_CHAR *pszHeapNameOut,

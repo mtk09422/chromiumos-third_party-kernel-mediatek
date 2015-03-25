@@ -63,6 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pdump_km.h"
 #include "pdump_physmem.h"
 #include "pmr_impl.h"
+#include "pmr_os.h"
 #include "pvrsrv.h"
 
 #include "allocmem.h"
@@ -809,6 +810,55 @@ PMRPinPMR(PMR *psPMR)
 }
 
 PVRSRV_ERROR
+PMRMakeLocalImportHandle(PMR *psPMR,
+                         PMR **ppsPMR)
+{
+	PMRRefPMR(psPMR);
+	*ppsPMR = psPMR;
+	return PVRSRV_OK;
+}
+
+PVRSRV_ERROR
+PMRUnmakeLocalImportHandle(PMR *psPMR)
+{
+	PMRUnrefPMR(psPMR);
+	return PVRSRV_OK;
+}
+
+/*
+	Note:
+	We pass back the PMR as it was passed in as a different handle type
+	(DEVMEM_MEM_IMPORT) and it allows us to change the import structure
+	type if we should need to embed any meta data in it.
+*/
+PVRSRV_ERROR
+PMRLocalImportPMR(PMR *psPMR,
+				  PMR **ppsPMR,
+				  IMG_DEVMEM_SIZE_T *puiSize,
+				  IMG_DEVMEM_ALIGN_T *puiAlign)
+{
+	 _Ref(psPMR);
+
+	/* Return the PMR */
+	*ppsPMR = psPMR;
+	*puiSize = psPMR->uiLogicalSize;
+	*puiAlign = 1ULL << psPMR->uiLog2ContiguityGuarantee;
+	return PVRSRV_OK;
+}
+
+PVRSRV_ERROR
+PMRGetUID(PMR *psPMR,
+		  IMG_UINT64 *pui64UID)
+{
+	PVR_ASSERT(psPMR != NULL);
+
+	*pui64UID = psPMR->uiSerialNum;
+
+	return PVRSRV_OK;
+}
+
+#if defined(SUPPORT_INSECURE_EXPORT)
+PVRSRV_ERROR
 PMRExportPMR(PMR *psPMR,
              PMR_EXPORT **ppsPMRExportPtr,
              PMR_SIZE_T *puiSize,
@@ -837,35 +887,6 @@ PMRExportPMR(PMR *psPMR,
     return PVRSRV_OK;
 }
 
-PVRSRV_ERROR
-PMRMakeServerExportClientExport(DEVMEM_EXPORTCOOKIE *psPMRExportIn,
-								PMR_EXPORT **ppsPMRExportPtr,
-								PMR_SIZE_T *puiSize,
-								PMR_LOG2ALIGN_T *puiLog2Contig,
-								PMR_PASSWORD_T *puiPassword)
-{
-	*ppsPMRExportPtr = (PMR_EXPORT *) psPMRExportIn->hPMRExportHandle;
-	*puiSize = psPMRExportIn->uiSize;
-	*puiLog2Contig = psPMRExportIn->uiLog2ContiguityGuarantee;
-	*puiPassword = psPMRExportIn->uiPMRExportPassword;
-
-	return PVRSRV_OK;
-}
-
-PVRSRV_ERROR
-PMRUnmakeServerExportClientExport(PMR_EXPORT *psPMRExport)
-{
-	PVR_UNREFERENCED_PARAMETER(psPMRExport);
-
-	/*
-	 * There is nothing to do here, the server will call unexport
-	 * regardless of the type of shutdown. In order to play ball
-	 * with the handle manager (where it's used) we need to pair
-	 * functions and this is PMRMakeServerExportClientExport
-	 * counterpart.
-	 */
-	return PVRSRV_OK;
-}
 
 PVRSRV_ERROR
 PMRUnexportPMR(PMR_EXPORT *psPMRExport)
@@ -928,40 +949,60 @@ PMRUnimportPMR(PMR *psPMR)
     return PVRSRV_OK;
 }
 
-/*
-	Note:
-	We pass back the PMR as it was passed in as a different handle type
-	(DEVMEM_MEM_IMPORT) and it allows us to change the import structure
-	type if we should need to embed any meta data in it.
-*/
-PVRSRV_ERROR
-PMRLocalImportPMR(PMR *psPMR,
-				  PMR **ppsPMR,
-				  IMG_DEVMEM_SIZE_T *puiSize,
-				  IMG_DEVMEM_ALIGN_T *puiAlign)
-{
-	 _Ref(psPMR);
+#else /* if defined(SUPPORT_INSECURE_EXPORT) */
 
-	/* Return the PMR */
-	*ppsPMR = psPMR;
-	*puiSize = psPMR->uiLogicalSize;
-	*puiAlign = 1ULL << psPMR->uiLog2ContiguityGuarantee;
+PVRSRV_ERROR
+PMRExportPMR(PMR *psPMR,
+             PMR_EXPORT **ppsPMRExportPtr,
+             PMR_SIZE_T *puiSize,
+             PMR_LOG2ALIGN_T *puiLog2Contig,
+             PMR_PASSWORD_T *puiPassword)
+{
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	PVR_UNREFERENCED_PARAMETER(ppsPMRExportPtr);
+	PVR_UNREFERENCED_PARAMETER(puiSize);
+	PVR_UNREFERENCED_PARAMETER(puiLog2Contig);
+	PVR_UNREFERENCED_PARAMETER(puiPassword);
+
+	return PVRSRV_OK;
+}
+
+
+PVRSRV_ERROR
+PMRUnexportPMR(PMR_EXPORT *psPMRExport)
+{
+	PVR_UNREFERENCED_PARAMETER(psPMRExport);
+	return PVRSRV_OK;
+}
+
+
+PVRSRV_ERROR
+PMRImportPMR(PMR_EXPORT *psPMRExport,
+             PMR_PASSWORD_T uiPassword,
+             PMR_SIZE_T uiSize,
+             PMR_LOG2ALIGN_T uiLog2Contig,
+             PMR **ppsPMR)
+{
+	PVR_UNREFERENCED_PARAMETER(psPMRExport);
+	PVR_UNREFERENCED_PARAMETER(uiPassword);
+	PVR_UNREFERENCED_PARAMETER(uiSize);
+	PVR_UNREFERENCED_PARAMETER(uiLog2Contig);
+	PVR_UNREFERENCED_PARAMETER(ppsPMR);
+
 	return PVRSRV_OK;
 }
 
 PVRSRV_ERROR
-PMRGetUID(PMR *psPMR,
-		  IMG_UINT64 *pui64UID)
+PMRUnimportPMR(PMR *psPMR)
 {
-	PVR_ASSERT(psPMR != NULL);
-
-	*pui64UID = psPMR->uiSerialNum;
-
+	PVR_UNREFERENCED_PARAMETER(psPMR);
 	return PVRSRV_OK;
 }
+#endif /* if defined(SUPPORT_INSECURE_EXPORT) */
 
 #if defined(SUPPORT_SECURE_EXPORT)
 PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
+                                PVRSRV_DEVICE_NODE * psDevNode,
 								PMR *psPMR,
 								IMG_SECURE_TYPE *phSecure,
 								PMR **ppsPMR,
@@ -969,6 +1010,8 @@ PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
 {
 	PVRSRV_ERROR eError;
 
+	PVR_UNREFERENCED_PARAMETER(psDevNode);
+	
 	/* We are acquiring reference to PMR here because OSSecureExport
 	 * releases bridge lock and PMR lock for a moment and we don't want PMR
 	 * to be removed by other thread in the meantime. */
@@ -1593,6 +1636,17 @@ PMR_WriteBytes(PMR *psPMR,
 
 	*puiNumBytes = uiBytesCopied;
     return eError;
+}
+
+PVRSRV_ERROR
+PMRMMapPMR(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
+{
+	if (psPMR->psFuncTab->pfnMMap)
+	{
+		return psPMR->psFuncTab->pfnMMap(psPMR->pvFlavourData, psPMR, pOSMMapData);
+	}
+
+	return OSMMapPMRGeneric(psPMR, pOSMMapData);
 }
 
 void

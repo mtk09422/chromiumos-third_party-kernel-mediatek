@@ -244,7 +244,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 								IMG_UINT32					*paui32ClientUpdateValue,
 								IMG_UINT32					ui32ServerSyncPrims,
 								IMG_UINT32					*paui32ServerSyncFlags,
-								SERVER_SYNC_PRIMITIVE 		**pasServerSyncs,
+								SERVER_SYNC_PRIMITIVE		**pasServerSyncs,
 								IMG_UINT32					ui32CmdSize,
 								IMG_PBYTE					pui8DMCmd,
 								IMG_BOOL					bPDumpContinuous,
@@ -257,9 +257,9 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	PVRSRV_ERROR			eError2;
 	IMG_UINT32				i;
 
-	RGXFWIF_DEV_VIRTADDR	pPreTimestamp;
-	RGXFWIF_DEV_VIRTADDR	pPostTimestamp;
-	PRGXFWIF_UFO_ADDR		pRMWUFOAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPreAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPostAddr;
+	PRGXFWIF_UFO_ADDR       pRMWUFOAddr;
 
 
 	/* Sanity check the server fences */
@@ -273,8 +273,8 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	}
 
 	RGX_GetTimestampCmdHelper((PVRSRV_RGXDEV_INFO*) psComputeContext->psDeviceNode->pvDevice,
-	                          & pPreTimestamp,
-	                          & pPostTimestamp,
+	                          & pPreAddr,
+	                          & pPostAddr,
 	                          & pRMWUFOAddr);
 
 	eError = RGXCmdHelperInitCmdCCB(FWCommonContextGetClientCCB(psComputeContext->psServerCommonContext),
@@ -289,8 +289,8 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	                                pasServerSyncs,
 	                                ui32CmdSize,
 	                                pui8DMCmd,
-	                                & pPreTimestamp,
-	                                & pPostTimestamp,
+	                                & pPreAddr,
+	                                & pPostAddr,
 	                                & pRMWUFOAddr,
 	                                RGXFWIF_CCB_CMD_TYPE_CDM,
 	                                bPDumpContinuous,
@@ -429,10 +429,13 @@ IMG_EXPORT PVRSRV_ERROR PVRSRVRGXFlushComputeDataKM(RGX_SERVER_COMPUTE_CONTEXT *
 }
 
 PVRSRV_ERROR PVRSRVRGXSetComputeContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                  PVRSRV_DEVICE_NODE * psDeviceNode,
 												  RGX_SERVER_COMPUTE_CONTEXT *psComputeContext,
 												  IMG_UINT32 ui32Priority)
 {
 	PVRSRV_ERROR eError;
+
+	PVR_UNREFERENCED_PARAMETER(psDeviceNode);
 
 	eError = ContextSetPriority(psComputeContext->psServerCommonContext,
 								psConnection,

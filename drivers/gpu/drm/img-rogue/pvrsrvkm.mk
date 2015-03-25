@@ -17,7 +17,6 @@ pvrsrvkm-y += \
  server_smm_bridge.o \
  server_srvcore_bridge.o \
  server_sync_bridge.o \
- server_syncexport_bridge.o \
  server_syncsexport_bridge.o \
  server_timerquery_bridge.o \
  cache_generic.o \
@@ -34,7 +33,6 @@ pvrsrvkm-y += \
  power.o \
  process_stats.o \
  pvrsrv.o \
- scp.o \
  srvcore.o \
  sync_server.o \
  tlintern.o \
@@ -63,9 +61,8 @@ pvrsrvkm-y += \
  event.o \
  handle_idr.o \
  mm.o \
- mmap.o \
- mtk_module.o \
  module_common.o \
+ mtk_module.o \
  osconnection_server.o \
  osfunc.o \
  ossecure_export.o \
@@ -74,13 +71,14 @@ pvrsrvkm-y += \
  physmem_osmem_linux.o \
  physmem_tdmetacode_linux.o \
  physmem_tdsecbuf_linux.o \
+ pmr_os.o \
  pvr_bridge_k.o \
  pvr_debug.o \
  pvr_debugfs.o \
  pvr_drm.o \
- pvr_drm_display.o \
  pvr_drm_gem.o \
  pvr_drm_prime.o \
+ pvr_linux_fence.o \
  devicemem.o \
  devicemem_utils.o \
  dllist.o \

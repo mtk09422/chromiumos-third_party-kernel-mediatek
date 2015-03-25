@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(RGX_FIRMWARE)
 typedef IMG_UINT32							*PRGXFWIF_SIGBUFFER;
 typedef struct _RGXFWIF_TRACEBUF_			*PRGXFWIF_TRACEBUF;
-typedef IMG_UINT8							*PRGXFWIF_HWPERFINFO;
+typedef IMG_UINT8							*PRGXFWIF_HWPERFBUF;
 typedef struct _RGXFWIF_HWRINFOBUF_			*PRGXFWIF_HWRINFOBUF;
 typedef struct _RGXFWIF_RUNTIME_CFG_		*PRGXFWIF_RUNTIME_CFG;
 typedef struct _RGXFWIF_GPU_UTIL_FWCB_		*PRGXFWIF_GPU_UTIL_FWCB;
@@ -73,7 +73,7 @@ typedef DLLIST_NODE							RGXFWIF_DLLIST_NODE;
 #else
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_SIGBUFFER;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_TRACEBUF;
-typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_HWPERFINFO;
+typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_HWPERFBUF;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_HWRINFOBUF;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_RUNTIME_CFG;
 typedef RGXFWIF_DEV_VIRTADDR				PRGXFWIF_GPU_UTIL_FWCB;
@@ -158,7 +158,11 @@ typedef struct _RGXFWIF_3DCTX_STATE_
 
 typedef struct _RGXFWIF_COMPUTECTX_STATE_
 {
+#if defined(RGX_FEATURE_COMPUTE_MORTON_CAPABLE)
+	IMG_BOOL	RGXFW_ALIGN	bBufferB;
+#else
 	IMG_UINT64	RGXFW_ALIGN	ui64Padding;
+#endif
 } RGXFWIF_COMPUTECTX_STATE;
 
 
@@ -666,7 +670,7 @@ typedef struct _RGXFWIF_RUNTIME_CFG_
 	IMG_UINT32				ui32ActivePMLatencyms;		/* APM latency in ms before signalling IDLE to the host */
 	IMG_BOOL				bActivePMLatencyPersistant;	/* If set, APM latency does not reset to system default each GPU power transition */
 	IMG_UINT32				ui32CoreClockSpeed;			/* Core clock speed, currently only used to calculate timer ticks */
-	IMG_UINT32				ui32DefaultDustsNumInit;		/* Last number of dusts change requested by the host */
+	IMG_UINT32				ui32DefaultDustsNumInit;	/* Last number of dusts change requested by the host */
 } RGXFWIF_RUNTIME_CFG;
 
 /*!
@@ -719,7 +723,7 @@ typedef struct _RGXFWIF_INIT_
 	PRGXFWIF_RUNTIME_CFG	psRuntimeCfg;
 
 	PRGXFWIF_TRACEBUF		psTraceBufCtl;
-	PRGXFWIF_HWPERFINFO		psHWPerfInfoCtl;
+	PRGXFWIF_HWPERFBUF		pui8HWPerfBuf;
 	IMG_UINT64	RGXFW_ALIGN ui64HWPerfFilter;
 
 	PRGXFWIF_HWRINFOBUF		psRGXFWIfHWRInfoBufCtl;

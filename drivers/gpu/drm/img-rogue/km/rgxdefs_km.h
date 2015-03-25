@@ -73,6 +73,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * RGX Defines
  *****************************************************************************/
 
+#if defined(RGX_FEATURE_META)
 /* META cores (required for the RGX_FEATURE_META) */
 #define MTP218   (1)
 #define MTP219   (2)
@@ -93,6 +94,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RGX_META_COREMEM_DATA     (1)
 #endif
 #endif
+
+#endif  /*RGX_FEATURE_META*/
 
 /* ISP requires valid state on all three pipes regardless of the number of
  * active pipes/tiles in flight.

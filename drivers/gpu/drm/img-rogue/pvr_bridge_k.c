@@ -41,6 +41,9 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
+
+#include <linux/mm_types.h>
+
 #include "img_defs.h"
 #include "pvr_bridge.h"
 #include "connection_server.h"
@@ -49,6 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debugfs.h"
 #include "private_data.h"
 #include "linkage.h"
+#include "pmr.h"
 
 #if defined(SUPPORT_DRM)
 #include <drm/drmP.h>
@@ -74,6 +78,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // end of additional includes
 /************************************************************************/
 #endif
+
+/* WARNING!
+ * The mmap code has its own mutex, to prevent a possible deadlock,
+ * when using gPVRSRVLock.
+ * The Linux kernel takes the mm->mmap_sem before calling the mmap
+ * entry points (PVRMMap, MMapVOpen, MMapVClose), but the ioctl
+ * entry point may take mm->mmap_sem during fault handling, or 
+ * before calling get_user_pages.  If gPVRSRVLock was used in the
+ * mmap entry points, a deadlock could result, due to the ioctl
+ * and mmap code taking the two locks in different orders.
+ * As a corollary to this, the mmap entry points must not call
+ * any driver code that relies on gPVRSRVLock is held.
+ */
+static DEFINE_MUTEX(g_sMMapMutex);
 
 #if defined(DEBUG_BRIDGE_KM)
 static struct dentry *gpsPVRDebugFSBridgeStatsEntry = NULL;
@@ -185,6 +203,8 @@ LinuxBridgeInit(void)
 		return PVRSRV_ERROR_OUT_OF_MEMORY;
 	}
 #endif
+
+	BridgeDispatchTableStartOffsetsInit();
 
 	eError = InitSRVCOREBridge();
 	if (eError != PVRSRV_OK)
@@ -837,3 +857,69 @@ PVRSRV_BridgeCompatDispatchKM(struct file *pFile,
 	return BridgedDispatchKM(psConnection, &params_for_64);
 }
 #endif /* defined(CONFIG_COMPAT) */
+
+int
+PVRSRV_MMap(struct file *pFile, struct vm_area_struct *ps_vma)
+{
+	CONNECTION_DATA *psConnection = LinuxConnectionFromFile(pFile);
+	PMR *psPMR;
+	PVRSRV_ERROR eError;
+
+	/*
+	 * The bridge lock used here to protect PVRSRVLookupHandle is replaced
+	 * by a specific lock considering that the handle functions have now
+	 * their own lock. This change was necessary to solve the lockdep issues
+	 * related with the PVRSRV_MMap.
+	 */
+	mutex_lock(&g_sMMapMutex);
+	PMRLock();
+
+#if defined(SUPPORT_DRM_DC_MODULE)
+	psPMR = PVRSRVGEMMMapLookupPMR(pFile, ps_vma);
+	if (!psPMR)
+#endif
+	{
+		IMG_HANDLE hSecurePMRHandle = (IMG_HANDLE)((uintptr_t)ps_vma->vm_pgoff);
+
+		eError = PVRSRVLookupHandle(psConnection->psHandleBase,
+					    (void **)&psPMR,
+					    hSecurePMRHandle,
+					    PVRSRV_HANDLE_TYPE_PHYSMEM_PMR);
+		if (eError != PVRSRV_OK)
+		{
+			goto e0;
+		}
+	}
+
+	/*
+	 * Take a reference so that we can drop the PMRLock early. We must then
+	 * drop the reference later as PMRMMapPMR will also take a reference.
+	 */
+	PMRRefPMR(psPMR);
+	PMRUnlock();
+
+	eError = PMRMMapPMR(psPMR, ps_vma);
+	if (eError != PVRSRV_OK)
+	{
+		goto e1;
+	}
+
+	PMRUnrefPMR(psPMR);
+	mutex_unlock(&g_sMMapMutex);
+
+	return 0;
+
+e1:
+	PMRUnrefPMR(psPMR);
+	goto em1;
+e0:
+	PVR_DPF((PVR_DBG_ERROR, "Error in mmap critical section"));
+	PMRUnlock();
+em1:
+	mutex_unlock(&g_sMMapMutex);
+
+	PVR_DPF((PVR_DBG_ERROR, "Unable to translate error %d", eError));
+	PVR_ASSERT(eError != PVRSRV_OK);
+
+	return -ENOENT; // -EAGAIN // or what?
+}

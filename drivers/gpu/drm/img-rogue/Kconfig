@@ -1,4 +1,4 @@
-config POWERVR_ROGUE
+config DRM_POWERVR_ROGUE
 	tristate "PowerVR Rogue"
 	depends on HAS_IOMEM
 	depends on DRM
@@ -9,7 +9,7 @@ config POWERVR_ROGUE
 	  Say Y here if your SoC contains a PowerVR Rogue GPU. For more
 	  information, see <http://www.imgtec.com/powervr/>.
 
-config POWERVR_ROGUE_DEBUG
+config DRM_POWERVR_ROGUE_DEBUG
 	bool "Enable PowerVR Rogue debug features"
 	depends on POWERVR_ROGUE
 	default n

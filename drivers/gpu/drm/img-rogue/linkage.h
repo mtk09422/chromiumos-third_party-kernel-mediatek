@@ -61,12 +61,12 @@ long PVRSRV_BridgeCompatDispatchKM(struct file *file, unsigned int cmd, unsigned
 #endif
 #endif
 
+int PVRSRV_MMap(struct file *file, struct vm_area_struct *ps_vma);
+
 PVRSRV_ERROR PVROSFuncInit(void);
 void PVROSFuncDeInit(void);
 
 int PVRDebugCreateDebugFSEntries(void);
 void PVRDebugRemoveDebugFSEntries(void);
-
-int MMapPMR(struct file *file, struct vm_area_struct *ps_vma);
 
 #endif /* !defined(__LINKAGE_H__) */

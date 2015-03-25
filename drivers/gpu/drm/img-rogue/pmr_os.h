@@ -1,9 +1,8 @@
 /*************************************************************************/ /*!
 @File
-@Title          Version numbers and strings.
+@Title          OS PMR functions
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Version numbers and strings for PVR Consumer services
-                components.
+@Description    OS specific PMR functions
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -42,31 +41,12 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _PVRVERSION_H_
-#define _PVRVERSION_H_
+#if !defined(__PMR_OS_H__)
+#define __PMR_OS_H__
 
-#define PVR_STR(X) #X
-#define PVR_STR2(X) PVR_STR(X)
+#include "pmr_impl.h"
 
-#define PVRVERSION_MAJ               1
-#define PVRVERSION_MIN               6
+PVRSRV_ERROR
+OSMMapPMRGeneric(PMR *psPMR, PMR_MMAP_DATA pOSMMapData);
 
-#define PVRVERSION_FAMILY           "rogueddk"
-#define PVRVERSION_BRANCHNAME       "DEV/CHROMEOS/freon"
-#define PVRVERSION_BUILD             3490026
-#define PVRVERSION_BSCONTROL        "Rogue_DDK_ChromiumOS"
-
-#define PVRVERSION_STRING           "Rogue_DDK_ChromiumOS rogueddk DEV/CHROMEOS/freon@" PVR_STR2(PVRVERSION_BUILD)
-#define PVRVERSION_STRING_SHORT     "1.6@" PVR_STR2(PVRVERSION_BUILD) " (DEV/CHROMEOS/freon)"
-
-#define COPYRIGHT_TXT               "Copyright (c) Imagination Technologies Ltd. All Rights Reserved."
-
-#define PVRVERSION_BUILD_HI          349
-#define PVRVERSION_BUILD_LO          26
-#define PVRVERSION_STRING_NUMERIC    PVR_STR2(PVRVERSION_MAJ) "." PVR_STR2(PVRVERSION_MIN) "." PVR_STR2(PVRVERSION_BUILD_HI) "." PVR_STR2(PVRVERSION_BUILD_LO)
-
-#define PVRVERSION_PACK(MAJ,MIN) ((((MAJ)&0xFFFF) << 16) | (((MIN)&0xFFFF) << 0))
-#define PVRVERSION_UNPACK_MAJ(VERSION) (((VERSION) >> 16) & 0xFFFF)
-#define PVRVERSION_UNPACK_MIN(VERSION) (((VERSION) >> 0) & 0xFFFF)
-
-#endif /* _PVRVERSION_H_ */
+#endif /* !defined(__PMR_OS_H__) */

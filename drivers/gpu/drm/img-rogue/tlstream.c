@@ -220,32 +220,28 @@ TLStreamCreate(IMG_HANDLE *phStream,
 	OSSNPrintf(pszBufferLabel, sizeof(pszBufferLabel), "TLStreamBuf-%s", szStreamName);
 
 	/* Allocate memory for the circular buffer and export it to user space. */
-	eError = DevmemAllocateExportable( NULL,
-									   (IMG_HANDLE) TLGetGlobalRgxDevice(),
-									   (IMG_DEVMEM_SIZE_T)psTmp->ui32Size,
-									   (IMG_DEVMEM_ALIGN_T) OSGetPageSize(),
-									   uiMemFlags | PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE,
-									   pszBufferLabel,
-									   &psTmp->psStreamMemDesc);
+	eError = DevmemAllocateExportable((IMG_HANDLE) TLGetGlobalRgxDevice(),
+	                                  (IMG_DEVMEM_SIZE_T)psTmp->ui32Size,
+	                                  (IMG_DEVMEM_ALIGN_T) OSGetPageSize(),
+	                                  uiMemFlags | PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE,
+	                                  pszBufferLabel,
+	                                  &psTmp->psStreamMemDesc);
 	PVR_LOGG_IF_ERROR(eError, "DevmemAllocateExportable", e3);
 
 	eError = DevmemAcquireCpuVirtAddr( psTmp->psStreamMemDesc, (void**) &psTmp->pbyBuffer );
 	PVR_LOGG_IF_ERROR(eError, "DevmemAcquireCpuVirtAddr", e4);
 
-	eError = DevmemExport(psTmp->psStreamMemDesc, &(psTmp->sExportCookie));
-	PVR_LOGG_IF_ERROR(eError, "DevmemExport", e5);
-
 	/* Synchronization object to synchronize with user side data transfers. */
 	eError = OSEventObjectCreate(psTmp->szName, &hEventList);
 	if (eError != PVRSRV_OK)
 	{
-		goto e6;
+		goto e5;
 	}
 
 	eError = OSLockCreate (&psTmp->hStreamLock, LOCK_TYPE_PASSIVE);
 	if (eError != PVRSRV_OK)
 	{
-		goto e7;
+		goto e6;
 	}
 
 	/* Now remember the stream in the global TL structures */
@@ -253,7 +249,7 @@ TLStreamCreate(IMG_HANDLE *phStream,
 	if (psn == NULL)
 	{
 		eError=PVRSRV_ERROR_OUT_OF_MEMORY;
-		goto e8;
+		goto e7;
 	}
 
 	/* Stream node created, now reset the write reference count to 1
@@ -274,12 +270,10 @@ TLStreamCreate(IMG_HANDLE *phStream,
 	*phStream = (IMG_HANDLE)psTmp;
 	PVR_DPF_RETURN_OK;
 
-e8:
-	OSLockDestroy(psTmp->hStreamLock);
 e7:
-	OSEventObjectDestroy(hEventList);
+	OSLockDestroy(psTmp->hStreamLock);
 e6:
-	DevmemUnexport(psTmp->psStreamMemDesc, &(psTmp->sExportCookie));
+	OSEventObjectDestroy(hEventList);
 e5:
 	DevmemReleaseCpuVirtAddr( psTmp->psStreamMemDesc );
 e4:
@@ -900,20 +894,19 @@ TLStreamDestroy (PTL_STREAM psStream)
 		OSEventObjectDestroy(psStream->hProducerEventObj);
 	}
 
-	DevmemUnexport(psStream->psStreamMemDesc, &psStream->sExportCookie);
 	DevmemReleaseCpuVirtAddr(psStream->psStreamMemDesc);
 	DevmemFree(psStream->psStreamMemDesc);
 	OSFREEMEM(psStream);
 }
 
-DEVMEM_EXPORTCOOKIE*
-TLStreamGetBufferCookie(PTL_STREAM psStream)
+DEVMEM_MEMDESC*
+TLStreamGetBufferPointer(PTL_STREAM psStream)
 {
 	PVR_DPF_ENTERED;
 
 	PVR_ASSERT(psStream);
 
-	PVR_DPF_RETURN_VAL(&psStream->sExportCookie);
+	PVR_DPF_RETURN_VAL(psStream->psStreamMemDesc);
 }
 
 IMG_BOOL

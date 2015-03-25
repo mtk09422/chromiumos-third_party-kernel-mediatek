@@ -69,7 +69,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEVMEM_REFCOUNT_PRINT(fmt, ...)
 #endif
 
-
 /* If we need a "hMapping" but we don't have a server-side mapping, we
    poison the entry with this value so that it's easily recognised in
    the debugger.  Note that this is potentially a valid handle, but
@@ -82,16 +81,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define LACK_OF_RESERVATION_POISON ((IMG_HANDLE)0x7117dead)
 
 struct _DEVMEM_CONTEXT_ {
-    /* Cookie of the device on which this memory context resides */
-    IMG_HANDLE hDeviceNode;
 
+	SHARED_DEV_CONNECTION hDevConnection;
+	
     /* Number of heaps that have been created in this context
        (regardless of whether they have allocations) */
     IMG_UINT32 uiNumHeaps;
-
-    /* Sometimes we need to talk to Kernel Services.  In order to do
-       so, we need the connection handle */
-    DEVMEM_BRIDGE_HANDLE hBridge;
 
     /*
       Each "DEVMEM_CONTEXT" has a counterpart in the server,
@@ -175,13 +170,10 @@ typedef struct _DEVMEM_CPU_IMPORT_ {
 	IMG_UINT32 ui32RefCount;		/*!< Refcount of the CPU virtual address */
 	IMG_HANDLE hOSMMapData;			/*!< CPU mapping handle */
 	POS_LOCK hLock;					/*!< Lock to protect the CPU import */
-#if !defined(__KERNEL__) && defined(SUPPORT_ION)
-	int iDmaBufFd;					/*!< >=0 if this was an imported ion allocation */
-#endif
 } DEVMEM_CPU_IMPORT;
 
 typedef struct _DEVMEM_IMPORT_ {
-    DEVMEM_BRIDGE_HANDLE hBridge;		/*!< Bridge connection for the server */
+	SHARED_DEV_CONNECTION hDevConnection;
     IMG_DEVMEM_ALIGN_T uiAlign;			/*!< Alignment requirement */
 	DEVMEM_SIZE_T uiSize;				/*!< Size of import */
     ATOMIC_T hRefCount;					/*!< Refcount for this import */
@@ -210,6 +202,7 @@ typedef struct _DEVMEM_CPU_MEMDESC_ {
 struct _DEVMEM_MEMDESC_ {
     DEVMEM_IMPORT *psImport;				/*!< Import this memdesc is on */
     IMG_DEVMEM_OFFSET_T uiOffset;			/*!< Offset into import where our allocation starts */
+	IMG_DEVMEM_SIZE_T uiAllocSize;          /*!< Size of the allocation */
     ATOMIC_T hRefCount;						/*!< Refcount of the memdesc */
     POS_LOCK hLock;							/*!< Lock to protect memdesc */
 
@@ -222,6 +215,7 @@ struct _DEVMEM_MEMDESC_ {
 #if defined(PVR_RI_DEBUG)
     IMG_HANDLE hRIHandle;					/*!< Handle to RI information */
 #endif
+
 };
 
 /******************************************************************************
@@ -246,7 +240,7 @@ PVRSRV_ERROR _DevmemValidateParams(IMG_DEVMEM_SIZE_T uiSize,
 @Input          ppsImport     The import to allocate.
 @return         PVRSRV_ERROR
 ******************************************************************************/
-PVRSRV_ERROR _DevmemImportStructAlloc(IMG_HANDLE hBridge,
+PVRSRV_ERROR _DevmemImportStructAlloc(SHARED_DEV_CONNECTION hDevConnection,
 									  DEVMEM_IMPORT **ppsImport);
 
 /******************************************************************************
@@ -359,10 +353,12 @@ PVRSRV_ERROR _DevmemMemDescAlloc(DEVMEM_MEMDESC **ppsMemDesc);
 @Input          psMemDesc    MemDesc to initialise.
 @Input          uiOffset     Offset in the import structure.
 @Input          psImport     Import the MemDesc is on.
+@Input          uiAllocSize  Size of the allocation
 ******************************************************************************/
 void _DevmemMemDescInit(DEVMEM_MEMDESC *psMemDesc,
 						IMG_DEVMEM_OFFSET_T uiOffset,
-						DEVMEM_IMPORT *psImport);
+						DEVMEM_IMPORT *psImport,
+						IMG_DEVMEM_SIZE_T uiAllocSize);
 
 /******************************************************************************
 @Function       _DevmemMemDescAcquire

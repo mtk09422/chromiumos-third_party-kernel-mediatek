@@ -232,7 +232,7 @@ PVRSRV_ERROR RGXCreateCCB(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	psClientCCB->psServerCommonContext = psServerCommonContext;
 
 	uiClientCCBMemAllocFlags = PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-	                            PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+								PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 								PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 								PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 								PVRSRV_MEMALLOCFLAG_CPU_READABLE |
@@ -265,6 +265,7 @@ PVRSRV_ERROR RGXCreateCCB(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		goto fail_alloc_ccb;
 	}
 
+
 	eError = DevmemAcquireCpuVirtAddr(psClientCCB->psClientCCBMemDesc,
 									  (void **) &psClientCCB->pui8ClientCCB);
 	if (eError != PVRSRV_OK)
@@ -287,6 +288,7 @@ PVRSRV_ERROR RGXCreateCCB(PVRSRV_DEVICE_NODE	*psDeviceNode,
 				PVRSRVGetErrorStringKM(eError)));
 		goto fail_alloc_ccbctrl;
 	}
+
 
 	eError = DevmemAcquireCpuVirtAddr(psClientCCB->psClientCCBCtrlMemDesc,
 									  (void **) &psClientCCB->psClientCCBCtrl);
@@ -820,9 +822,9 @@ PVRSRV_ERROR RGXCmdHelperInitCmdCCB(RGX_CLIENT_CCB 			*psClientCCB,
                                     SERVER_SYNC_PRIMITIVE	**papsServerSyncs,
                                     IMG_UINT32				ui32CmdSize,
                                     IMG_PBYTE				pui8DMCmd,
-                                    RGXFWIF_DEV_VIRTADDR	* ppPreTimestamp,
-                                    RGXFWIF_DEV_VIRTADDR	* ppPostTimestamp,
-                                    PRGXFWIF_UFO_ADDR       * ppRMWUFOAddr,
+                                    PRGXFWIF_TIMESTAMP_ADDR *ppPreAddr,
+                                    PRGXFWIF_TIMESTAMP_ADDR *ppPostAddr,
+                                    PRGXFWIF_UFO_ADDR       *ppRMWUFOAddr,
                                     RGXFWIF_CCB_CMD_TYPE	eType,
                                     IMG_BOOL				bPDumpContinuous,
                                     IMG_CHAR				*pszCommandName,
@@ -868,17 +870,17 @@ PVRSRV_ERROR RGXCmdHelperInitCmdCCB(RGX_CLIENT_CCB 			*psClientCCB,
 	psCmdHelperData->ui32RMWUFOCmdSize = 0;
 
 
-	if (ppPreTimestamp && (ppPreTimestamp->ui32Addr != 0))
+	if (ppPreAddr && (ppPreAddr->ui32Addr != 0))
 	{
 
-		psCmdHelperData->pPreTimestamp           = * ppPreTimestamp;
+		psCmdHelperData->pPreTimestampAddr = *ppPreAddr;
 		psCmdHelperData->ui32PreTimeStampCmdSize = sizeof(RGXFWIF_CCB_CMD_HEADER)
 			+ ((sizeof(RGXFWIF_DEV_VIRTADDR) + RGXFWIF_FWALLOC_ALIGN - 1) & ~(RGXFWIF_FWALLOC_ALIGN  - 1));
 	}
 
-	if (ppPostTimestamp && (ppPostTimestamp->ui32Addr != 0))
+	if (ppPostAddr && (ppPostAddr->ui32Addr != 0))
 	{
-		psCmdHelperData->pPostTimestamp           = * ppPostTimestamp;
+		psCmdHelperData->pPostTimestampAddr = *ppPostAddr;
 		psCmdHelperData->ui32PostTimeStampCmdSize = sizeof(RGXFWIF_CCB_CMD_HEADER)
 			+ ((sizeof(RGXFWIF_DEV_VIRTADDR) + RGXFWIF_FWALLOC_ALIGN - 1) & ~(RGXFWIF_FWALLOC_ALIGN  - 1));
 	}
@@ -1080,7 +1082,7 @@ PVRSRV_ERROR RGXCmdHelperAcquireCmdCCB(IMG_UINT32 ui32CmdCount,
 		{
 			RGXWriteTimestampCommand(& pui8CmdPtr,
 			                         RGXFWIF_CCB_CMD_TYPE_PRE_TIMESTAMP,
-			                         psCmdHelperData->pPreTimestamp);
+			                         psCmdHelperData->pPreTimestampAddr);
 		}
 
 		/*
@@ -1109,7 +1111,7 @@ PVRSRV_ERROR RGXCmdHelperAcquireCmdCCB(IMG_UINT32 ui32CmdCount,
 		{
 			RGXWriteTimestampCommand(& pui8CmdPtr,
 			                         RGXFWIF_CCB_CMD_TYPE_POST_TIMESTAMP,
-			                         psCmdHelperData->pPostTimestamp);
+			                         psCmdHelperData->pPostTimestampAddr);
 		}
 
 

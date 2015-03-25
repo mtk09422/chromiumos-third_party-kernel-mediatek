@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -78,7 +74,6 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATETRANSFERCONTEXT *psRGXCreateTransferContextOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	IMG_BYTE *psFrameworkCmdInt = NULL;
 	IMG_HANDLE hPrivDataInt = NULL;
 	RGX_SERVER_TQ_CONTEXT * psTransferContextInt = NULL;
@@ -113,20 +108,6 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 					/* Look up the address from the handle */
 					psRGXCreateTransferContextOUT->eError =
 						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateTransferContextIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateTransferContextOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateTransferContext_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXCreateTransferContextOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
 											(void **) &hPrivDataInt,
 											psRGXCreateTransferContextIN->hPrivData,
 											PVRSRV_HANDLE_TYPE_DEV_PRIV_DATA);
@@ -138,8 +119,7 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXCreateTransferContextOUT->eError =
-		PVRSRVRGXCreateTransferContextKM(psConnection,
-					hDevNodeInt,
+		PVRSRVRGXCreateTransferContextKM(psConnection, OSGetDevData(psConnection),
 					psRGXCreateTransferContextIN->ui32Priority,
 					psRGXCreateTransferContextIN->sMCUFenceAddr,
 					psRGXCreateTransferContextIN->ui32FrameworkCmdize,
@@ -1044,7 +1024,7 @@ PVRSRVBridgeRGXSetTransferContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXSetTransferContextPriorityOUT->eError =
-		PVRSRVRGXSetTransferContextPriorityKM(psConnection,
+		PVRSRVRGXSetTransferContextPriorityKM(psConnection, OSGetDevData(psConnection),
 					psTransferContextInt,
 					psRGXSetTransferContextPriorityIN->ui32Priority);
 

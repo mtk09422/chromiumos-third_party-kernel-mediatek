@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -104,7 +100,7 @@ PVRSRVBridgeSyncPrimServerSecureExport(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psSyncPrimServerSecureExportOUT->eError =
-		PVRSRVSyncPrimServerSecureExportKM(psConnection,
+		PVRSRVSyncPrimServerSecureExportKM(psConnection, OSGetDevData(psConnection),
 					psSyncHandleInt,
 					&psSyncPrimServerSecureExportOUT->Export,
 					&psExportInt, &psSecureConnection);

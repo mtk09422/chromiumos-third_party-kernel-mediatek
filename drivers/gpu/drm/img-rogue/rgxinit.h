@@ -44,6 +44,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if !defined(__RGXINIT_H__)
 #define __RGXINIT_H__
 
+#include "connection_server.h"
 #include "pvrsrv_error.h"
 #include "img_types.h"
 #include "rgxscript.h"
@@ -65,7 +66,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ******************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (PVRSRV_DEVICE_NODE	*psDeviceNode,
+PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (CONNECTION_DATA       *psConnection,
+                                      PVRSRV_DEVICE_NODE	*psDeviceNode,
 									  RGX_INIT_COMMAND		*psInitScript,
 									  RGX_INIT_COMMAND		*psDbgScript,
 									  RGX_INIT_COMMAND		*psDbgBusScript,
@@ -79,24 +81,41 @@ PVRSRV_ERROR PVRSRVRGXInitDevPart2KM (PVRSRV_DEVICE_NODE	*psDeviceNode,
 									  IMG_UINT64			ui64KernelCatBaseMask,
 									  IMG_UINT32			ui32DeviceFlags,
 									  RGX_ACTIVEPM_CONF		eActivePMConf,
-								 	  DEVMEM_EXPORTCOOKIE	*psFWCodeAllocServerExportCookie,
-								 	  DEVMEM_EXPORTCOOKIE	*psFWDataAllocServerExportCookie,
-								 	  DEVMEM_EXPORTCOOKIE	*psFWCorememAllocServerExportCookie,
-									  DEVMEM_EXPORTCOOKIE	*psHWPerfDataAllocServerExportCookie);
+									  PMR					*psFWCodePMR,
+									  PMR					*psFWDataPMR,
+									  PMR					*psFWCorememPMR,
+									  PMR					*psHWPerfPMR);
 
 IMG_EXPORT
-PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(PVRSRV_DEVICE_NODE    *psDeviceNode,
+PVRSRV_ERROR RGXInitAllocFWImgMemDestroy(PMR* psPMR);
+
+IMG_EXPORT
+PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(CONNECTION_DATA       *psConnection,
+                                          PVRSRV_DEVICE_NODE    *psDeviceNode,
 										  IMG_DEVMEM_SIZE_T     ui32FWCodeLen,
 									 	  IMG_DEVMEM_SIZE_T     ui32FWDataLen,
 									 	  IMG_DEVMEM_SIZE_T     uiFWCorememLen,
-									 	  DEVMEM_EXPORTCOOKIE   **ppsFWCodeAllocServerExportCookie,
-									 	  IMG_DEV_VIRTADDR      *psFWCodeDevVAddrBase,
-									 	  DEVMEM_EXPORTCOOKIE   **ppsFWDataAllocServerExportCookie,
-									 	  IMG_DEV_VIRTADDR      *psFWDataDevVAddrBase,
-										  DEVMEM_EXPORTCOOKIE   **ppsFWCorememAllocServerExportCookie,
+										  PMR					**ppsFWCodePMR,
+									 	  IMG_DEV_VIRTADDR		*psFWCodeDevVAddrBase,
+										  PMR					**ppsFWDataPMR,
+									 	  IMG_DEV_VIRTADDR		*psFWDataDevVAddrBase,
+										  PMR					**ppsFWCorememPMR,
 										  IMG_DEV_VIRTADDR      *psFWCorememDevVAddrBase,
 										  RGXFWIF_DEV_VIRTADDR  *psFWCorememMetaVAddrBase);
 
+#if defined(RGX_FEATURE_MIPS)
+IMG_EXPORT
+PVRSRV_ERROR PVRSRVRGXInitMipsWrapperRegistersKM(PVRSRV_DEVICE_NODE *psDeviceNode,
+												 IMG_UINT32 ui32Remap1Config1Offset,
+												 IMG_UINT32 ui32Remap1Config2Offset,
+												 IMG_UINT32 ui32WrapperConfigOffset,
+												 IMG_UINT32 ui32BootCodeOffset);
+#endif
+
+IMG_EXPORT
+PVRSRV_ERROR PVRSRVRGXPdumpBootldrDataInitKM(PVRSRV_DEVICE_NODE *psDeviceNode,
+												 IMG_UINT32 ui32BootConfOffset,
+												 IMG_UINT32 ui32ExceptionVectorsBaseAddress);
 
 
 /*!
@@ -114,7 +133,8 @@ PVRSRV_ERROR PVRSRVRGXInitAllocFWImgMemKM(PVRSRV_DEVICE_NODE    *psDeviceNode,
 
 ******************************************************************************/
 IMG_IMPORT
-PVRSRV_ERROR PVRSRVRGXInitFirmwareKM(PVRSRV_DEVICE_NODE			*psDeviceNode, 
+PVRSRV_ERROR PVRSRVRGXInitFirmwareKM(CONNECTION_DATA                *psConnection,
+									    PVRSRV_DEVICE_NODE			*psDeviceNode, 
 									    RGXFWIF_DEV_VIRTADDR		*psRGXFwInit,
 									    IMG_BOOL					bEnableSignatureChecks,
 									    IMG_UINT32					ui32SignatureChecksBufSize,
@@ -129,7 +149,7 @@ PVRSRV_ERROR PVRSRVRGXInitFirmwareKM(PVRSRV_DEVICE_NODE			*psDeviceNode,
 									    IMG_UINT32					ui32HWRDebugDumpLimit,
 									    RGXFWIF_COMPCHECKS_BVNC     *psClientBVNC,
 										IMG_UINT32					ui32HWPerfCountersDataSize,
-										DEVMEM_EXPORTCOOKIE   **ppsHWPerfDataAllocServerExportCookie,
+										PMR							**ppsHWPerfPMR,
 									    RGX_RD_POWER_ISLAND_CONF			eRGXRDPowerIslandingConf);
 
 
@@ -156,12 +176,14 @@ PVRSRV_ERROR PVRSRVRGXInitFirmwareKM(PVRSRV_DEVICE_NODE			*psDeviceNode,
 
 ******************************************************************************/
 
-IMG_EXPORT
-PVRSRV_ERROR PVRSRVRGXInitLoadFWImageKM(PMR *psFWImgDestPMR,
-                                        PMR *psFWImgSrcPMR,
-                                        IMG_UINT64 ui64FWImgLen,
-										PMR *psFWImgSigPMR,
-                                        IMG_UINT64 ui64FWSigLen);
+IMG_EXPORT PVRSRV_ERROR
+PVRSRVRGXInitLoadFWImageKM(CONNECTION_DATA * psConnection,
+	PVRSRV_DEVICE_NODE *psDeviceNode, /*  */
+	PMR *psFWImgDestPMR,
+	PMR *psFWImgSrcPMR,
+	IMG_UINT64 ui64FWImgLen,
+	PMR *psFWImgSigPMR,
+	IMG_UINT64 ui64FWSigLen);
 
 /*!
 *******************************************************************************
@@ -232,6 +254,9 @@ PVRSRV_ERROR DevDeInitRGX(PVRSRV_DEVICE_NODE *psDeviceNode);
  @Return   PVRSRV_ERROR
 
 ******************************************************************************/
-PVRSRV_ERROR PVRSRVGPUVIRTPopulateLMASubArenasKM(PVRSRV_DEVICE_NODE	*psDeviceNode, IMG_UINT32 ui32NumElements, IMG_UINT32 aui32Elements[]);
+PVRSRV_ERROR PVRSRVGPUVIRTPopulateLMASubArenasKM(CONNECTION_DATA    * psConnection,
+                                                 PVRSRV_DEVICE_NODE	* psDeviceNode,
+                                                 IMG_UINT32         ui32NumElements,
+                                                 IMG_UINT32         aui32Elements[]);
 
 #endif /* __RGXINIT_H__ */

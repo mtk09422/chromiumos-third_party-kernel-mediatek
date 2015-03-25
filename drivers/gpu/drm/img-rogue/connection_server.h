@@ -82,6 +82,8 @@ typedef struct _CONNECTION_DATA_
 	struct _CONNECTION_DATA_	*psNext;
 } CONNECTION_DATA;
 
+#include "osconnection_server.h"
+
 PVRSRV_ERROR PVRSRVConnectionConnect(void **ppvPrivData, void *pvOSData);
 void PVRSRVConnectionDisconnect(void *pvPrivData);
 
@@ -101,5 +103,14 @@ IMG_HANDLE PVRSRVConnectionPrivateData(CONNECTION_DATA *psConnection)
 	return (psConnection != NULL) ? psConnection->hOsPrivateData : NULL;
 }
 
+
+#ifdef INLINE_IS_PRAGMA
+#pragma inline(PVRSRVGetDevData)
+#endif
+static INLINE
+PVRSRV_DEVICE_NODE * PVRSRVGetDevData(CONNECTION_DATA *psConnection)
+{
+	return OSGetDevData(psConnection);
+}
 
 #endif /* !defined(_CONNECTION_SERVER_H_) */

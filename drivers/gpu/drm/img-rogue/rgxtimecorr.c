@@ -70,24 +70,26 @@ static void _RGXMakeTimeCorrData(PVRSRV_DEVICE_NODE *psDeviceNode)
 	RGXFWIF_GPU_UTIL_FWCB *psGpuUtilFWCB = psDevInfo->psRGXFWIfGpuUtilFWCb;
 	RGX_GPU_DVFS_TABLE    *psGpuDVFSTable = psDevInfo->psGpuDVFSTable;
 	RGXFWIF_TIME_CORR     *psTimeCorr;
-	IMG_UINT32            ui32NewIndex;
+	IMG_UINT32            ui32NewSeqCount;
+	IMG_UINT32            ui32CoreClockSpeed;
+	IMG_UINT32            ui32Remainder;
 
-	ui32NewIndex = psGpuUtilFWCB->ui32TimeCorrCurrent + 1;
-	if(ui32NewIndex == RGXFWIF_TIME_CORR_ARRAY_SIZE)
-	{
-		ui32NewIndex = 0;
-	}
-	psTimeCorr = &psGpuUtilFWCB->sTimeCorr[ui32NewIndex];
+	ui32CoreClockSpeed = psGpuDVFSTable->aui32DVFSClock[psGpuDVFSTable->ui32CurrentDVFSId];
+
+	ui32NewSeqCount = psGpuUtilFWCB->ui32TimeCorrSeqCount + 1;
+	psTimeCorr = &psGpuUtilFWCB->sTimeCorr[RGXFWIF_TIME_CORR_CURR_INDEX(ui32NewSeqCount)];
 
 	psTimeCorr->ui64CRTimeStamp    = RGXReadHWTimerReg(psDevInfo);
 	psTimeCorr->ui64OSTimeStamp    = OSClockns64();
-	psTimeCorr->ui32CoreClockSpeed = psGpuDVFSTable->aui32DVFSClock[psGpuDVFSTable->ui32CurrentDVFSId];
+	psTimeCorr->ui32CoreClockSpeed = ui32CoreClockSpeed;
+	psTimeCorr->ui32CRDeltaToOSDeltaKNs =
+	    RGXFWIF_GET_CRDELTA_TO_OSDELTA_K_NS(ui32CoreClockSpeed, ui32Remainder);
 
 	/* Make sure the values are written to memory before updating the index of the current entry */
 	OSWriteMemoryBarrier();
 
 	/* Update the index of the current entry in the timer correlation array */
-	psGpuUtilFWCB->ui32TimeCorrCurrent = ui32NewIndex;
+	psGpuUtilFWCB->ui32TimeCorrSeqCount = ui32NewSeqCount;
 
 	PVR_DPF((PVR_DBG_MESSAGE,"RGXMakeTimeCorrData: Correlated OS timestamp %llu (ns) with CR timestamp %llu, GPU clock speed %uHz",
 	         psTimeCorr->ui64OSTimeStamp, psTimeCorr->ui64CRTimeStamp, psTimeCorr->ui32CoreClockSpeed));

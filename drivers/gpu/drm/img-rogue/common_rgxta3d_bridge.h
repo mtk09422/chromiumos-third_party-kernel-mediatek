@@ -83,7 +83,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* Bridge in structure for RGXCreateHWRTData */
 typedef struct PVRSRV_BRIDGE_IN_RGXCREATEHWRTDATA_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_UINT32 ui32RenderTarget;
 	IMG_DEV_VIRTADDR sPMMlistDevVAddr;
 	IMG_DEV_VIRTADDR sVFPPageTableAddr;
@@ -143,7 +142,6 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYHWRTDATA_TAG
 /* Bridge in structure for RGXCreateRenderTarget */
 typedef struct PVRSRV_BRIDGE_IN_RGXCREATERENDERTARGET_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_DEV_VIRTADDR spsVHeapTableDevVAddr;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_RGXCREATERENDERTARGET;
 
@@ -180,7 +178,6 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYRENDERTARGET_TAG
 /* Bridge in structure for RGXCreateZSBuffer */
 typedef struct PVRSRV_BRIDGE_IN_RGXCREATEZSBUFFER_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_HANDLE hReservation;
 	IMG_HANDLE hPMR;
 	PVRSRV_MEMALLOCFLAGS_T uiMapFlags;
@@ -254,7 +251,6 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXUNPOPULATEZSBUFFER_TAG
 /* Bridge in structure for RGXCreateFreeList */
 typedef struct PVRSRV_BRIDGE_IN_RGXCREATEFREELIST_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_UINT32 ui32ui32MaxFLPages;
 	IMG_UINT32 ui32ui32InitFLPages;
 	IMG_UINT32 ui32ui32GrowFLPages;
@@ -331,7 +327,6 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXREMOVEBLOCKFROMFREELIST_TAG
 /* Bridge in structure for RGXCreateRenderContext */
 typedef struct PVRSRV_BRIDGE_IN_RGXCREATERENDERCONTEXT_TAG
 {
-	IMG_HANDLE hDevNode;
 	IMG_UINT32 ui32Priority;
 	IMG_DEV_VIRTADDR sMCUFenceAddr;
 	IMG_DEV_VIRTADDR sVDMCallStackAddr;

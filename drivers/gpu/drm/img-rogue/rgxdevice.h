@@ -53,6 +53,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cache_external.h"
 #include "device.h"
 #include "osfunc.h"
+#if defined(RGX_FEATURE_MIPS)
+#include "rgxmipsmmu.h"
+#endif
 
 typedef struct _RGX_SERVER_COMMON_CONTEXT_ RGX_SERVER_COMMON_CONTEXT;
 
@@ -117,6 +120,9 @@ typedef struct _RGXFWIF_GPU_UTIL_STATS_
 #if defined(GPU_UTIL_SLC_STALL_COUNTERS)
 	IMG_UINT32 ui32SLCStallsRatio;    /* SLC Read/Write stalls ratio expressed in 0,01% units */
 #endif
+#if defined(PVR_POWER_ACTOR) && defined (PVR_DVFS)
+	IMG_UINT32 ui32GpuEnergy;         /* GPU dynamic energy */
+#endif
 } RGXFWIF_GPU_UTIL_STATS;
 
 
@@ -177,7 +183,11 @@ typedef struct _PVRSRV_RGXDEV_INFO_
 	IMG_UINT64				ui64KernelCatBaseMask;
 
 	void					*pvDeviceMemoryHeap;
-	
+
+#if defined(RGX_FEATURE_MIPS)
+	RGXMIPSFW_MMU_CONFIG    *psMipsFwMmuConfig;
+#endif
+
 	/* Kernel CCBs */
 	DEVMEM_MEMDESC			*apsKernelCCBCtlMemDesc[RGXFWIF_DM_MAX];	/*!< memdesc for kernel CCB control */
 	RGXFWIF_CCB_CTL			*apsKernelCCBCtl[RGXFWIF_DM_MAX];			/*!< kernel CCB control kernel mapping */
@@ -201,13 +211,9 @@ typedef struct _PVRSRV_RGXDEV_INFO_
 	RGX_SCRIPTS				*psScripts;
 
 	DEVMEM_MEMDESC			*psRGXFWCodeMemDesc;
-	DEVMEM_EXPORTCOOKIE		sRGXFWCodeExportCookie;
-
 	DEVMEM_MEMDESC			*psRGXFWDataMemDesc;
-	DEVMEM_EXPORTCOOKIE		sRGXFWDataExportCookie;
 
 	DEVMEM_MEMDESC			*psRGXFWCorememMemDesc;
-	DEVMEM_EXPORTCOOKIE		sRGXFWCorememExportCookie;
 
 	DEVMEM_MEMDESC			*psRGXFWIfTraceBufCtlMemDesc;
 	RGXFWIF_TRACEBUF		*psRGXFWIfTraceBuf;
@@ -227,7 +233,6 @@ typedef struct _PVRSRV_RGXDEV_INFO_
 	DEVMEM_MEMDESC			*psRGXFWIfRegCfgMemDesc;
 
 	DEVMEM_MEMDESC			*psRGXFWIfHWPerfCountersMemDesc;
-	DEVMEM_EXPORTCOOKIE     sRGXFWHWPerfCountersExportCookie;
 	DEVMEM_MEMDESC			*psRGXFWIfInitMemDesc;
 
 	DEVMEM_MEMDESC			*psRGXFWIfRuntimeCfgMemDesc;
@@ -320,19 +325,19 @@ typedef struct _PVRSRV_RGXDEV_INFO_
 	IMG_BOOL	bStalledClient;
 
 	/* Timer Queries */
-	IMG_UINT32        ui32ActiveQueryId;       /*!< id of the active line */
-	IMG_BOOL          bSaveStart;              /*!< save the start time of the next kick on the device*/
-	IMG_BOOL          bSaveEnd;                /*!< save the end time of the next kick on the device*/
+	IMG_UINT32     ui32ActiveQueryId;       /*!< id of the active line */
+	IMG_BOOL       bSaveStart;              /*!< save the start time of the next kick on the device*/
+	IMG_BOOL       bSaveEnd;                /*!< save the end time of the next kick on the device*/
 
-	DEVMEM_MEMDESC    * psStartTimeMemDesc;    /*!< memdesc for Start Times */
-	RGXFWIF_TIMESTAMP * pasStartTimeById;      /*!< CPU mapping of the above */
+	DEVMEM_MEMDESC * psStartTimeMemDesc;    /*!< memdesc for Start Times */
+	IMG_UINT64     * pui64StartTimeById;    /*!< CPU mapping of the above */
 
-	DEVMEM_MEMDESC    * psEndTimeMemDesc;      /*!< memdesc for End Timer */
-	RGXFWIF_TIMESTAMP * pasEndTimeById;        /*!< CPU mapping of the above */
+	DEVMEM_MEMDESC * psEndTimeMemDesc;      /*!< memdesc for End Timer */
+	IMG_UINT64     * pui64EndTimeById;      /*!< CPU mapping of the above */
 
-	IMG_UINT32        aui32ScheduledOnId[RGX_MAX_TIMER_QUERIES];      /*!< kicks Scheduled on QueryId */
-	DEVMEM_MEMDESC    * psCompletedMemDesc;    /*!< kicks Completed on QueryId */
-	IMG_UINT32        * pui32CompletedById;    /*!< CPU mapping of the above */
+	IMG_UINT32     aui32ScheduledOnId[RGX_MAX_TIMER_QUERIES];  /*!< kicks Scheduled on QueryId */
+	DEVMEM_MEMDESC * psCompletedMemDesc;    /*!< kicks Completed on QueryId */
+	IMG_UINT32     * pui32CompletedById;    /*!< CPU mapping of the above */
 
 
 	/* GPU DVFS Table and GPU Utilisation stats */

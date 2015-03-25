@@ -99,8 +99,6 @@ typedef struct
     IMG_DEVMEM_LOG2ALIGN_T uiLog2ContiguityGuarantee;
 } DEVMEM_EXPORTCOOKIE;
 
-typedef IMG_HANDLE DEVMEM_SERVER_EXPORTCOOKIE; /*!< typedef for DeviceMem Server Export Cookie */
-
 /*enum that describes the operation associated with changing sparse memory*/
 typedef enum Resize {
 	SPARSE_RESIZE_NONE=0,

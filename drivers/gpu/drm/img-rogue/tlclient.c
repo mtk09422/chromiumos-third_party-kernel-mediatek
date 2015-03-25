@@ -83,7 +83,6 @@ typedef struct _TL_STREAM_DESC_
 	IMG_HANDLE		hServerSD;
 
 	/* Stream data buffer variables */
-	DEVMEM_EXPORTCOOKIE		sExportCookie;
 	DEVMEM_MEMDESC*			psUMmemDesc;
 	IMG_PBYTE				pBaseAddr;
 
@@ -106,7 +105,9 @@ PVRSRV_ERROR TLClientOpenStream(IMG_HANDLE hSrvHandle,
 {
 	PVRSRV_ERROR 				eError = PVRSRV_OK;
 	TL_STREAM_DESC* 			psSD = 0;
-	DEVMEM_SERVER_EXPORTCOOKIE 	hServerExportCookie;
+	IMG_HANDLE hTLPMR;
+	IMG_HANDLE hTLImportHandle;
+	IMG_DEVMEM_SIZE_T uiImportSize;
 
 	PVR_ASSERT(hSrvHandle);
 	PVR_ASSERT(pszName);
@@ -127,7 +128,7 @@ PVRSRV_ERROR TLClientOpenStream(IMG_HANDLE hSrvHandle,
 	/* Send open stream request to kernel server to get stream handle and
 	 * buffer cookie so we can get access to the buffer in this process. */
 	eError = BridgeTLOpenStream(hSrvHandle, pszName, ui32Mode,
-										&psSD->hServerSD, &hServerExportCookie);
+										&psSD->hServerSD, &hTLPMR);
 	if (eError != PVRSRV_OK)
 	{
 	    if ((ui32Mode & PVRSRV_STREAM_FLAG_OPEN_WAIT) &&
@@ -139,20 +140,27 @@ PVRSRV_ERROR TLClientOpenStream(IMG_HANDLE hSrvHandle,
 	}
 
 	/* Convert server export cookie into a cookie for use by this client */
-	eError = DevmemMakeServerExportClientExport(hSrvHandle,
-									hServerExportCookie, &psSD->sExportCookie);
-	PVR_LOGG_IF_ERROR(eError, "DevmemMakeServerExportClientExport", e2);
+	eError = DevmemMakeLocalImportHandle(hSrvHandle,
+										hTLPMR, &hTLImportHandle);
+	PVR_LOGG_IF_ERROR(eError, "DevmemMakeLocalImportHandle", e2);
 
 	/* Now convert client cookie into a client handle on the buffer's
 	 * physical memory region */
-	eError = DevmemImport(hSrvHandle, &psSD->sExportCookie,
-						PVRSRV_MEMALLOCFLAG_CPU_READABLE, &psSD->psUMmemDesc);
+	eError = DevmemLocalImport(hSrvHandle,
+	                           hTLImportHandle,
+	                           PVRSRV_MEMALLOCFLAG_CPU_READABLE,
+	                           &psSD->psUMmemDesc,
+	                           &uiImportSize);
 	PVR_LOGG_IF_ERROR(eError, "DevmemImport", e3);
 
 	/* Now map the memory into the virtual address space of this process. */
 	eError = DevmemAcquireCpuVirtAddr(psSD->psUMmemDesc, (void **)
 															&psSD->pBaseAddr);
 	PVR_LOGG_IF_ERROR(eError, "DevmemAcquireCpuVirtAddr", e4);
+
+	/* Ignore error, not much that can be done */
+	(void) DevmemUnmakeLocalImportHandle(hSrvHandle,
+			hTLImportHandle);
 
 	/* Return client descriptor handle to caller */
 	*phSD = psSD;
@@ -162,8 +170,8 @@ PVRSRV_ERROR TLClientOpenStream(IMG_HANDLE hSrvHandle,
 e4:
 	DevmemFree(psSD->psUMmemDesc);
 e3:
-	(void) DevmemUnmakeServerExportClientExport(hSrvHandle,
-				&psSD->sExportCookie);
+	(void) DevmemUnmakeLocalImportHandle(hSrvHandle,
+				&hTLImportHandle);
 /* Clean up post stream open */
 e2:
 	BridgeTLCloseStream(hSrvHandle, psSD->hServerSD);
@@ -207,11 +215,6 @@ PVRSRV_ERROR TLClientCloseStream(IMG_HANDLE hSrvHandle,
 	DevmemReleaseCpuVirtAddr(psSD->psUMmemDesc);
 
 	DevmemFree(psSD->psUMmemDesc);
-
-	/* Ignore error, not much that can be done */
-	(void) DevmemUnmakeServerExportClientExport(hSrvHandle,
-			&psSD->sExportCookie);
-
 
 	/* Send close to server to clean up kernel mode resources for this
 	 * handle and release the memory. */

@@ -1,9 +1,8 @@
-/**************************************************************************/ /*!
-@File
-@Title          OS Authentication header
+/*************************************************************************/ /*!
+@File           device_connection.h
+@Title          
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Defines the interface between the OS and the bridge to
-                authenticate a function called from the client
+@Description    
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -40,15 +39,18 @@ PURPOSE AND NONINFRINGEMENT; AND (B) IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/ /***************************************************************************/
+*/ /**************************************************************************/
 
-#ifndef __OSAUTH_H__
-#define __OSAUTH_H__
-
-#include "img_types.h"
-#include "pvrsrv_error.h"
-#include "connection_server.h"
-
-PVRSRV_ERROR OSCheckAuthentication(CONNECTION_DATA *psConnectionData, IMG_UINT32 ui32Level);
-
+#if defined(__KERNEL__)
+#include "device.h"
 #endif
+
+#if defined(__KERNEL__)
+typedef struct _PVRSRV_DEVICE_NODE_* SHARED_DEV_CONNECTION;
+#else
+typedef IMG_HANDLE SHARED_DEV_CONNECTION;
+#endif
+
+/**************************************************************************//**
+End of file (device_connection.h)
+******************************************************************************/

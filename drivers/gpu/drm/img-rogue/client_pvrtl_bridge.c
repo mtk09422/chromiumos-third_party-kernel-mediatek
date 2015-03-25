@@ -54,11 +54,11 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeTLOpenStream(IMG_HANDLE hBridge,
 							  IMG_CHAR *puiName,
 							  IMG_UINT32 ui32Mode,
 							  IMG_HANDLE *phSD,
-							  DEVMEM_SERVER_EXPORTCOOKIE *phClientBUFExportCookie)
+							  IMG_HANDLE *phTLPMR)
 {
 	PVRSRV_ERROR eError;
 	TL_STREAM_DESC * psSDInt;
-	DEVMEM_EXPORTCOOKIE * psClientBUFExportCookieInt;
+	PMR * psTLPMRInt;
 	PVR_UNREFERENCED_PARAMETER(hBridge);
 
 
@@ -67,10 +67,10 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeTLOpenStream(IMG_HANDLE hBridge,
 					puiName,
 					ui32Mode,
 					&psSDInt,
-					&psClientBUFExportCookieInt);
+					&psTLPMRInt);
 
 	*phSD = psSDInt;
-	*phClientBUFExportCookie = psClientBUFExportCookieInt;
+	*phTLPMR = psTLPMRInt;
 	return eError;
 }
 

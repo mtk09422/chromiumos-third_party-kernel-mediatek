@@ -88,7 +88,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVInit(void *);
  @Return   PVRSRV_ERROR	:
 
 ******************************************************************************/
-void IMG_CALLCONV PVRSRVDeInit(void);
+void IMG_CALLCONV PVRSRVDeInit(void *);
 
 
 /*!

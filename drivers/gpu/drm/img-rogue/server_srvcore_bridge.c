@@ -60,10 +60,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -93,7 +89,7 @@ PVRSRVBridgeConnect(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psConnectOUT->eError =
-		PVRSRVConnectKM(psConnection,
+		PVRSRVConnectKM(psConnection, OSGetDevData(psConnection),
 					psConnectIN->ui32Flags,
 					psConnectIN->ui32ClientBuildOptions,
 					psConnectIN->ui32ClientDDKVersion,
@@ -335,7 +331,7 @@ PVRSRVBridgeInitSrvDisconnect(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psInitSrvDisconnectOUT->eError =
-		PVRSRVInitSrvDisconnectKM(psConnection,
+		PVRSRVInitSrvDisconnectKM(psConnection, OSGetDevData(psConnection),
 					psInitSrvDisconnectIN->bInitSuccesful,
 					psInitSrvDisconnectIN->ui32ClientBuildOptions);
 

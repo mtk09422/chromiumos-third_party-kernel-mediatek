@@ -68,7 +68,6 @@ struct _SYNC_PRIMITIVE_BLOCK_
 {
 	PVRSRV_DEVICE_NODE	*psDevNode;
 	DEVMEM_MEMDESC		*psMemDesc;
-	DEVMEM_EXPORTCOOKIE	sExportCookie;
 	IMG_UINT32			*pui32LinAddr;
 	IMG_UINT32			ui32BlockSize;		/*!< Size of the Sync Primitive Block */
 	IMG_UINT32			ui32RefCount;
@@ -398,7 +397,6 @@ void _SyncPrimitiveBlockUnref(SYNC_PRIMITIVE_BLOCK *psSyncBlk)
 
 		_SyncConnectionRemoveBlock(psSyncBlk);
 		OSLockDestroy(psSyncBlk->hLock);
-		DevmemUnexport(psSyncBlk->psMemDesc, &psSyncBlk->sExportCookie);
 		DevmemReleaseCpuVirtAddr(psSyncBlk->psMemDesc);
 		psDevNode->pfnFreeUFOBlock(psDevNode, psSyncBlk->psMemDesc);
 		OSFreeMem(psSyncBlk);
@@ -412,11 +410,11 @@ void _SyncPrimitiveBlockUnref(SYNC_PRIMITIVE_BLOCK *psSyncBlk)
 
 PVRSRV_ERROR
 PVRSRVAllocSyncPrimitiveBlockKM(CONNECTION_DATA *psConnection,
-								PVRSRV_DEVICE_NODE *psDevNode,
+                                PVRSRV_DEVICE_NODE * psDevNode,
 								SYNC_PRIMITIVE_BLOCK **ppsSyncBlk,
 								IMG_UINT32 *puiSyncPrimVAddr,
 								IMG_UINT32 *puiSyncPrimBlockSize,
-								DEVMEM_EXPORTCOOKIE **psExportCookie)
+								PMR        **ppsSyncPMR)
 {
 	SYNC_PRIMITIVE_BLOCK *psNewSyncBlk;
 	PVRSRV_ERROR eError;
@@ -447,16 +445,12 @@ PVRSRVAllocSyncPrimitiveBlockKM(CONNECTION_DATA *psConnection,
 		goto e2;
 	}
 
-	eError = DevmemExport(psNewSyncBlk->psMemDesc, &psNewSyncBlk->sExportCookie);
-	if (eError != PVRSRV_OK)
-	{
-		goto e3;
-	}
+	DevmemLocalGetImportHandle(psNewSyncBlk->psMemDesc, (void **) ppsSyncPMR);
 
 	eError = OSLockCreate(&psNewSyncBlk->hLock, LOCK_TYPE_NONE);
 	if (eError != PVRSRV_OK)
 	{
-		goto e4;
+		goto e3;
 	}
 
 	psNewSyncBlk->ui32RefCount = 1;
@@ -464,7 +458,6 @@ PVRSRVAllocSyncPrimitiveBlockKM(CONNECTION_DATA *psConnection,
 	/* If there is a connection pointer then add the new block onto it's list */
 	_SyncConnectionAddBlock(psConnection, psNewSyncBlk);
 
-	*psExportCookie = &psNewSyncBlk->sExportCookie;
 	*ppsSyncBlk = psNewSyncBlk;
 	*puiSyncPrimBlockSize = psNewSyncBlk->ui32BlockSize;
 
@@ -473,8 +466,6 @@ PVRSRVAllocSyncPrimitiveBlockKM(CONNECTION_DATA *psConnection,
 						  *puiSyncPrimVAddr);
 
 	return PVRSRV_OK;
-e4:
-	DevmemUnexport(psNewSyncBlk->psMemDesc, &psNewSyncBlk->sExportCookie);
 
 e3:
 	DevmemReleaseCpuVirtAddr(psNewSyncBlk->psMemDesc);
@@ -555,7 +546,8 @@ ServerSyncUnref(SERVER_SYNC_PRIMITIVE *psSync)
 }
 
 PVRSRV_ERROR
-PVRSRVServerSyncAllocKM(PVRSRV_DEVICE_NODE *psDevNode,
+PVRSRVServerSyncAllocKM(CONNECTION_DATA * psConnection,
+                        PVRSRV_DEVICE_NODE *psDevNode,
 						SERVER_SYNC_PRIMITIVE **ppsSync,
 						IMG_UINT32 *pui32SyncPrimVAddr,
 						IMG_UINT32 ui32ClassNameSize,
@@ -564,6 +556,8 @@ PVRSRVServerSyncAllocKM(PVRSRV_DEVICE_NODE *psDevNode,
 	SERVER_SYNC_PRIMITIVE *psNewSync;
 	PVRSRV_ERROR eError;
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	psNewSync = OSAllocMem(sizeof(SERVER_SYNC_PRIMITIVE));
 	if (psNewSync == NULL)
 	{
@@ -736,6 +730,7 @@ PVRSRVSyncPrimServerImportKM(SERVER_SYNC_EXPORT *psExport,
 #if defined(SUPPORT_SECURE_EXPORT)
 PVRSRV_ERROR
 PVRSRVSyncPrimServerSecureExportKM(CONNECTION_DATA *psConnection,
+                                   PVRSRV_DEVICE_NODE * psDevNode,
 								   SERVER_SYNC_PRIMITIVE *psSync,
 								   IMG_SECURE_TYPE *phSecure,
 								   SERVER_SYNC_EXPORT **ppsExport,
@@ -1009,6 +1004,22 @@ IMG_BOOL ServerSyncFenceIsMet(SERVER_SYNC_PRIMITIVE *psSync,
 {
 	SYNC_UPDATES_PRINT("%s: sync: %p, value(%d) == fence(%d)?", __FUNCTION__, psSync, *psSync->psSync->pui32LinAddr, ui32FenceValue);
 	return (*psSync->psSync->pui32LinAddr == ui32FenceValue);
+}
+
+IMG_BOOL ServerSyncFenceWasMet(SERVER_SYNC_PRIMITIVE *psSync,
+							   IMG_UINT32 ui32FenceValue)
+{
+	IMG_UINT32 ui32CurrentValue = *psSync->psSync->pui32LinAddr;
+
+	SYNC_UPDATES_PRINT("%s: sync: %p, value(%d) fence(%d)?", __FUNCTION__, psSync, ui32CurrentValue, ui32FenceValue);
+
+	return (ui32CurrentValue - ui32FenceValue) <= IMG_INT32_MAX;
+}
+
+void
+ServerSyncCompletePassedFenceOp(SERVER_SYNC_PRIMITIVE *psSync)
+{
+	ServerSyncUnref(psSync);
 }
 
 void

@@ -53,6 +53,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_drm.h"
 #include "pvr_drm_display.h"
 #include "pvr_drm_shared.h"
+#include "pvr_linux_fence.h"
 #include "sync_server_internal.h"
 #include "allocmem.h"
 
@@ -110,6 +111,52 @@ ErrorSyncUnreference:
 	return iErr;
 }
 
+static PVRSRV_ERROR GEMFenceContextHandleDestroy(void *pvParam)
+{
+	LINUX_FENCE_CONTEXT *psFC = (LINUX_FENCE_CONTEXT *)pvParam;
+
+	pvr_linux_destroy_fence_context(psFC);
+
+	return PVRSRV_OK;
+}
+
+static int GEMFenceContextHandleCreate(CONNECTION_DATA *psConnection, LINUX_FENCE_CONTEXT *psFC, IMG_HANDLE *phFC)
+{
+	PVRSRV_ERROR eError;
+
+	eError = PVRSRVAllocHandle(psConnection->psHandleBase,
+				   phFC,
+				   (void *)psFC,
+				   PVRSRV_HANDLE_TYPE_NATIVE_FENCE_CONTEXT,
+				   PVRSRV_HANDLE_ALLOC_FLAG_MULTI,
+				   (PFN_HANDLE_RELEASE)GEMFenceContextHandleDestroy);
+	if (eError != PVRSRV_OK)
+	{
+		switch (eError)
+		{
+			case PVRSRV_ERROR_UNABLE_TO_ADD_HANDLE:
+			case PVRSRV_ERROR_OUT_OF_MEMORY:
+				return -ENOMEM;
+			case PVRSRV_ERROR_INVALID_PARAMS:
+			default:
+				return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+static int GEMFenceContextHandleLookup(CONNECTION_DATA *psConnection, IMG_HANDLE hFC, LINUX_FENCE_CONTEXT **ppsFC)
+{
+	PVRSRV_ERROR eError;
+
+	eError = PVRSRVLookupHandle(psConnection->psHandleBase,
+				    (void **)ppsFC,
+				    hFC,
+				    PVRSRV_HANDLE_TYPE_NATIVE_FENCE_CONTEXT);
+
+	return eError == PVRSRV_OK ? 0 : -ENOENT;
+}
 
 /*************************************************************************/ /*!
 * DRM GEM PMR factory
@@ -288,7 +335,8 @@ PVRSRV_ERROR PVRSRVGEMCreatePMR(PVRSRV_DEVICE_NODE *psDevNode,
 	switch (psPVRObj->type)
 	{
 		case PVR_DRM_GEM_PMR:
-			eError = PhysmemNewRamBackedPMR(psDevNode,
+			eError = PhysmemNewRamBackedPMR(NULL,
+							psDevNode,
 							psObj->size,
 							psObj->size,
 							1,
@@ -305,7 +353,8 @@ PVRSRV_ERROR PVRSRVGEMCreatePMR(PVRSRV_DEVICE_NODE *psDevNode,
 							   psObj->size,
 							   uiFlags,
 							   &psGEMPriv->psBackingPMR,
-							   &psPVRObj->obj);
+							   &psPVRObj->obj,
+							   &psPVRObj->resv);
 			break;
 #endif
 #if defined(PVR_DRM_USE_PRIME)
@@ -557,11 +606,46 @@ ExitUnlock:
 	return iRet;
 }
 
+static int GEMLookupSync(struct pvr_drm_gem_object *psPVRObj, PVRSRV_GEM_SYNC_TYPE eType, SERVER_SYNC_PRIMITIVE **ppsSync, IMG_UINT32 *puiSyncVAddr)
+{
+	switch (psPVRObj->type)
+	{
+		case PVR_DRM_GEM_PMR:
+#if defined(PVR_DRM_USE_PRIME)
+		case PVR_DRM_GEM_IMPORT_PMR:
+#endif
+#if defined(SUPPORT_DRM_DC_MODULE)
+		case PVR_DRM_GEM_DISPLAY_PMR:
+#endif
+		{
+			switch (eType)
+			{
+				case PVRSRV_GEM_SYNC_TYPE_WRITE:
+				case PVRSRV_GEM_SYNC_TYPE_READ_HW:
+				case PVRSRV_GEM_SYNC_TYPE_READ_SW:
+				case PVRSRV_GEM_SYNC_TYPE_READ_DISPLAY:
+					*ppsSync = psPVRObj->apsSyncPrim[eType];
+					if (puiSyncVAddr != NULL)
+					{
+						*puiSyncVAddr = psPVRObj->auiSyncPrimVAddr[eType];
+					}
+					return 0;
+				default:
+					return -EINVAL;
+			}
+		}
+		default:
+			return -EINVAL;
+	}
+}
+
 int PVRDRMGEMSyncGet(struct drm_device *dev, void *arg, struct drm_file *file)
 {
 	struct drm_pvr_gem_sync_get *psGEMSyncGet = (struct drm_pvr_gem_sync_get *)arg;
 	struct pvr_drm_gem_object *psPVRObj;
 	struct drm_gem_object *psObj;
+	SERVER_SYNC_PRIMITIVE *psSync;
+	IMG_UINT32 uiSyncVAddr;
 	int iRet;
 
 	OSAcquireBridgeLock();
@@ -574,57 +658,24 @@ int PVRDRMGEMSyncGet(struct drm_device *dev, void *arg, struct drm_file *file)
 	}
 	psPVRObj = to_pvr_drm_gem_object(psObj);
 
-	switch (psPVRObj->type)
+	iRet = GEMLookupSync(psPVRObj, psGEMSyncGet->type, &psSync, &uiSyncVAddr);
+	if (iRet == 0)
 	{
-		case PVR_DRM_GEM_PMR:
-#if defined(PVR_DRM_USE_PRIME)
-		case PVR_DRM_GEM_IMPORT_PMR:
-#endif
-#if defined(SUPPORT_DRM_DC_MODULE)
-		case PVR_DRM_GEM_DISPLAY_PMR:
-#endif
+		if (psSync != NULL)
 		{
-			SERVER_SYNC_PRIMITIVE *psSync;
-			IMG_UINT32 uiSyncVAddr;
 			IMG_HANDLE hSync = NULL;
 
-			switch (psGEMSyncGet->type)
+			iRet = GEMSyncHandleCreate(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file)),
+						   psSync,
+						   &hSync);
+			if (iRet == 0)
 			{
-				case PVRSRV_GEM_SYNC_TYPE_WRITE:
-				case PVRSRV_GEM_SYNC_TYPE_READ_HW:
-				case PVRSRV_GEM_SYNC_TYPE_READ_SW:
-				case PVRSRV_GEM_SYNC_TYPE_READ_DISPLAY:
-					psSync = psPVRObj->apsSyncPrim[psGEMSyncGet->type];
-					uiSyncVAddr = psPVRObj->auiSyncPrimVAddr[psGEMSyncGet->type];
-					break;
-				default:
-					iRet = -EINVAL;
-					goto ExitUnref;
+				psGEMSyncGet->sync_handle = (uint64_t)(uintptr_t)hSync;
+				psGEMSyncGet->firmware_addr = uiSyncVAddr;
 			}
-
-			if (psSync != NULL)
-			{
-				iRet = GEMSyncHandleCreate(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file)),
-							   psSync,
-							   &hSync);
-				if (iRet != 0)
-				{
-					goto ExitUnref;
-				}
-			}
-			
-			psGEMSyncGet->sync_handle = (uint64_t)(uintptr_t)hSync;
-			psGEMSyncGet->firmware_addr = uiSyncVAddr;
-			
-			iRet = 0;
-			break;
 		}
-		default:
-			iRet = -EINVAL;
-			break;
 	}
 
-ExitUnref:
 	drm_gem_object_unreference_unlocked(psObj);
 
 ExitUnlock:
@@ -633,6 +684,135 @@ ExitUnlock:
 	return iRet;
 }
 
+int PVRDRMGEMDestroyFenceContext(struct drm_device *dev, void *arg, struct drm_file *file)
+{
+	struct drm_pvr_gem_destroy_fence_context *psGEMDestroyContext = (struct drm_pvr_gem_destroy_fence_context *)arg;
+	PVRSRV_ERROR eError;
+
+	OSAcquireBridgeLock();
+
+	eError = PVRSRVReleaseHandle(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file))->psHandleBase,
+					(IMG_HANDLE)(uintptr_t)psGEMDestroyContext->context,
+					PVRSRV_HANDLE_TYPE_NATIVE_FENCE_CONTEXT);
+	OSReleaseBridgeLock();
+
+	return (eError == PVRSRV_OK) ? 0 : -ENOENT;
+}
+
+int PVRDRMGEMCreateFenceContext(struct drm_device *dev, void *arg, struct drm_file *file)
+{
+	struct drm_pvr_gem_create_fence_context *psGEMCreateContext = (struct drm_pvr_gem_create_fence_context *)arg;
+	LINUX_FENCE_CONTEXT *psFC;
+	IMG_HANDLE hFC;
+	int iRet;
+
+	iRet = pvr_linux_create_fence_context(&psFC, (bool)psGEMCreateContext->shared);
+	if (iRet)
+	{
+		return iRet;
+	}
+
+	OSAcquireBridgeLock();
+
+	iRet = GEMFenceContextHandleCreate(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file)), psFC, &hFC);
+
+	OSReleaseBridgeLock();
+
+	if (iRet)
+	{
+		pvr_linux_destroy_fence_context(psFC);
+	}
+	else
+	{
+		psGEMCreateContext->context = (uintptr_t)hFC;
+	}
+
+	return iRet;
+}
+
+int PVRDRMGEMAttachFence(struct drm_device *dev, void *arg, struct drm_file *file)
+{
+	struct drm_pvr_gem_attach_fence *psGEMAttachFence = (struct drm_pvr_gem_attach_fence *)arg;
+	struct pvr_drm_gem_object *psPVRObj;
+	struct drm_gem_object *psObj;
+	LINUX_FENCE_CONTEXT *psFC;
+	SERVER_SYNC_PRIMITIVE *psSync;
+	int iRet;
+
+	OSAcquireBridgeLock();
+
+	iRet = GEMFenceContextHandleLookup(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file)), (IMG_HANDLE)(uintptr_t)psGEMAttachFence->context, &psFC);
+	if (iRet)
+	{
+		goto ExitUnlock;
+	}
+
+	psObj = drm_gem_object_lookup(dev, file, psGEMAttachFence->gem_handle);
+	if (!psObj)
+	{
+		iRet = -ENOENT;
+		goto ExitUnlock;
+	}
+	psPVRObj = to_pvr_drm_gem_object(psObj);
+
+	iRet = GEMLookupSync(psPVRObj, psGEMAttachFence->type, &psSync, NULL);
+	if (!iRet)
+	{
+		if (psSync && psPVRObj->resv)
+		{
+			iRet = pvr_linux_fence_attach(psFC, psSync, psPVRObj->resv);
+		}
+	}
+
+	drm_gem_object_unreference_unlocked(psObj);
+
+ExitUnlock:
+	OSReleaseBridgeLock();
+
+	return iRet;
+}
+
+int PVRDRMGEMCreateFence(struct drm_device *dev, void *arg, struct drm_file *file)
+{
+	struct drm_pvr_gem_create_fence *psGEMCreateFence = (struct drm_pvr_gem_create_fence *)arg;
+	struct pvr_drm_gem_object *psPVRObj;
+	struct drm_gem_object *psObj;
+	LINUX_FENCE_CONTEXT *psFC;
+	SERVER_SYNC_PRIMITIVE *psSync;
+	int iRet;
+
+	OSAcquireBridgeLock();
+
+	iRet = GEMFenceContextHandleLookup(LinuxConnectionFromFile(PVR_FILE_FROM_DRM_FILE(file)), (IMG_HANDLE)(uintptr_t)psGEMCreateFence->context, &psFC);
+	if (iRet)
+	{
+		goto ExitUnlock;
+	}
+
+	psObj = drm_gem_object_lookup(dev, file, psGEMCreateFence->gem_handle);
+	if (!psObj)
+	{
+		iRet = -ENOENT;
+		goto ExitUnlock;
+	}
+	psPVRObj = to_pvr_drm_gem_object(psObj);
+
+	iRet = GEMLookupSync(psPVRObj, psGEMCreateFence->type, &psSync, NULL);
+	if (!iRet)
+	{
+		if (psSync && psPVRObj->resv)
+		{
+			iRet = pvr_linux_fence_create(psFC, psSync);
+		}
+	}
+
+	drm_gem_object_unreference_unlocked(psObj);
+
+ExitUnlock:
+	OSReleaseBridgeLock();
+
+	return iRet;
+}
 
 /*************************************************************************/ /*!
 * DRM GEM helper callbacks
@@ -842,7 +1022,8 @@ int PVRSRVGEMInitObject(struct drm_gem_object *obj,
 					break;
 			}
 
-			eError = PVRSRVServerSyncAllocKM(psDevPriv->dev_node,
+			eError = PVRSRVServerSyncAllocKM(NULL,
+							 psDevPriv->dev_node,
 							 &psPVRObj->apsSyncPrim[iSyncIndex],
 							 &psPVRObj->auiSyncPrimVAddr[iSyncIndex],
 							 strlen(pszSyncName),

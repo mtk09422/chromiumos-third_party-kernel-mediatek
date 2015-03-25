@@ -61,6 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 PVRSRV_ERROR OSConnectionPrivateDataInit(IMG_HANDLE *phOsPrivateData, void *pvOSData)
 {
+	ENV_CONNECTION_PRIVATE_DATA *psPrivData = pvOSData;
 	ENV_CONNECTION_DATA *psEnvConnection;
 #if defined(SUPPORT_ION)
 	ENV_ION_CONNECTION_DATA *psIonConnection;
@@ -78,7 +79,8 @@ PVRSRV_ERROR OSConnectionPrivateDataInit(IMG_HANDLE *phOsPrivateData, void *pvOS
 	OSMemSet(psEnvConnection, 0, sizeof(*psEnvConnection));
 
 	/* Save the pointer to our struct file */
-	psEnvConnection->psFile = pvOSData;
+	psEnvConnection->psFile = psPrivData->psFile;
+	psEnvConnection->psDevNode = psPrivData->psDevNode;
 
 #if defined(SUPPORT_ION)
 	psIonConnection = (ENV_ION_CONNECTION_DATA *)OSAllocMem(sizeof(ENV_ION_CONNECTION_DATA));
@@ -129,4 +131,15 @@ PVRSRV_ERROR OSConnectionPrivateDataDeInit(IMG_HANDLE hOsPrivateData)
 	/*not nulling pointer, copy on stack*/
 
 	return PVRSRV_OK;
+}
+
+
+PVRSRV_DEVICE_NODE *OSGetDevData(CONNECTION_DATA *psConnection)
+{
+	ENV_CONNECTION_DATA *psEnvConnection;
+
+	psEnvConnection = PVRSRVConnectionPrivateData(psConnection);
+	PVR_ASSERT(psEnvConnection);
+
+	return psEnvConnection->psDevNode;
 }

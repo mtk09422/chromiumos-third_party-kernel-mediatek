@@ -449,7 +449,8 @@ PVRSRV_ERROR RGXGrowFreeList(RGX_FREELIST *psFreeList,
 	/* Allocate Memory Block */
 	PDUMPCOMMENT("Allocate PB Block (Pages %08X)", ui32NumPages);
 	uiSize = (IMG_DEVMEM_SIZE_T)ui32NumPages * RGX_BIF_PM_PHYSICAL_PAGE_SIZE;
-	eError = PhysmemNewRamBackedPMR(psFreeList->psDevInfo->psDeviceNode,
+	eError = PhysmemNewRamBackedPMR(NULL,
+	                                psFreeList->psDevInfo->psDeviceNode,
 									uiSize,
 									uiSize,
 									1,
@@ -908,7 +909,8 @@ void RGXProcessRequestFreelistsReconstruction(PVRSRV_RGXDEV_INFO *psDevInfo,
 
 /* Create HWRTDataSet */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
+PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
+                               PVRSRV_DEVICE_NODE	*psDeviceNode,
 							   IMG_UINT32			psRenderTarget, /* FIXME this should not be IMG_UINT32 */
 							   IMG_DEV_VIRTADDR		psPMMListDevVAddr,
 							   IMG_DEV_VIRTADDR		psVFPPageTableAddr,
@@ -944,6 +946,8 @@ PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	IMG_UINT32 ui32Loop;
 	RGX_RTDATA_CLEANUP_DATA *psTmpCleanup;
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	/* Prepare cleanup struct */
 	psTmpCleanup = OSAllocMem(sizeof(*psTmpCleanup));
 	if (psTmpCleanup == NULL)
@@ -977,7 +981,7 @@ PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	eError = DevmemFwAllocate(psDevInfo,
 							sizeof(RGXFWIF_HWRTDATA),
 							PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-							PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+							PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 							PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC |
 							PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 							PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
@@ -1047,7 +1051,7 @@ PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	eError = DevmemFwAllocate(psDevInfo,
 										sizeof(RGXFWIF_RTA_CTL),
 										PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-										PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+										PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 										PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 										PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 										PVRSRV_MEMALLOCFLAG_UNCACHED |
@@ -1078,7 +1082,7 @@ PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		eError = DevmemFwAllocate(psDevInfo,
 								ui16MaxRTs * sizeof(IMG_UINT32),
 								PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-								PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+								PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
 								PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 								PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 								PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
@@ -1102,7 +1106,7 @@ PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		eError = DevmemFwAllocate(psDevInfo,
                                                         ui16MaxRTs * sizeof(IMG_UINT32),
                                                         PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-                                                        PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(META_CACHED) |
+							PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(FIRMWARE_CACHED) |
                                                         PVRSRV_MEMALLOCFLAG_GPU_READABLE |
                                                         PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
                                                         PVRSRV_MEMALLOCFLAG_CPU_WRITEABLE |
@@ -1241,7 +1245,8 @@ PVRSRV_ERROR RGXDestroyHWRTData(RGX_RTDATA_CLEANUP_DATA *psCleanupData)
 }
 
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateFreeList(PVRSRV_DEVICE_NODE	*psDeviceNode, 
+PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
+                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
 							   IMG_UINT32			ui32MaxFLPages,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,
@@ -1570,7 +1575,8 @@ PVRSRV_ERROR RGXRemoveBlockFromFreeListKM(RGX_FREELIST *psFreeList)
 	RGXCreateRenderTarget
 */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateRenderTarget(PVRSRV_DEVICE_NODE	*psDeviceNode, 
+PVRSRV_ERROR RGXCreateRenderTarget(CONNECTION_DATA      *psConnection,
+                                   PVRSRV_DEVICE_NODE	*psDeviceNode, 
 								   IMG_DEV_VIRTADDR		psVHeapTableDevVAddr,
 								   RGX_RT_CLEANUP_DATA 	**ppsCleanupData,
 								   IMG_UINT32			*sRenderTargetFWDevVAddr)
@@ -1581,6 +1587,8 @@ PVRSRV_ERROR RGXCreateRenderTarget(PVRSRV_DEVICE_NODE	*psDeviceNode,
 	PVRSRV_RGXDEV_INFO 		*psDevInfo = psDeviceNode->pvDevice;
 	RGX_RT_CLEANUP_DATA		*psCleanupData;
 
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	
 	psCleanupData = OSAllocMem(sizeof(*psCleanupData));
 	if (psCleanupData == NULL)
 	{
@@ -1699,12 +1707,13 @@ PVRSRV_ERROR RGXDestroyRenderTarget(RGX_RT_CLEANUP_DATA *psCleanupData)
 	RGXCreateZSBuffer
 */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateZSBufferKM(PVRSRV_DEVICE_NODE	*psDeviceNode,
-								DEVMEMINT_RESERVATION 	*psReservation,
-								PMR 					*psPMR,
-								PVRSRV_MEMALLOCFLAGS_T 	uiMapFlags,
-								RGX_ZSBUFFER_DATA **ppsZSBuffer,
-								IMG_UINT32 *pui32ZSBufferFWDevVAddr)
+PVRSRV_ERROR RGXCreateZSBufferKM(CONNECTION_DATA * psConnection,
+                                 PVRSRV_DEVICE_NODE	*psDeviceNode,
+                                 DEVMEMINT_RESERVATION 	*psReservation,
+                                 PMR 					*psPMR,
+                                 PVRSRV_MEMALLOCFLAGS_T 	uiMapFlags,
+                                 RGX_ZSBUFFER_DATA **ppsZSBuffer,
+                                 IMG_UINT32 *pui32ZSBufferFWDevVAddr)
 {
 	PVRSRV_ERROR				eError;
 	PVRSRV_RGXDEV_INFO 			*psDevInfo = psDeviceNode->pvDevice;
@@ -2667,9 +2676,9 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	struct pvr_sync_append_data *psFDData = NULL;
 #endif
 
-	RGXFWIF_DEV_VIRTADDR pPreTimestamp;
-	RGXFWIF_DEV_VIRTADDR pPostTimestamp;
-	PRGXFWIF_UFO_ADDR    pRMWUFOAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPreAddr;
+	PRGXFWIF_TIMESTAMP_ADDR pPostAddr;
+	PRGXFWIF_UFO_ADDR       pRMWUFOAddr;
 
 	*pbCommittedRefCountsTA = IMG_FALSE;
 	*pbCommittedRefCounts3D = IMG_FALSE;
@@ -2694,8 +2703,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	}
 
 	RGX_GetTimestampCmdHelper((PVRSRV_RGXDEV_INFO*) psRenderContext->psDeviceNode->pvDevice,
-	                          & pPreTimestamp,
-	                          & pPostTimestamp,
+	                          & pPreAddr,
+	                          & pPostAddr,
 	                          & pRMWUFOAddr);
 
 	/*
@@ -2764,8 +2773,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 		                                pasServerTASyncs,
 		                                ui32TACmdSize,
 		                                pui8TADMCmd,
-		                                & pPreTimestamp,
-		                                (bKick3D ? NULL : & pPostTimestamp),
+		                                & pPreAddr,
+		                                (bKick3D ? NULL : & pPostAddr),
 		                                (bKick3D ? NULL : & pRMWUFOAddr),
 		                                RGXFWIF_CCB_CMD_TYPE_TA,
 		                                bPDumpContinuous,
@@ -2916,8 +2925,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										pasServer3DSyncs,
 										ui323DCmdSize,
 										pui83DDMCmd,
-										(bKickTA ? NULL : & pPreTimestamp),
-										& pPostTimestamp,
+										(bKickTA ? NULL : & pPreAddr),
+										& pPostAddr,
 										& pRMWUFOAddr,
 										RGXFWIF_CCB_CMD_TYPE_3D,
 										bPDumpContinuous,
@@ -3118,11 +3127,14 @@ fail_fdsync:
 }
 
 PVRSRV_ERROR PVRSRVRGXSetRenderContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                 PVRSRV_DEVICE_NODE * psDeviceNode,
 												 RGX_SERVER_RENDER_CONTEXT *psRenderContext,
 												 IMG_UINT32 ui32Priority)
 {
 	PVRSRV_ERROR eError;
 
+	PVR_UNREFERENCED_PARAMETER(psDeviceNode);
+	
 	if (psRenderContext->sTAData.ui32Priority != ui32Priority)
 	{
 		eError = ContextSetPriority(psRenderContext->sTAData.psServerCommonContext,

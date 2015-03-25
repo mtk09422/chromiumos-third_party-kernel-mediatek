@@ -1,6 +1,9 @@
 /*************************************************************************/ /*!
-@Title          RGX Config BVNC 1.V.2.0
+@File           rgx_firmware_processor.h
+@Title
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+@Platform       RGX
+@Description    Generic include file for firmware processors (META and MIPS)
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -39,31 +42,16 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _RGXCONFIG_KM_1_V_2_0_H_
-#define _RGXCONFIG_KM_1_V_2_0_H_
 
-/***** Automatically generated file (2/24/2015 2:10:05 PM): Do not edit manually ********************/
-/***** Timestamp:  (2/24/2015 2:10:05 PM)************************************************************/
+#if !defined(RGX_FIRMWARE_PROCESSOR_H)
+#define RGX_FIRMWARE_PROCESSOR_H
 
-#define RGX_BNC_KM_B 1
-#define RGX_BNC_KM_N 2
-#define RGX_BNC_KM_C 0
+#include "km/rgxdefs_km.h"
 
-/******************************************************************************
- * DDK Defines
- *****************************************************************************/
-#define RGX_FEATURE_NUM_CLUSTERS (2)
-#define RGX_FEATURE_SLC_SIZE_IN_BYTES (128*1024)
-#define RGX_FEATURE_PHYS_BUS_WIDTH (40)
-#define RGX_FEATURE_AXI_ACELITE 
-#define RGX_FEATURE_SLC_CACHE_LINE_SIZE_BITS (512)
-#define RGX_FEATURE_VIRTUAL_ADDRESS_SPACE_BITS (40)
-#define RGX_FEATURE_TLA 
-#define RGX_FEATURE_GS_RTA_SUPPORT 
-#define RGX_FEATURE_NUM_ISP_IPP_PIPES (3)
-#define RGX_FEATURE_META (MTP218)
-#define RGX_FEATURE_META_COREMEM_SIZE (0)
-#define RGX_FEATURE_COMPUTE 
+#if defined(RGX_FEATURE_META)
+#include "rgx_meta.h"
+#else
+#include "rgx_mips.h"
+#endif
 
-
-#endif /* _RGXCONFIG_1_V_2_0_H_ */
+#endif /* RGX_FIRMWARE_PROCESSOR_H */

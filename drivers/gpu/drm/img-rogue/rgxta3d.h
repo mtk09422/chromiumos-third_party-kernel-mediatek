@@ -150,7 +150,8 @@ IMG_BOOL RGXDumpFreeListPageList(RGX_FREELIST *psFreeList);
 
 /* Create HWRTDataSet */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateHWRTData(PVRSRV_DEVICE_NODE	*psDeviceNode, 
+PVRSRV_ERROR RGXCreateHWRTData(CONNECTION_DATA      *psConnection,
+                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
 							   IMG_UINT32			psRenderTarget,
 							   IMG_DEV_VIRTADDR		psPMMListDevVAddr,
 							   IMG_DEV_VIRTADDR		psVFPPageTableAddr,
@@ -184,7 +185,8 @@ PVRSRV_ERROR RGXDestroyHWRTData(RGX_RTDATA_CLEANUP_DATA *psCleanupData);
 
 /* Create Render Target */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateRenderTarget(PVRSRV_DEVICE_NODE	*psDeviceNode,
+PVRSRV_ERROR RGXCreateRenderTarget(CONNECTION_DATA      *psConnection,
+                                   PVRSRV_DEVICE_NODE	*psDeviceNode,
 								   IMG_DEV_VIRTADDR		psVHeapTableDevVAddr,
 								   RGX_RT_CLEANUP_DATA	**ppsCleanupData,
 								   IMG_UINT32			*sRenderTargetFWDevVAddr);
@@ -198,12 +200,13 @@ PVRSRV_ERROR RGXDestroyRenderTarget(RGX_RT_CLEANUP_DATA *psCleanupData);
 	RGXCreateZSBuffer
 */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateZSBufferKM(PVRSRV_DEVICE_NODE				*psDeviceNode,
-								DEVMEMINT_RESERVATION 	*psReservation,
-								PMR 					*psPMR,
-								PVRSRV_MEMALLOCFLAGS_T 	uiMapFlags,
-								RGX_ZSBUFFER_DATA		 	**ppsZSBuffer,
-								IMG_UINT32					*sRenderTargetFWDevVAddr);
+PVRSRV_ERROR RGXCreateZSBufferKM(CONNECTION_DATA * psConnection,
+                                 PVRSRV_DEVICE_NODE	* psDeviceNode,
+                                 DEVMEMINT_RESERVATION 	*psReservation,
+                                 PMR 					*psPMR,
+                                 PVRSRV_MEMALLOCFLAGS_T 	uiMapFlags,
+                                 RGX_ZSBUFFER_DATA		 	**ppsZSBuffer,
+                                 IMG_UINT32					*sRenderTargetFWDevVAddr);
 
 /*
 	RGXDestroyZSBuffer
@@ -269,7 +272,8 @@ PVRSRV_ERROR RGXGrowFreeList(RGX_FREELIST *psFreeList,
 
 /* Create free list */
 IMG_EXPORT
-PVRSRV_ERROR RGXCreateFreeList(PVRSRV_DEVICE_NODE	*psDeviceNode, 
+PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
+                               PVRSRV_DEVICE_NODE	*psDeviceNode, 
 							   IMG_UINT32			ui32MaxFLPages,
 							   IMG_UINT32			ui32InitFLPages,
 							   IMG_UINT32			ui32GrowFLPages,
@@ -425,6 +429,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 
 
 PVRSRV_ERROR PVRSRVRGXSetRenderContextPriorityKM(CONNECTION_DATA *psConnection,
+                                                 PVRSRV_DEVICE_NODE * psDevNode,
 												 RGX_SERVER_RENDER_CONTEXT *psRenderContext,
 												 IMG_UINT32 ui32Priority);
 

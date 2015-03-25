@@ -806,6 +806,7 @@ static IMG_CHAR* _RGXDecodeMMULevel(IMG_UINT32 ui32MMULevel)
 
  @Input ui32TagID           - Tag ID value
  @Input ui32TagSB           - Tag Sideband data
+ @Input bRead               - Read flag
  @Output ppszTagID          - Decoded string from the Tag ID
  @Output ppszTagSB          - Decoded string from the Tag SB
  @Output pszScratchBuf      - Buffer provided to the function to generate the debug strings
@@ -816,6 +817,7 @@ static IMG_CHAR* _RGXDecodeMMULevel(IMG_UINT32 ui32MMULevel)
 ******************************************************************************/
 static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 								 IMG_UINT32  ui32TagSB,
+								 IMG_BOOL    bRead,
 								 IMG_CHAR    **ppszTagID,
 								 IMG_CHAR    **ppszTagSB,
 								 IMG_CHAR    *pszScratchBuf,
@@ -860,12 +862,12 @@ static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 		case 15: pszTagID = "TPF (Black Pearl 0)"; i32SideBandType = RGXDBG_TPF; break;
 		case 16: pszTagID = "USCS (Black Pearl 0)"; i32SideBandType = RGXDBG_USCS; break;
 		case 17: pszTagID = "PPP (Black Pearl 0)"; i32SideBandType = RGXDBG_PPP; break;
-#if defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3)
-		case 18: pszTagID = "VCE (Black Pearl 0)"; i32SideBandType = RGXDBG_VCE; break;
-		case 19: pszTagID = "FBCDC (Black Pearl 0)"; i32SideBandType = RGXDBG_FBCDC; break;
-#else
+#if defined(HW_ERN_50539) || (defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3))
 		case 18: pszTagID = "TPF_CPF (Black Pearl 0)"; i32SideBandType = RGXDBG_TPF_CPF; break;
 		case 19: pszTagID = "IPF_CPF (Black Pearl 0)"; i32SideBandType = RGXDBG_IPF_CPF; break;
+#else
+		case 18: pszTagID = "VCE (Black Pearl 0)"; i32SideBandType = RGXDBG_VCE; break;
+		case 19: pszTagID = "FBCDC (Black Pearl 0)"; i32SideBandType = RGXDBG_FBCDC; break;
 #endif
 		case 20: pszTagID = "MCU (Texas 1)"; i32SideBandType = RGXDBG_MCU; break;
 #if defined(HW_ERN_50539)
@@ -901,12 +903,12 @@ static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 		case 31: pszTagID = "TPF (Black Pearl 1)"; i32SideBandType = RGXDBG_TPF; break;
 		case 32: pszTagID = "USCS (Black Pearl 1)"; i32SideBandType = RGXDBG_USCS; break;
 		case 33: pszTagID = "PPP (Black Pearl 1)"; i32SideBandType = RGXDBG_PPP; break;
-#if defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3)
-		case 34: pszTagID = "VCE (Black Pearl 1)"; i32SideBandType = RGXDBG_VCE; break;
-		case 35: pszTagID = "FBCDC (Black Pearl 1)"; i32SideBandType = RGXDBG_FBCDC; break;
-#else
+#if defined(HW_ERN_50539) || (defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3))
 		case 34: pszTagID = "TPF_CPF (Black Pearl 1)"; i32SideBandType = RGXDBG_TPF_CPF; break;
 		case 35: pszTagID = "IPF_CPF (Black Pearl 1)"; i32SideBandType = RGXDBG_IPF_CPF; break;
+#else
+		case 34: pszTagID = "VCE (Black Pearl 1)"; i32SideBandType = RGXDBG_VCE; break;
+		case 35: pszTagID = "FBCDC (Black Pearl 1)"; i32SideBandType = RGXDBG_FBCDC; break;
 #endif
 		case 36: pszTagID = "MCU (Texas 3)"; i32SideBandType = RGXDBG_MCU; break;
 #if defined(HW_ERN_50539)
@@ -942,12 +944,12 @@ static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 		case 47: pszTagID = "TPF (Black Pearl 2)"; i32SideBandType = RGXDBG_TPF; break;
 		case 48: pszTagID = "USCS (Black Pearl 2)"; i32SideBandType = RGXDBG_USCS; break;
 		case 49: pszTagID = "PPP (Black Pearl 2)"; i32SideBandType = RGXDBG_PPP; break;
-#if defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3)
-		case 50: pszTagID = "VCE (Black Pearl 2)"; i32SideBandType = RGXDBG_VCE; break;
-		case 51: pszTagID = "FBCDC (Black Pearl 2)"; i32SideBandType = RGXDBG_FBCDC; break;
-#else
+#if defined(HW_ERN_50539) || (defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3))
 		case 50: pszTagID = "TPF_CPF (Black Pearl 2)"; i32SideBandType = RGXDBG_TPF_CPF; break;
 		case 51: pszTagID = "IPF_CPF (Black Pearl 2)"; i32SideBandType = RGXDBG_IPF_CPF; break;
+#else
+		case 50: pszTagID = "VCE (Black Pearl 2)"; i32SideBandType = RGXDBG_VCE; break;
+		case 51: pszTagID = "FBCDC (Black Pearl 2)"; i32SideBandType = RGXDBG_FBCDC; break;
 #endif
 		case 52: pszTagID = "MCU (Texas 5)"; i32SideBandType = RGXDBG_MCU; break;
 #if defined(HW_ERN_50539)
@@ -983,12 +985,12 @@ static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 		case 63: pszTagID = "TPF (Black Pearl 3)"; i32SideBandType = RGXDBG_TPF; break;
 		case 64: pszTagID = "USCS (Black Pearl 3)"; i32SideBandType = RGXDBG_USCS; break;
 		case 65: pszTagID = "PPP (Black Pearl 3)"; i32SideBandType = RGXDBG_PPP; break;
-#if defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3)
-		case 66: pszTagID = "VCE (Black Pearl 3)"; i32SideBandType = RGXDBG_VCE; break;
-		case 67: pszTagID = "FBCDC (Black Pearl 3)"; i32SideBandType = RGXDBG_FBCDC; break;
-#else
+#if defined(HW_ERN_50539) || (defined(RGX_FEATURE_FBCDC_ARCHITECTURE) && (RGX_FEATURE_FBCDC_ARCHITECTURE >= 3))
 		case 66: pszTagID = "TPF_CPF (Black Pearl 3)"; i32SideBandType = RGXDBG_TPF_CPF; break;
 		case 67: pszTagID = "IPF_CPF (Black Pearl 3)"; i32SideBandType = RGXDBG_IPF_CPF; break;
+#else
+		case 66: pszTagID = "VCE (Black Pearl 3)"; i32SideBandType = RGXDBG_VCE; break;
+		case 67: pszTagID = "FBCDC (Black Pearl 3)"; i32SideBandType = RGXDBG_FBCDC; break;
 #endif
 		case 68: pszTagID = "MCU (Texas 7)"; i32SideBandType = RGXDBG_MCU; break;
 #if defined(HW_ERN_50539)
@@ -1193,32 +1195,32 @@ static void _RGXDecodeMMUReqTags(IMG_UINT32  ui32TagID,
 
 		case RGXDBG_FBCDC:
 		{
-			IMG_UINT32 ui32Req   = (ui32TagSB >> 0) & 0xf;
-			IMG_UINT32 ui32MCUSB = (ui32TagSB >> 4) & 0x3;
-			IMG_CHAR* pszReqOrig = "";
-
-			switch (ui32Req)
+			/*
+			 * FBC faults on a 4-cluster phantom does not always set SB
+			 * bit 5, but since FBC is write-only and FBDC is read-only,
+			 * we can set bit 5 if this is a write fault, before decoding.
+			 */
+			if (bRead == IMG_FALSE)
 			{
-				case 0x0: pszReqOrig = "FBC Request, originator ZLS";  break;
-				case 0x1: pszReqOrig = "FBC Request, originator PBE"; break;
-				case 0x2: pszReqOrig = "FBC Request, originator Host"; break;
-				case 0x3: pszReqOrig = "FBC Request, originator TLA"; break;
-				case 0x4: pszReqOrig = "FBDC Request, originator ZLS"; break;
-				case 0x5: pszReqOrig = "FBDC Request, originator MCU"; break;
-				case 0x6: pszReqOrig = "FBDC Request, originator Host"; break;
-				case 0x7: pszReqOrig = "FBDC Request, originator TLA"; break;
-				case 0x8: pszReqOrig = "FBC Request, originator ZLS Requester Fence"; break;
-				case 0x9: pszReqOrig = "FBC Request, originator PBE Requester Fence"; break;
-				case 0xa: pszReqOrig = "FBC Request, originator Host Requester Fence"; break;
-				case 0xb: pszReqOrig = "FBC Request, originator TLA Requester Fence"; break;
-				case 0xc: pszReqOrig = "Reserved"; break;
-				case 0xd: pszReqOrig = "Reserved"; break;
-				case 0xe: pszReqOrig = "FBDC Request, originator FBCDC(Host) Memory Fence"; break;
-				case 0xf: pszReqOrig = "FBDC Request, originator FBCDC(TLA) Memory Fence"; break;
+				ui32TagSB |= 0x20;
 			}
-			OSSNPrintf(pszScratchBuf, ui32ScratchBufSize,
-			           "%s, MCU sideband 0x%X", pszReqOrig, ui32MCUSB);
-			pszTagSB = pszScratchBuf;
+			
+			switch (ui32TagSB)
+			{
+				case 0x00: pszTagSB = "FBDC Request, originator ZLS"; break;
+				case 0x02: pszTagSB = "FBDC Request, originator MCU Dust 0"; break;
+				case 0x03: pszTagSB = "FBDC Request, originator MCU Dust 1"; break;
+				case 0x20: pszTagSB = "FBC Request, originator ZLS"; break;
+				case 0x22: pszTagSB = "FBC Request, originator PBE Dust 0, Cluster 0"; break;
+				case 0x23: pszTagSB = "FBC Request, originator PBE Dust 0, Cluster 1"; break;
+				case 0x24: pszTagSB = "FBC Request, originator PBE Dust 1, Cluster 0"; break;
+				case 0x25: pszTagSB = "FBC Request, originator PBE Dust 1, Cluster 1"; break;
+				case 0x28: pszTagSB = "FBC Request, originator ZLS Fence"; break;
+				case 0x2a: pszTagSB = "FBC Request, originator PBE Dust 0, Cluster 0, Fence"; break;
+				case 0x2b: pszTagSB = "FBC Request, originator PBE Dust 0, Cluster 1, Fence"; break;
+				case 0x2c: pszTagSB = "FBC Request, originator PBE Dust 1, Cluster 0, Fence"; break;
+				case 0x2d: pszTagSB = "FBC Request, originator PBE Dust 1, Cluster 1, Fence"; break;
+			}
 			break;
 		}
 
@@ -1947,7 +1949,7 @@ static void _RGXDumpRGXMMUFaultStatus(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 		IMG_CHAR *pszTagID;
 		IMG_CHAR *pszTagSB;
 
-		_RGXDecodeMMUReqTags(ui32Requester, ui32SideBand, &pszTagID, &pszTagSB, aszScratch, RGX_DEBUG_STR_SIZE);
+		_RGXDecodeMMUReqTags(ui32Requester, ui32SideBand, bRead, &pszTagID, &pszTagSB, aszScratch, RGX_DEBUG_STR_SIZE);
 
 		PVR_DUMPDEBUG_LOG(("%sMMU (Core) - FAULT:",  (bSummary)?"":"    "));
 		PVR_DUMPDEBUG_LOG(("%s  * MMU status (0x%016llX): PC = %d, %s 0x%010llX, %s (%s)%s%s%s%s.",
@@ -2014,7 +2016,7 @@ static void _RGXDumpRGXMMUMetaFaultStatus(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPri
 		IMG_CHAR *pszTagID;
 		IMG_CHAR *pszTagSB;
 
-		_RGXDecodeMMUReqTags(ui32Requester, ui32SideBand, &pszTagID, &pszTagSB, aszScratch, RGX_DEBUG_STR_SIZE);
+		_RGXDecodeMMUReqTags(ui32Requester, ui32SideBand, bRead, &pszTagID, &pszTagSB, aszScratch, RGX_DEBUG_STR_SIZE);
 
 		PVR_DUMPDEBUG_LOG(("%sMMU (Meta) - FAULT:",  (bSummary)?"":"    "));
 		PVR_DUMPDEBUG_LOG(("%s  * MMU status (0x%016llX): PC = %d, %s 0x%010llX, %s (%s)%s%s%s%s.",
@@ -2191,18 +2193,12 @@ static void _RGXDumpFWHWRInfo(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 
 			if((psHWRInfo->eDM == dm) && (psHWRInfo->ui32HWRNumber != 0))
 			{
-				IMG_UINT64 ui64OSTimeStamp, ui64DeltaTime, ui64Seconds, ui64Nanoseconds;
-				IMG_UINT32 ui32CoreClockSpeed = psHWRInfo->sTimeCorr.ui32CoreClockSpeed;
+				IMG_UINT64 ui64Seconds, ui64Nanoseconds;
 				IMG_UINT32 ui32Remainder;
 
-				/* Get delta CR, convert to delta nS and add the result to the correlated OS timestamp */
-				ui64DeltaTime = psHWRInfo->ui64CRTimer - psHWRInfo->sTimeCorr.ui64CRTimeStamp;
-				ui64DeltaTime = RGXFWIF_GET_DELTA_OSTIME_NS(ui64DeltaTime, ui32CoreClockSpeed, ui32Remainder);
-				ui64OSTimeStamp = psHWRInfo->sTimeCorr.ui64OSTimeStamp + ui64DeltaTime;
-
-				/* Split timestamp in seconds and nanoseconds */
-				ui64Seconds = OSDivide64r64(ui64OSTimeStamp, 1000000000, &ui32Remainder);
-				ui64Nanoseconds = ui64OSTimeStamp - (ui64Seconds * 1000000000ULL);
+				/* Split OS timestamp in seconds and nanoseconds */
+				ui64Seconds = OSDivide64r64(psHWRInfo->ui64OSTimer, 1000000000, &ui32Remainder);
+				ui64Nanoseconds = psHWRInfo->ui64OSTimer - (ui64Seconds * 1000000000ULL);
 				
 				ui32HWRRecoveryFlags = psHWRInfo->ui32HWRRecoveryFlags;
 				if(ui32HWRRecoveryFlags & RGXFWIF_DM_STATE_GUILTY_LOCKUP) { pszLockupType = ", Guilty Lockup"; }
@@ -2352,10 +2348,12 @@ static void _RGXDumpRGXDebugSummary(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 
 		_RGXDumpRGXBIFBank(pfnDumpDebugPrintf, psDevInfo, RGXDBG_BIF0, ui64RegValMMUStatus, ui64RegValREQStatus, 0, 0, IMG_TRUE);
 
+#if !defined(RGX_FEATURE_SINGLE_BIF)
 		ui64RegValMMUStatus = OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_BIF_FAULT_BANK1_MMU_STATUS);
 		ui64RegValREQStatus = OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_BIF_FAULT_BANK1_REQ_STATUS);
 
 		_RGXDumpRGXBIFBank(pfnDumpDebugPrintf, psDevInfo, RGXDBG_BIF1, ui64RegValMMUStatus, ui64RegValREQStatus, 0, 0, IMG_TRUE);
+#endif
 
 #if defined(RGX_FEATURE_CLUSTER_GROUPING)
 #if defined(RGX_NUM_PHANTOMS)
@@ -2443,6 +2441,7 @@ static void _RGXDumpRGXDebugSummary(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 	_RGXDumpFWHWRInfo(pfnDumpDebugPrintf, psRGXFWIfTraceBuf, psDevInfo);
 }
 
+#if defined (RGX_FEATURE_META)
 static void _RGXDumpMetaSPExtraDebugInfo(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 										 PVRSRV_RGXDEV_INFO *psDevInfo)
 {
@@ -2505,6 +2504,7 @@ static void _RGXDumpMetaSPExtraDebugInfo(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrin
 	}
 
 }
+#endif /* RGX_FEATURE_META */
 
 /*
 	RGXDumpDebugInfo
@@ -2798,14 +2798,19 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 				PVR_DUMPDEBUG_LOG(("RGX Register Base Address (Linear):   0x%p", psDevInfo->pvRegsBaseKM));
 				PVR_DUMPDEBUG_LOG(("RGX Register Base Address (Physical): 0x%08lX", (unsigned long)psDevInfo->sRegsPhysBase.uiAddr));
 
+#if defined(RGX_FEATURE_META)
 				/* Forcing bit 6 of MslvCtrl1 to 0 to avoid internal reg read going though the core */
 				OSWriteHWReg32(psDevInfo->pvRegsBaseKM, RGX_CR_META_SP_MSLVCTRL1, 0x0);
+#endif
 
 				eError = RGXRunScript(psDevInfo, psDevInfo->psScripts->asDbgCommands, RGX_MAX_DEBUG_COMMANDS, PDUMP_FLAGS_CONTINUOUS, pfnDumpDebugPrintf);
 				if (eError != PVRSRV_OK)
 				{
-					PVR_DPF((PVR_DBG_ERROR,"RGXDebugRequestProcess: RGXRunScript failed (%d) - Dump Slave Port debug information", eError));
+					PVR_DPF((PVR_DBG_ERROR,"RGXDebugRequestProcess: RGXRunScript failed (%d)", eError));
+#if defined(RGX_FEATURE_META)
+					PVR_DPF((PVR_DBG_ERROR,"Dump Slave Port debug information"));
 					_RGXDumpMetaSPExtraDebugInfo(pfnDumpDebugPrintf, psDevInfo);
+#endif
 				}
 			}
 			else

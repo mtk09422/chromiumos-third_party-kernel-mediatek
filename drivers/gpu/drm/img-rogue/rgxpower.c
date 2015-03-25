@@ -52,12 +52,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debug.h"
 #include "osfunc.h"
 #include "rgxdebug.h"
-#include "rgx_meta.h"
+#include "rgx_firmware_processor.h"
 #include "devicemem_pdump.h"
 #include "rgxapi_km.h"
 #include "rgxtimecorr.h"
+#include "devicemem_utils.h"
+
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
 #include "process_stats.h"
+#endif
+#if defined(PVR_DVFS)
+#include "pvr_dvfs_device.h"
 #endif
 
 extern IMG_UINT32 g_ui32HostSampleIRQCount;
@@ -80,6 +85,160 @@ static void RGXEnableClocks(PVRSRV_RGXDEV_INFO	*psDevInfo)
 	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGX clock: use default (automatic clock gating)");
 }
 #endif
+
+#if defined(RGX_FEATURE_META)
+/*!
+*******************************************************************************
+
+ @Function	RGXInitFWProcWrapper
+
+ @Description Configures the hardware wrapper of the META processor
+
+ @Input psDeviceNode - device node structure
+
+ @Return   void
+
+******************************************************************************/
+static PVRSRV_ERROR RGXinitMetaProcWrapper(PVRSRV_RGXDEV_INFO *psDevInfo, PVRSRV_DEVICE_CONFIG *psDevConfig)
+{
+	PVRSRV_ERROR eError = PVRSRV_OK;
+
+	/* Set Garten IDLE to META idle and Set the Garten Wrapper BIF Fence address */
+
+	IMG_UINT64 ui64GartenConfig;
+
+	PVR_UNREFERENCED_PARAMETER(psDevConfig);
+
+	/* Garten IDLE bit controlled by META */
+	ui64GartenConfig = RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_IDLE_CTRL_META;
+
+	/* Set fence addr to the bootloader */
+	ui64GartenConfig |= (RGXFW_BOOTLDR_DEVV_ADDR & ~RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_ADDR_CLRMSK);
+
+	/* Set PC = 0 for fences */
+	ui64GartenConfig &= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_PC_BASE_CLRMSK;
+
+#if defined(RGX_FEATURE_SLC_VIVT)
+#if !defined(FIX_HW_BRN_51281)
+	/* Ensure the META fences go all the way to external memory */
+	ui64GartenConfig |= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_SLC_COHERENT_EN;    /* SLC Coherent 1 */
+	ui64GartenConfig &= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_PERSISTENCE_CLRMSK; /* SLC Persistence 0 */
+#endif /* FIX_HW_BRN_51281 */
+
+#else
+	/* Set SLC DM=META */
+	ui64GartenConfig |= ((IMG_UINT64) RGXFW_SEGMMU_META_DM_ID) << RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_DM_SHIFT;
+
+#endif /* RGX_FEATURE_SLC_VIVT */
+
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Configure META wrapper");
+	OSWriteHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig);
+	PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig, PDUMP_FLAGS_CONTINUOUS);
+	return eError;
+}
+
+#else  /* RGX_FEATURE_META */
+
+/*!
+*******************************************************************************
+
+ @Function	RGXInitFWProcWrapper
+
+ @Description Configures the hardware wrapper of the MIPS processor
+
+ @Input psDeviceNode - device node structure
+
+ @Return   void
+
+******************************************************************************/
+static PVRSRV_ERROR RGXinitMipsProcWrapper(PVRSRV_RGXDEV_INFO *psDevInfo, PVRSRV_DEVICE_CONFIG *psDevConfig)
+{
+	PVRSRV_ERROR eError = PVRSRV_OK;
+
+	/* Garten IDLE bit controlled by MIPS */
+	IMG_UINT64 ui64GartenConfig = RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_IDLE_CTRL_META;
+
+	IMG_UINT32 ui32BootCodeOffset = (IMG_UINT32)RGXMIPSFW_BOOTCODE_BASE_PAGE * (IMG_UINT32)RGXMIPSFW_PAGE_SIZE;
+	PMR *psPMR = (PMR *)(psDevInfo->psRGXFWCodeMemDesc->psImport->hPMR);
+	/* We need to setup the MIPS wrapper register in case of a MIPS-based BVNC*/
+#if !defined(NO_HARDWARE)
+		IMG_DEV_PHYADDR sDevAddrPtr;
+		void *pvRegsBaseKM;
+		IMG_BOOL bValid;
+		eError = RGXGetPhyAddr(psPMR, &sDevAddrPtr, ui32BootCodeOffset, RGXMIPSFW_LOG2_PAGE_SIZE, 1, &bValid);
+		if (eError != PVRSRV_OK)
+		{
+			PVR_DPF((PVR_DBG_ERROR,"RGXGetPhyAddr failed (%u)",
+					eError));
+			return eError;
+		}
+		/* Write into the RGX_CR_MTS_MIPS_WRAPPER_CONFIG to set the register transactions ID */
+		pvRegsBaseKM = OSMapPhysToLin(psDevConfig->sRegsCpuPBase, psDevConfig->ui32RegsSize, 0);
+		OSWriteHWReg64(pvRegsBaseKM,
+						   RGX_CR_MIPS_WRAPPER_CONFIG,
+						   psDevConfig->sRegsCpuPBase.uiAddr >> RGXMIPSFW_WRAPPER_CONFIG_REGBANK_ADDR_ALIGN);
+		/* Write the register Boot remap registers */
+		OSWriteHWReg64(pvRegsBaseKM,
+						   RGX_CR_MIPS_ADDR_REMAP1_CONFIG1,
+						   RGXMIPSFW_BOOTLDR_ADDR_PHY | 1);
+		/* only 0xC bits of the original address survive (4K bootloader), we take the low 32-bits (12 bits aligned) of the physAddr*/
+		OSWriteHWReg64(pvRegsBaseKM,
+						   RGX_CR_MIPS_ADDR_REMAP1_CONFIG2,
+						   (sDevAddrPtr.uiAddr & ~RGX_CR_MIPS_ADDR_REMAP1_CONFIG2_ADDR_OUT_CLRMSK) | RGXMIPSFW_LOG2_REMAP1_SEGMENT_SIZE);
+		/* Set the garten idle bit to be driven by the MIPS cpu_idle signal */
+		OSWriteHWReg64(pvRegsBaseKM, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig);
+		OSUnMapPhysToLin(pvRegsBaseKM, psDevConfig->ui32RegsSize, 0);
+#endif
+#if defined(PDUMP)
+		PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "Configure MIPS wrapper");
+		PDUMPCOMMENTWITHFLAGS(0, "Write the register transaction ID");
+		PDumpRegLabelToReg64(RGX_PDUMPREG_NAME, RGX_CR_MIPS_WRAPPER_CONFIG, 0, 0);
+
+		PDUMPCOMMENTWITHFLAGS(0, "Write the register Boot remap registers");
+		PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_MIPS_ADDR_REMAP1_CONFIG1, RGXMIPSFW_BOOTLDR_ADDR_PHY | 1, 0);
+		PDumpMemLabelToInternalVar(":SYSMEM:$1",
+									   psPMR,
+									   psDevInfo->psRGXFWCodeMemDesc->uiOffset + ui32BootCodeOffset,
+									   0);
+		PDumpWriteVarANDValueOp (":SYSMEM:$1",
+									   ~RGX_CR_MIPS_ADDR_REMAP1_CONFIG2_ADDR_OUT_CLRMSK,
+									   0);
+		PDumpWriteVarORValueOp (":SYSMEM:$1",
+									 RGXMIPSFW_LOG2_REMAP1_SEGMENT_SIZE,
+								 0);
+		PDumpInternalVarToReg32 (RGX_PDUMPREG_NAME,
+									 RGX_CR_MIPS_ADDR_REMAP1_CONFIG2,
+									 ":SYSMEM:$1",
+									 0);
+		PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "Set the GARTEN_IDLE type to MIPS");
+		PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig, PDUMP_FLAGS_CONTINUOUS);
+#endif /* PDUMP */
+		return eError;
+}
+
+#endif /* RGX_FEATURE_META */
+
+
+/*!
+*******************************************************************************
+
+ @Function	RGXInitFWProcWrapper
+
+ @Description Configures the hardware wrapper of the firmware processor
+
+ @Input psDeviceNode - device node structure
+
+ @Return   void
+
+******************************************************************************/
+static PVRSRV_ERROR RGXInitFWProcWrapper(PVRSRV_RGXDEV_INFO *psDevInfo, PVRSRV_DEVICE_CONFIG *psDevConfig)
+{
+#if defined(RGX_FEATURE_META)
+	return RGXinitMetaProcWrapper(psDevInfo, psDevConfig);
+#else
+	return RGXinitMipsProcWrapper(psDevInfo, psDevConfig);
+#endif
+}
 
 
 /*!
@@ -449,8 +608,8 @@ static PVRSRV_ERROR RGXStart(PVRSRV_RGXDEV_INFO	*psDevInfo, PVRSRV_DEVICE_CONFIG
 	(void) OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET);
 	PDUMPREGREAD64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, PDUMP_FLAGS_CONTINUOUS);
 
-	/* Take everything out of reset but META */
-	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: soft reset de-assert step 1 excluding META");
+	/* Take everything out of reset but META/MIPS */
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: soft reset de-assert step 1 excluding %s", RGXFW_PROCESSOR);
 	OSWriteHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET, RGX_S7_SOFT_RESET_DUSTS | RGX_CR_SOFT_RESET_GARTEN_EN);
 	PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, RGX_S7_SOFT_RESET_DUSTS | RGX_CR_SOFT_RESET_GARTEN_EN, PDUMP_FLAGS_CONTINUOUS);
 
@@ -459,7 +618,7 @@ static PVRSRV_ERROR RGXStart(PVRSRV_RGXDEV_INFO	*psDevInfo, PVRSRV_DEVICE_CONFIG
 	(void) OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET);
 	PDUMPREGREAD64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, PDUMP_FLAGS_CONTINUOUS);
 
-	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: soft reset de-assert step 2 excluding META");
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: soft reset de-assert step 2 excluding %s", RGXFW_PROCESSOR);
 	OSWriteHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN);
 	PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN, PDUMP_FLAGS_CONTINUOUS);
 	(void) OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET);
@@ -479,8 +638,8 @@ static PVRSRV_ERROR RGXStart(PVRSRV_RGXDEV_INFO	*psDevInfo, PVRSRV_DEVICE_CONFIG
 	(void) OSReadHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET);
 	PDUMPREGREAD64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, PDUMP_FLAGS_CONTINUOUS);
 
-	/* Take everything out of reset but META */
-	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Take everything out of reset but META");
+	/* Take everything out of reset but META/MIPS */
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Take everything out of reset but %s", RGXFW_PROCESSOR);
 	OSWriteHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN);
 	PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN, PDUMP_FLAGS_CONTINUOUS);
 #endif
@@ -499,44 +658,14 @@ static PVRSRV_ERROR RGXStart(PVRSRV_RGXDEV_INFO	*psDevInfo, PVRSRV_DEVICE_CONFIG
 	RGX_INIT_SLC(psDevInfo);
 #endif
 
-#if !defined(SUPPORT_META_SLAVE_BOOT)
+#if !defined(SUPPORT_META_SLAVE_BOOT) && defined(RGX_FEATURE_META)
 	/* Configure META to Master boot */
 	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: META Master boot");
 	OSWriteHWReg32(psDevInfo->pvRegsBaseKM, RGX_CR_META_BOOT, RGX_CR_META_BOOT_MODE_EN);
 	PDUMPREG32(RGX_PDUMPREG_NAME, RGX_CR_META_BOOT, RGX_CR_META_BOOT_MODE_EN, PDUMP_FLAGS_CONTINUOUS);
 #endif
-
-	/* Set Garten IDLE to META idle and Set the Garten Wrapper BIF Fence address */
-	{
-		IMG_UINT64 ui64GartenConfig;
-
-		/* Garten IDLE bit controlled by META */
-		ui64GartenConfig = RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_IDLE_CTRL_META;
-
-		/* Set fence addr to the bootloader */
-		ui64GartenConfig |= (RGXFW_BOOTLDR_DEVV_ADDR & ~RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_ADDR_CLRMSK);
-
-		/* Set PC = 0 for fences */
-		ui64GartenConfig &= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_PC_BASE_CLRMSK;
-
-#if defined(RGX_FEATURE_SLC_VIVT)
-#if !defined(FIX_HW_BRN_51281)
-		/* Ensure the META fences go all the way to external memory */
-		ui64GartenConfig |= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_SLC_COHERENT_EN;    /* SLC Coherent 1 */
-		ui64GartenConfig &= RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_PERSISTENCE_CLRMSK; /* SLC Persistence 0 */
-#endif
-
-#else 
-		/* Set SLC DM=META */
-		ui64GartenConfig |= ((IMG_UINT64) RGXFW_SEGMMU_META_DM_ID) << RGX_CR_MTS_GARTEN_WRAPPER_CONFIG_FENCE_DM_SHIFT;
-
-#endif
-
-		PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Configure META wrapper");
-		OSWriteHWReg64(psDevInfo->pvRegsBaseKM, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig);
-		PDUMPREG64(RGX_PDUMPREG_NAME, RGX_CR_MTS_GARTEN_WRAPPER_CONFIG, ui64GartenConfig, PDUMP_FLAGS_CONTINUOUS);
-	}
-
+	/* Initialises META/MIPS wrapper */
+	RGXInitFWProcWrapper(psDevInfo, psDevConfig);
 #if defined(RGX_FEATURE_AXI_ACELITE)
 	/*
 		We must init the AXI-ACE interface before 1st BIF transaction
@@ -549,8 +678,8 @@ static PVRSRV_ERROR RGXStart(PVRSRV_RGXDEV_INFO	*psDevInfo, PVRSRV_DEVICE_CONFIG
 	 */
 	RGXInitBIF(psDevInfo);
 
-	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Take META out of reset");
-	/* need to wait for at least 16 cycles before taking meta out of reset ... */
+	PDUMPCOMMENTWITHFLAGS(PDUMP_FLAGS_CONTINUOUS, "RGXStart: Take %s out of reset", RGXFW_PROCESSOR);
+	/* need to wait for at least 16 cycles before taking META/MIPS out of reset ... */
 	PVRSRVSystemWaitCycles(psDevConfig, 32);
 	PDUMPIDLWITHFLAGS(32, PDUMP_FLAGS_CONTINUOUS);
 	
@@ -793,7 +922,7 @@ PVRSRV_ERROR RGXPrePowerState (IMG_HANDLE				hDevHandle,
 			if (psFWTraceBuf->ePowState == RGXFWIF_POW_OFF)
 			{
 #if !defined(NO_HARDWARE)
-				/* Wait for the pending META to host interrupts to come back. */
+				/* Wait for the pending META/MIPS to host interrupts to come back. */
 				eError = PVRSRVPollForValueKM(&g_ui32HostSampleIRQCount,
 									          psDevInfo->psRGXFWIfTraceBuf->ui32InterruptCount,
 									          0xffffffff);
@@ -817,6 +946,15 @@ PVRSRV_ERROR RGXPrePowerState (IMG_HANDLE				hDevHandle,
 
 					/* Update GPU frequency and timer correlation related data */
 					RGXGPUFreqCalibratePrePowerState(psDeviceNode);
+
+#if defined(PVR_DVFS)
+					eError = SuspendDVFS();
+					if (eError != PVRSRV_OK)
+					{
+						PVR_DPF((PVR_DBG_ERROR,"RGXPostPowerState: Failed to suspend DVFS"));
+						return eError;
+					}
+#endif
 
 					psDevInfo->bRGXPowered = IMG_FALSE;
 
@@ -898,6 +1036,14 @@ PVRSRV_ERROR RGXPostPowerState (IMG_HANDLE				hDevHandle,
 
 			psDevInfo->bRGXPowered = IMG_TRUE;
 
+#if defined(PVR_DVFS)
+			eError = ResumeDVFS();
+			if (eError != PVRSRV_OK)
+			{
+				PVR_DPF((PVR_DBG_ERROR,"RGXPostPowerState: Failed to resume DVFS"));
+				return eError;
+			}
+#endif
 		}
 	}
 
@@ -1210,12 +1356,16 @@ _RGXActivePowerRequest_PowerLock_failed:
 /*
 	RGXForcedIdleRequest
 */
+
+#define RGX_FORCED_IDLE_RETRY_COUNT 10
+
 PVRSRV_ERROR RGXForcedIdleRequest(IMG_HANDLE hDevHandle, IMG_BOOL bDeviceOffPermitted)
 {
 	PVRSRV_DEVICE_NODE	*psDeviceNode = hDevHandle;
 	PVRSRV_RGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
 	RGXFWIF_KCCB_CMD	sPowCmd;
 	PVRSRV_ERROR		eError;
+	IMG_UINT32		ui32RetryCount = 0;
 
 #if !defined(NO_HARDWARE)
 	RGXFWIF_TRACEBUF	*psFWTraceBuf = psDevInfo->psRGXFWIfTraceBuf;
@@ -1253,20 +1403,20 @@ PVRSRV_ERROR RGXForcedIdleRequest(IMG_HANDLE hDevHandle, IMG_BOOL bDeviceOffPerm
 		return eError;
 	}
 
-	/* Wait for the firmware to answer. */
-#if defined(VIRTUAL_PLATFORM) || defined(EMULATOR)
-	do {	/* On VP/EMU may take a very long time for commands to flush. Timeouts can be ignored. */
+	/* Wait for GPU to finish current workload */
+	do {
 		eError = PVRSRVPollForValueKM(psDevInfo->psPowSyncPrim->pui32LinAddr, 0x1, 0xFFFFFFFF);
-		PVR_DPF((PVR_DBG_ERROR,"RGXForcedIdleRequest: On VP/EMU not considered an error. Retrying..."));
-	} while (eError != PVRSRV_OK);
-#else
-	eError = PVRSRVPollForValueKM(psDevInfo->psPowSyncPrim->pui32LinAddr, 0x1, 0xFFFFFFFF);
-#endif
+		if ((eError == PVRSRV_OK) || (ui32RetryCount == RGX_FORCED_IDLE_RETRY_COUNT))
+		{
+			break;
+		}
+		ui32RetryCount++;
+		PVR_DPF((PVR_DBG_WARNING,"RGXForcedIdleRequest: Request timeout. Retry %d of %d", ui32RetryCount, RGX_FORCED_IDLE_RETRY_COUNT));
+	} while (IMG_TRUE);
 
 	if (eError != PVRSRV_OK)
 	{
-		PVR_DPF((PVR_DBG_ERROR,"RGXForcedIdleRequest: Timeout waiting for idle request"));
-		PVR_DPF((PVR_DBG_ERROR,"RGXForcedIdleRequest: Firmware potentially left in forced idle state"));
+		PVR_DPF((PVR_DBG_ERROR,"RGXForcedIdleRequest: Idle request failed. Firmware potentially left in forced idle state"));
 		return eError;
 	}
 

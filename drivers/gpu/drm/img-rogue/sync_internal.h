@@ -58,8 +58,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SYNC_PRIM_NAME_SIZE		50
 typedef struct SYNC_PRIM_CONTEXT
 {
-	SYNC_BRIDGE_HANDLE			hBridge;						/*!< Bridge handle */
-	IMG_HANDLE					hDeviceNode;					/*!< The device we're operating on */
+	SHARED_DEV_CONNECTION       hDevConnection;
 	IMG_CHAR					azName[SYNC_PRIM_NAME_SIZE];	/*!< Name of the RA */
 	RA_ARENA					*psSubAllocRA;					/*!< RA context */
 	IMG_CHAR					azSpanName[SYNC_PRIM_NAME_SIZE];/*!< Name of the span RA */

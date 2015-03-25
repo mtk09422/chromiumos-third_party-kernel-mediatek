@@ -55,6 +55,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <asm/ioctl.h>
 #include <drm/drmP.h>
 #include <drm/drm.h>
+#if defined(CHROMIUMOS_WORKAROUNDS_KERNEL314)
+#include <drm/drm_atomic.h>
+#endif
 
 #include "allocmem.h"
 #include "img_defs.h"
@@ -119,6 +122,11 @@ static int PVRSRVDRMLoad(struct drm_device *dev, unsigned long flags)
 	int iRes = 0;
 #if defined(SUPPORT_SYSTEM_INTERRUPT_HANDLING)
 	PVRSRV_ERROR eError;
+#endif
+#if defined(LDM_PLATFORM)
+	LDM_DEV *pDevice = dev->platformdev;
+#elif defined(LDM_PCI)
+	LDM_DEV *pDevice = dev->pdev;
 #endif
 
 	PVR_TRACE(("PVRSRVDRMLoad"));
@@ -216,7 +224,7 @@ error_system_data_release:
 #endif
 
 error_system_deinit:
-	PVRSRVSystemDeInit();
+	PVRSRVSystemDeInit(pDevice);
 
 error_free_dev_priv:
 	dev->dev_private = NULL;
@@ -239,6 +247,11 @@ static int PVRSRVDRMUnload(struct drm_device *dev)
 #if defined(SUPPORT_SYSTEM_INTERRUPT_HANDLING)
 	IMG_HANDLE hSysData = psDevPriv->hSysData;
 #endif
+#if defined(LDM_PLATFORM)
+	LDM_DEV *pDevice = dev->platformdev;
+#elif defined(LDM_PCI)
+	LDM_DEV *pDevice = dev->pdev;
+#endif
 
 	PVR_TRACE(("PVRSRVDRMUnload"));
 
@@ -247,7 +260,7 @@ static int PVRSRVDRMUnload(struct drm_device *dev)
 #endif
 
 	psDevPriv->dev_node = NULL;
-	PVRSRVSystemDeInit();
+	PVRSRVSystemDeInit(pDevice);
 
 #if defined(SUPPORT_SYSTEM_INTERRUPT_HANDLING)
 	psDevPriv->hSysData = NULL;
@@ -391,6 +404,10 @@ struct drm_ioctl_desc sPVRDRMIoctls[] =
 	DRM_IOCTL_DEF_DRV(PVR_GEM_TO_IMG_HANDLE, PVRDRMGEMToIMGHandle, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(PVR_IMG_TO_GEM_HANDLE, PVRDRMIMGToGEMHandle, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
 	DRM_IOCTL_DEF_DRV(PVR_GEM_SYNC_GET, PVRDRMGEMSyncGet, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(PVR_GEM_CREATE_FENCE_CONTEXT, PVRDRMGEMCreateFenceContext, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(PVR_GEM_DESTROY_FENCE_CONTEXT, PVRDRMGEMDestroyFenceContext, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(PVR_GEM_ATTACH_FENCE, PVRDRMGEMAttachFence, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
+	DRM_IOCTL_DEF_DRV(PVR_GEM_CREATE_FENCE, PVRDRMGEMCreateFence, PVR_DRM_RENDER_ALLOW | DRM_UNLOCKED),
 };
 
 #if defined(CONFIG_COMPAT)
@@ -441,7 +458,7 @@ static const struct file_operations sPVRFileOps =
 #if defined(CONFIG_COMPAT)
 	.compat_ioctl		= PVRSRVDRMCompatIoctl,
 #endif
-	.mmap			= MMapPMR,
+	.mmap			= PVRSRV_MMap,
 	.poll			= drm_poll,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0)) && ! defined(CHROMIUMOS_WORKAROUNDS_KERNEL310)
 	.fasync			= drm_fasync,
@@ -504,7 +521,7 @@ struct drm_driver sPVRDRMDriver =
 #if defined(CONFIG_COMPAT)
 		.compat_ioctl	= PVRSRVDRMCompatIoctl,
 #endif
-		.mmap		= MMapPMR,
+		.mmap		= PVRSRV_MMap,
 		.poll		= drm_poll,
 		.fasync		= drm_fasync,
 		.read		= drm_read,
@@ -525,5 +542,13 @@ struct drm_driver sPVRDRMDriver =
 	.major			= PVRVERSION_MAJ,
 	.minor			= PVRVERSION_MIN,
 	.patchlevel		= PVRVERSION_BUILD,
+#if defined(CHROMIUMOS_WORKAROUNDS_KERNEL314)
+	.atomic_begin = drm_atomic_begin,
+	.atomic_set_event = drm_atomic_set_event,
+	.atomic_check = drm_atomic_check,
+	.atomic_commit = drm_atomic_commit,
+	.atomic_end = drm_atomic_end,
+	.atomic_funcs = &drm_atomic_funcs,
+#endif
 };
 #endif	/* defined(SUPPORT_DRM) */

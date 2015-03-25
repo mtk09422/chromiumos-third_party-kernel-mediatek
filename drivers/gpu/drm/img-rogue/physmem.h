@@ -48,6 +48,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "img_types.h"
 #include "pvrsrv_error.h"
 #include "pvrsrv_memallocflags.h"
+#include "connection_server.h"
 
 /* services/server/include/ */
 #include "pmr.h"
@@ -89,7 +90,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
 extern PVRSRV_ERROR
-PhysmemNewRamBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
+PhysmemNewRamBackedPMR(CONNECTION_DATA * psConnection,
+                       PVRSRV_DEVICE_NODE *psDevNode,
                        IMG_DEVMEM_SIZE_T uiSize,
                        IMG_DEVMEM_SIZE_T uiChunkSize,
                        IMG_UINT32 ui32NumPhysChunks,

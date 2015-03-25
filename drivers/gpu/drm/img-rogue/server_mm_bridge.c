@@ -62,20 +62,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
 static PVRSRV_ERROR ReleasePMRExport(void *pvData)
-{
-	PVR_UNREFERENCED_PARAMETER(pvData);
-
-	return PVRSRV_OK;
-}
-static PVRSRV_ERROR ReleasePMRExportOut(void *pvData)
 {
 	PVR_UNREFERENCED_PARAMETER(pvData);
 
@@ -318,14 +308,13 @@ PMRGetUID_exit:
 }
 
 static IMG_INT
-PVRSRVBridgePMRMakeServerExportClientExport(IMG_UINT32 ui32DispatchTableEntry,
-					  PVRSRV_BRIDGE_IN_PMRMAKESERVEREXPORTCLIENTEXPORT *psPMRMakeServerExportClientExportIN,
-					  PVRSRV_BRIDGE_OUT_PMRMAKESERVEREXPORTCLIENTEXPORT *psPMRMakeServerExportClientExportOUT,
+PVRSRVBridgePMRMakeLocalImportHandle(IMG_UINT32 ui32DispatchTableEntry,
+					  PVRSRV_BRIDGE_IN_PMRMAKELOCALIMPORTHANDLE *psPMRMakeLocalImportHandleIN,
+					  PVRSRV_BRIDGE_OUT_PMRMAKELOCALIMPORTHANDLE *psPMRMakeLocalImportHandleOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	DEVMEM_EXPORTCOOKIE * psPMRServerExportInt = NULL;
-	PMR_EXPORT * psPMRExportOutInt = NULL;
-	IMG_HANDLE hPMRExportOutInt = NULL;
+	PMR * psBufferInt = NULL;
+	PMR * psExtMemInt = NULL;
 
 
 
@@ -335,100 +324,49 @@ PVRSRVBridgePMRMakeServerExportClientExport(IMG_UINT32 ui32DispatchTableEntry,
 
 				{
 					/* Look up the address from the handle */
-					psPMRMakeServerExportClientExportOUT->eError =
+					psPMRMakeLocalImportHandleOUT->eError =
 						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &psPMRServerExportInt,
-											psPMRMakeServerExportClientExportIN->hPMRServerExport,
-											PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE);
-					if(psPMRMakeServerExportClientExportOUT->eError != PVRSRV_OK)
+											(void **) &psBufferInt,
+											psPMRMakeLocalImportHandleIN->hBuffer,
+											PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE);
+					if(psPMRMakeLocalImportHandleOUT->eError != PVRSRV_OK)
 					{
-						goto PMRMakeServerExportClientExport_exit;
+						goto PMRMakeLocalImportHandle_exit;
 					}
 				}
 
 
-	psPMRMakeServerExportClientExportOUT->eError =
-		PMRMakeServerExportClientExport(
-					psPMRServerExportInt,
-					&psPMRExportOutInt,
-					&psPMRMakeServerExportClientExportOUT->ui64Size,
-					&psPMRMakeServerExportClientExportOUT->ui32Log2Contig,
-					&psPMRMakeServerExportClientExportOUT->ui64Password);
+	psPMRMakeLocalImportHandleOUT->eError =
+		PMRMakeLocalImportHandle(
+					psBufferInt,
+					&psExtMemInt);
 	/* Exit early if bridged call fails */
-	if(psPMRMakeServerExportClientExportOUT->eError != PVRSRV_OK)
+	if(psPMRMakeLocalImportHandleOUT->eError != PVRSRV_OK)
 	{
-		goto PMRMakeServerExportClientExport_exit;
+		goto PMRMakeLocalImportHandle_exit;
 	}
 
 
-	/*
-	 * For cases where we need a cross process handle we actually allocate two.
-	 * 
-	 * The first one is a connection specific handle and it gets given the real
-	 * release function. This handle does *NOT* get returned to the caller. It's
-	 * purpose is to release any leaked resources when we either have a bad or
-	 * abnormally terminated client. If we didn't do this then the resource
-	 * wouldn't be freed until driver unload. If the resource is freed normally,
-	 * this handle can be looked up via the cross process handle and then
-	 * released accordingly.
-	 * 
-	 * The second one is a cross process handle and it gets given a noop release
-	 * function. This handle does get returned to the caller.
-	 */
-	psPMRMakeServerExportClientExportOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
-							&hPMRExportOutInt,
-							(void *) psPMRExportOutInt,
-							PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT,
-							PVRSRV_HANDLE_ALLOC_FLAG_SHARED
-							,(PFN_HANDLE_RELEASE)&PMRUnmakeServerExportClientExport);
-	if (psPMRMakeServerExportClientExportOUT->eError != PVRSRV_OK)
+	psPMRMakeLocalImportHandleOUT->eError = PVRSRVAllocHandle(psConnection->psHandleBase,
+							&psPMRMakeLocalImportHandleOUT->hExtMem,
+							(void *) psExtMemInt,
+							PVRSRV_HANDLE_TYPE_DEVMEM_MEM_IMPORT,
+							PVRSRV_HANDLE_ALLOC_FLAG_MULTI
+							,(PFN_HANDLE_RELEASE)&PMRUnmakeLocalImportHandle);
+	if (psPMRMakeLocalImportHandleOUT->eError != PVRSRV_OK)
 	{
-		goto PMRMakeServerExportClientExport_exit;
-	}
-
-	psPMRMakeServerExportClientExportOUT->eError = PVRSRVAllocHandle(KERNEL_HANDLE_BASE,
-							&psPMRMakeServerExportClientExportOUT->hPMRExportOut,
-							(void *) psPMRExportOutInt,
-							PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT,
-							PVRSRV_HANDLE_ALLOC_FLAG_MULTI,
-							(PFN_HANDLE_RELEASE)&ReleasePMRExportOut);
-	if (psPMRMakeServerExportClientExportOUT->eError != PVRSRV_OK)
-	{
-		goto PMRMakeServerExportClientExport_exit;
+		goto PMRMakeLocalImportHandle_exit;
 	}
 
 
 
-PMRMakeServerExportClientExport_exit:
-	if (psPMRMakeServerExportClientExportOUT->eError != PVRSRV_OK)
+
+PMRMakeLocalImportHandle_exit:
+	if (psPMRMakeLocalImportHandleOUT->eError != PVRSRV_OK)
 	{
-		if (psPMRMakeServerExportClientExportOUT->hPMRExportOut)
+		if (psExtMemInt)
 		{
-			PVRSRV_ERROR eError = PVRSRVReleaseHandle(KERNEL_HANDLE_BASE,
-						(IMG_HANDLE) psPMRMakeServerExportClientExportOUT->hPMRExportOut,
-						PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-
-			/* Releasing the handle should free/destroy/release the resource. This should never fail... */
-			PVR_ASSERT((eError == PVRSRV_OK) || (eError == PVRSRV_ERROR_RETRY));
-
-		}
-
-		if (hPMRExportOutInt)
-		{
-			PVRSRV_ERROR eError = PVRSRVReleaseHandle(psConnection->psHandleBase,
-						hPMRExportOutInt,
-						PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-
-			/* Releasing the handle should free/destroy/release the resource. This should never fail... */
-			PVR_ASSERT((eError == PVRSRV_OK) || (eError == PVRSRV_ERROR_RETRY));
-
-			/* Avoid freeing/destroying/releasing the resource a second time below */
-			psPMRExportOutInt = NULL;
-		}
-
-		if (psPMRExportOutInt)
-		{
-			PMRUnmakeServerExportClientExport(psPMRExportOutInt);
+			PMRUnmakeLocalImportHandle(psExtMemInt);
 		}
 	}
 
@@ -437,15 +375,11 @@ PMRMakeServerExportClientExport_exit:
 }
 
 static IMG_INT
-PVRSRVBridgePMRUnmakeServerExportClientExport(IMG_UINT32 ui32DispatchTableEntry,
-					  PVRSRV_BRIDGE_IN_PMRUNMAKESERVEREXPORTCLIENTEXPORT *psPMRUnmakeServerExportClientExportIN,
-					  PVRSRV_BRIDGE_OUT_PMRUNMAKESERVEREXPORTCLIENTEXPORT *psPMRUnmakeServerExportClientExportOUT,
+PVRSRVBridgePMRUnmakeLocalImportHandle(IMG_UINT32 ui32DispatchTableEntry,
+					  PVRSRV_BRIDGE_IN_PMRUNMAKELOCALIMPORTHANDLE *psPMRUnmakeLocalImportHandleIN,
+					  PVRSRV_BRIDGE_OUT_PMRUNMAKELOCALIMPORTHANDLE *psPMRUnmakeLocalImportHandleOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	PMR_EXPORT * psPMRExportInt = NULL;
-	IMG_HANDLE hPMRExportInt = NULL;
-
-	PVR_UNREFERENCED_PARAMETER(psConnection);
 
 
 
@@ -453,45 +387,21 @@ PVRSRVBridgePMRUnmakeServerExportClientExport(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-	psPMRUnmakeServerExportClientExportOUT->eError =
-		PVRSRVLookupHandle(KERNEL_HANDLE_BASE,
-					(void **) &psPMRExportInt,
-					(IMG_HANDLE) psPMRUnmakeServerExportClientExportIN->hPMRExport,
-					PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-	PVR_ASSERT(psPMRUnmakeServerExportClientExportOUT->eError == PVRSRV_OK);
 
-	/*
-	 * Find the connection specific handle that represents the same data
-	 * as the cross process handle as releasing it will actually call the
-	 * data's real release function (see the function where the cross
-	 * process handle is allocated for more details).
-	 */
-	psPMRUnmakeServerExportClientExportOUT->eError =
-		PVRSRVFindHandle(psConnection->psHandleBase,
-					&hPMRExportInt,
-					psPMRExportInt,
-					PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-	PVR_ASSERT(psPMRUnmakeServerExportClientExportOUT->eError == PVRSRV_OK);
 
-	psPMRUnmakeServerExportClientExportOUT->eError =
+	psPMRUnmakeLocalImportHandleOUT->eError =
 		PVRSRVReleaseHandle(psConnection->psHandleBase,
-					hPMRExportInt,
-					PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-	PVR_ASSERT((psPMRUnmakeServerExportClientExportOUT->eError == PVRSRV_OK) || (psPMRUnmakeServerExportClientExportOUT->eError == PVRSRV_ERROR_RETRY));
-
-	psPMRUnmakeServerExportClientExportOUT->eError =
-		PVRSRVReleaseHandle(KERNEL_HANDLE_BASE,
-					(IMG_HANDLE) psPMRUnmakeServerExportClientExportIN->hPMRExport,
-					PVRSRV_HANDLE_TYPE_PHYSMEM_PMR_EXPORT);
-	if ((psPMRUnmakeServerExportClientExportOUT->eError != PVRSRV_OK) && (psPMRUnmakeServerExportClientExportOUT->eError != PVRSRV_ERROR_RETRY))
+					(IMG_HANDLE) psPMRUnmakeLocalImportHandleIN->hExtMem,
+					PVRSRV_HANDLE_TYPE_DEVMEM_MEM_IMPORT);
+	if ((psPMRUnmakeLocalImportHandleOUT->eError != PVRSRV_OK) && (psPMRUnmakeLocalImportHandleOUT->eError != PVRSRV_ERROR_RETRY))
 	{
 		PVR_ASSERT(0);
-		goto PMRUnmakeServerExportClientExport_exit;
+		goto PMRUnmakeLocalImportHandle_exit;
 	}
 
 
 
-PMRUnmakeServerExportClientExport_exit:
+PMRUnmakeLocalImportHandle_exit:
 
 	return 0;
 }
@@ -508,13 +418,6 @@ PVRSRVBridgePMRImportPMR(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-#if defined (SUPPORT_AUTH)
-	psPMRImportPMROUT->eError = OSCheckAuthentication(psConnection, 1);
-	if (psPMRImportPMROUT->eError != PVRSRV_OK)
-	{
-		goto PMRImportPMR_exit;
-	}
-#endif
 
 	PMRLock();
 
@@ -781,10 +684,10 @@ PVRSRVBridgeDevmemIntCtxCreate(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_DEVMEMINTCTXCREATE *psDevmemIntCtxCreateOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
 	DEVMEMINT_CTX * psDevMemServerContextInt = NULL;
 	IMG_HANDLE hPrivDataInt = NULL;
 
+	PVR_UNREFERENCED_PARAMETER(psDevmemIntCtxCreateIN);
 
 
 	psDevmemIntCtxCreateOUT->hDevMemServerContext = NULL;
@@ -792,23 +695,8 @@ PVRSRVBridgeDevmemIntCtxCreate(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psDevmemIntCtxCreateOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psDevmemIntCtxCreateIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psDevmemIntCtxCreateOUT->eError != PVRSRV_OK)
-					{
-						goto DevmemIntCtxCreate_exit;
-					}
-				}
-
-
 	psDevmemIntCtxCreateOUT->eError =
-		DevmemIntCtxCreate(
-					hDeviceNodeInt,
+		DevmemIntCtxCreate(psConnection, OSGetDevData(psConnection),
 					&psDevMemServerContextInt,
 					&hPrivDataInt);
 	/* Exit early if bridged call fails */
@@ -1253,7 +1141,6 @@ PVRSRVBridgePhysmemNewRamBackedPMR(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_PHYSMEMNEWRAMBACKEDPMR *psPhysmemNewRamBackedPMROUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
 	IMG_UINT32 *ui32MappingTableInt = NULL;
 	PMR * psPMRPtrInt = NULL;
 
@@ -1284,24 +1171,8 @@ PVRSRVBridgePhysmemNewRamBackedPMR(IMG_UINT32 ui32DispatchTableEntry,
 	PMRLock();
 
 
-				{
-					/* Look up the address from the handle */
-					psPhysmemNewRamBackedPMROUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psPhysmemNewRamBackedPMRIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psPhysmemNewRamBackedPMROUT->eError != PVRSRV_OK)
-					{
-						PMRUnlock();
-						goto PhysmemNewRamBackedPMR_exit;
-					}
-				}
-
-
 	psPhysmemNewRamBackedPMROUT->eError =
-		PhysmemNewRamBackedPMR(
-					hDeviceNodeInt,
+		PhysmemNewRamBackedPMR(psConnection, OSGetDevData(psConnection),
 					psPhysmemNewRamBackedPMRIN->uiSize,
 					psPhysmemNewRamBackedPMRIN->uiChunkSize,
 					psPhysmemNewRamBackedPMRIN->ui32NumPhysChunks,
@@ -1673,37 +1544,21 @@ PVRSRVBridgeHeapCfgHeapConfigCount(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGCOUNT *psHeapCfgHeapConfigCountOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
+
+	PVR_UNREFERENCED_PARAMETER(psHeapCfgHeapConfigCountIN);
 
 
 
 
-
-
-
-				{
-					/* Look up the address from the handle */
-					psHeapCfgHeapConfigCountOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psHeapCfgHeapConfigCountIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psHeapCfgHeapConfigCountOUT->eError != PVRSRV_OK)
-					{
-						goto HeapCfgHeapConfigCount_exit;
-					}
-				}
 
 
 	psHeapCfgHeapConfigCountOUT->eError =
-		HeapCfgHeapConfigCount(
-					hDeviceNodeInt,
+		HeapCfgHeapConfigCount(psConnection, OSGetDevData(psConnection),
 					&psHeapCfgHeapConfigCountOUT->ui32NumHeapConfigs);
 
 
 
 
-HeapCfgHeapConfigCount_exit:
 
 	return 0;
 }
@@ -1714,38 +1569,21 @@ PVRSRVBridgeHeapCfgHeapCount(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCOUNT *psHeapCfgHeapCountOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
 
 
 
 
 
-
-
-				{
-					/* Look up the address from the handle */
-					psHeapCfgHeapCountOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psHeapCfgHeapCountIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psHeapCfgHeapCountOUT->eError != PVRSRV_OK)
-					{
-						goto HeapCfgHeapCount_exit;
-					}
-				}
 
 
 	psHeapCfgHeapCountOUT->eError =
-		HeapCfgHeapCount(
-					hDeviceNodeInt,
+		HeapCfgHeapCount(psConnection, OSGetDevData(psConnection),
 					psHeapCfgHeapCountIN->ui32HeapConfigIndex,
 					&psHeapCfgHeapCountOUT->ui32NumHeaps);
 
 
 
 
-HeapCfgHeapCount_exit:
 
 	return 0;
 }
@@ -1756,7 +1594,6 @@ PVRSRVBridgeHeapCfgHeapConfigName(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGNAME *psHeapCfgHeapConfigNameOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
 	IMG_CHAR *puiHeapConfigNameInt = NULL;
 
 
@@ -1777,23 +1614,8 @@ PVRSRVBridgeHeapCfgHeapConfigName(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psHeapCfgHeapConfigNameOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psHeapCfgHeapConfigNameIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psHeapCfgHeapConfigNameOUT->eError != PVRSRV_OK)
-					{
-						goto HeapCfgHeapConfigName_exit;
-					}
-				}
-
-
 	psHeapCfgHeapConfigNameOUT->eError =
-		HeapCfgHeapConfigName(
-					hDeviceNodeInt,
+		HeapCfgHeapConfigName(psConnection, OSGetDevData(psConnection),
 					psHeapCfgHeapConfigNameIN->ui32HeapConfigIndex,
 					psHeapCfgHeapConfigNameIN->ui32HeapConfigNameBufSz,
 					puiHeapConfigNameInt);
@@ -1823,7 +1645,6 @@ PVRSRVBridgeHeapCfgHeapDetails(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_HEAPCFGHEAPDETAILS *psHeapCfgHeapDetailsOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDeviceNodeInt = NULL;
 	IMG_CHAR *puiHeapNameOutInt = NULL;
 
 
@@ -1844,23 +1665,8 @@ PVRSRVBridgeHeapCfgHeapDetails(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psHeapCfgHeapDetailsOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDeviceNodeInt,
-											psHeapCfgHeapDetailsIN->hDeviceNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psHeapCfgHeapDetailsOUT->eError != PVRSRV_OK)
-					{
-						goto HeapCfgHeapDetails_exit;
-					}
-				}
-
-
 	psHeapCfgHeapDetailsOUT->eError =
-		HeapCfgHeapDetails(
-					hDeviceNodeInt,
+		HeapCfgHeapDetails(psConnection, OSGetDevData(psConnection),
 					psHeapCfgHeapDetailsIN->ui32HeapConfigIndex,
 					psHeapCfgHeapDetailsIN->ui32HeapIndex,
 					psHeapCfgHeapDetailsIN->ui32HeapNameBufSz,
@@ -1916,11 +1722,11 @@ PVRSRV_ERROR InitMMBridge(void)
 					NULL, NULL,
 					0, 0);
 
-	SetDispatchTableEntry(PVRSRV_BRIDGE_MM, PVRSRV_BRIDGE_MM_PMRMAKESERVEREXPORTCLIENTEXPORT, PVRSRVBridgePMRMakeServerExportClientExport,
+	SetDispatchTableEntry(PVRSRV_BRIDGE_MM, PVRSRV_BRIDGE_MM_PMRMAKELOCALIMPORTHANDLE, PVRSRVBridgePMRMakeLocalImportHandle,
 					NULL, NULL,
 					0, 0);
 
-	SetDispatchTableEntry(PVRSRV_BRIDGE_MM, PVRSRV_BRIDGE_MM_PMRUNMAKESERVEREXPORTCLIENTEXPORT, PVRSRVBridgePMRUnmakeServerExportClientExport,
+	SetDispatchTableEntry(PVRSRV_BRIDGE_MM, PVRSRV_BRIDGE_MM_PMRUNMAKELOCALIMPORTHANDLE, PVRSRVBridgePMRUnmakeLocalImportHandle,
 					NULL, NULL,
 					0, 0);
 

@@ -58,17 +58,18 @@ extern "C" {
 #include "services.h"	/* For PVRSRV_DEV_DATA */
 #include "sync_external.h"
 
+struct _PVRSRV_DEVMEMCTX_;
+
 /*
   Device memory contexts, heaps and memory descriptors are passed
   through to underlying memory APIs directly, but are to be regarded
   as an opaque handle externally.
 */
-typedef DEVMEM_CONTEXT *PVRSRV_DEVMEMCTX;       /*!< Device-Mem Client-Side Interface: Typedef for Context Ptr */
+typedef struct _PVRSRV_DEVMEMCTX_ *PVRSRV_DEVMEMCTX;       /*!< Device-Mem Client-Side Interface: Typedef for Context Ptr */
 typedef DEVMEM_HEAP *PVRSRV_HEAP;               /*!< Device-Mem Client-Side Interface: Typedef for Heap Ptr */
 typedef DEVMEM_MEMDESC *PVRSRV_MEMDESC;         /*!< Device-Mem Client-Side Interface: Typedef for Memory Descriptor Ptr */
 typedef DEVMEM_EXPORTCOOKIE PVRSRV_DEVMEM_EXPORTCOOKIE;     /*!< Device-Mem Client-Side Interface: Typedef for Export Cookie */
 typedef DEVMEM_FLAGS_T PVRSRV_MEMMAP_FLAGS_T;               /*!< Device-Mem Client-Side Interface: Typedef for Memory-Mapping Flags Enum */
-typedef DEVMEM_SERVER_EXPORTCOOKIE PVRSRV_DEVMEM_SERVER_EXPORTCOOKIE;   /*!< Device-Mem Client-Side Interface: Typedef for Server Export Cookie */
 
 /* N.B.  Flags are now defined in pvrsrv_memallocflags.h as they need
          to be omnipresent. */
@@ -117,8 +118,8 @@ typedef DEVMEM_SERVER_EXPORTCOOKIE PVRSRV_DEVMEM_SERVER_EXPORTCOOKIE;   /*!< Dev
                                 error code
 */ /***************************************************************************/
 extern IMG_IMPORT PVRSRV_ERROR
-PVRSRVCreateDeviceMemContext(const PVRSRV_DEV_DATA *psDev,
-                              PVRSRV_DEVMEMCTX *phCtxOut);
+PVRSRVCreateDeviceMemContext(PVRSRV_DEV_CONNECTION *psDevConnection,
+                             PVRSRV_DEVMEMCTX *phCtxOut);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVDestroyDeviceMemContext
@@ -315,7 +316,14 @@ PVRSRVReleaseDeviceMapping(PVRSRV_MEMDESC hMemDesc);
 /*************************************************************************/ /*!
 @Function       PVRSRVDevmemLocalImport
 
-@Description    Import a PMR that was created with this connection to services.
+@Description    Import a PMR that was created with this connection.
+                The general usage of this function is as follows:
+                1) Create a devmem allocation on server side.
+                2) Pass back the PMR of that allocation to client side by
+                   creating a handle of type PMR_LOCAL_EXPORT_HANDLE.
+                3) Pass the PMR_LOCAL_EXPORT_HANDLE to
+                   PVRSRVMakeLocalImportHandle()to create a new handle type
+                   (DEVMEM_MEM_IMPORT) that can be used with this function.
 
 @Input          hExtHandle              External memory handle
 
@@ -328,7 +336,7 @@ PVRSRVReleaseDeviceMapping(PVRSRV_MEMDESC hMemDesc);
 @Return         PVRSRV_OK is succesful
 */
 /*****************************************************************************/
-PVRSRV_ERROR PVRSRVDevmemLocalImport(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR PVRSRVDevmemLocalImport(const PVRSRV_DEV_CONNECTION *psDevConnection,
 									 IMG_HANDLE hExtHandle,
 									 PVRSRV_MEMMAP_FLAGS_T uiFlags,
 									 PVRSRV_MEMDESC *phMemDescPtr,
@@ -368,7 +376,7 @@ PVRSRV_ERROR PVRSRVDevmemGetImportUID(PVRSRV_MEMDESC hMemDesc,
 @Return         PVRSRV_OK on success. Otherwise, a PVRSRV_ error code
 */ /***************************************************************************/
 PVRSRV_ERROR
-PVRSRVAllocExportableDevMem(const PVRSRV_DEV_DATA *psDevData,
+PVRSRVAllocExportableDevMem(const PVRSRV_DEV_CONNECTION *psDevConnection,
 							IMG_DEVMEM_SIZE_T uiSize,
 							IMG_DEVMEM_LOG2ALIGN_T uiLog2Align,
 							PVRSRV_MEMALLOCFLAGS_T uiFlags,
@@ -414,7 +422,7 @@ PVRSRVChangeSparseDevMem(PVRSRV_MEMDESC psMemDesc,
 				memory context of other processes, or to CPU.
 
                 Size must be a positive integer multiple of the page size
-@Input          psDevData           Device to allocation the memory for
+@Input          psDevConnection     Device to allocation the memory for
 @Input          uiSize              The logical size of allocation
 @Input          uiChunkSize         The size of the chunk
 @Input          ui32NumPhysChunks   The number of physical chunks required
@@ -427,7 +435,7 @@ PVRSRVChangeSparseDevMem(PVRSRV_MEMDESC psMemDesc,
 @Return         PVRSRV_OK on success. Otherwise, a PVRSRV_ error code
 */ /***************************************************************************/
 PVRSRV_ERROR
-PVRSRVAllocSparseDevMem2(const PVRSRV_DEV_DATA *psDevData,
+PVRSRVAllocSparseDevMem2(const PVRSRV_DEV_CONNECTION *psDevConnection,
 						IMG_DEVMEM_SIZE_T uiSize,
 						IMG_DEVMEM_SIZE_T uiChunkSize,
 						IMG_UINT32 ui32NumPhysChunks,
@@ -455,7 +463,7 @@ PVRSRVAllocSparseDevMem2(const PVRSRV_DEV_DATA *psDevData,
                 Size must be a positive integer multiple of the page size
                 This function is deprecated and should not be used in any new code
                 It will be removed in the subsequent changes.
-@Input          psDevData           Device to allocation the memory for
+@Input          psDevConnection     Device to allocation the memory for
 @Input          uiSize              The logical size of allocation
 @Input          uiChunkSize         The size of the chunk
 @Input          ui32NumPhysChunks   The number of physical chunks required
@@ -468,7 +476,7 @@ PVRSRVAllocSparseDevMem2(const PVRSRV_DEV_DATA *psDevData,
 @Return         PVRSRV_OK on success. Otherwise, a PVRSRV_ error code
 */ /***************************************************************************/
 PVRSRV_ERROR
-PVRSRVAllocSparseDevMem(const PVRSRV_DEV_DATA *psDevData,
+PVRSRVAllocSparseDevMem(const PVRSRV_DEV_CONNECTION *psDevConnection,
 						IMG_DEVMEM_SIZE_T uiSize,
 						IMG_DEVMEM_SIZE_T uiChunkSize,
 						IMG_UINT32 ui32NumPhysChunks,
@@ -492,12 +500,44 @@ PVRSRVAllocSparseDevMem(const PVRSRV_DEV_DATA *psDevData,
 IMG_UINT32 PVRSRVGetLog2PageSize(void);
 
 /**************************************************************************/ /*!
+@Function PVRSRVMakeLocalImportHandle
+@Description    This is a "special case" function for making a local import
+                handle. The server handle is a handle to a PMR of bridge type
+                PMR_LOCAL_EXPORT_HANDLE. The returned local import handle will
+                be of the bridge type DEVMEM_MEM_IMPORT that can be used with
+                PVRSRVDevmemLocalImport().
+@Input          psConnection        Services connection
+@Input          hServerHandle       Server export handle
+@Output         hLocalImportHandle  Returned client import handle
+@Return         PVRSRV_ERROR:       PVRSRV_OK on success. Otherwise, a PVRSRV_
+                                    error code
+*/ /***************************************************************************/
+PVRSRV_ERROR
+PVRSRVMakeLocalImportHandle(const PVRSRV_DEV_CONNECTION *psConnection,
+                            IMG_HANDLE hServerHandle,
+                            IMG_HANDLE *hLocalImportHandle);
+
+/**************************************************************************/ /*!
+@Function PVRSRVUnmakeLocalImportHandle
+@Description    Destroy the hLocalImportHandle created with
+                PVRSRVMakeLocalImportHandle().
+@Input          psConnection        Services connection
+@Output         hLocalImportHandle  Local import handle
+@Return         PVRSRV_ERROR:       PVRSRV_OK on success. Otherwise, a PVRSRV_
+                                    error code
+*/ /***************************************************************************/
+PVRSRV_ERROR
+PVRSRVUnmakeLocalImportHandle(const PVRSRV_DEV_CONNECTION *psConnection,
+                              IMG_HANDLE hLocalImportHandle);
+
+#if defined(SUPPORT_INSECURE_EXPORT)
+/**************************************************************************/ /*!
 @Function       PVRSRVExport
 @Description    Given a memory allocation allocated with Devmem_Allocate(),
                 create a "cookie" that can be passed intact by the caller's own
                 choice of secure IPC to another process and used as the argument
                 to "map" to map this memory into a heap in the target processes.
-                N.B.  This can also be used to map into multiple heaps in one 
+                N.B.  This can also be used to map into multiple heaps in one
                 process, though that's not the intention.
 
                 Note, the caller must later call Unexport before freeing the
@@ -510,34 +550,6 @@ IMG_UINT32 PVRSRVGetLog2PageSize(void);
 */ /***************************************************************************/
 PVRSRV_ERROR PVRSRVExportDevMem(PVRSRV_MEMDESC hMemDesc,
 						  		PVRSRV_DEVMEM_EXPORTCOOKIE *phExportCookie);
-
-/**************************************************************************/ /*!
-@Function DevmemMakeServerExportClientExport
-@Description    This is a "special case" function for making a server export 
-                cookie which went through the direct bridge into an export 
-                cookie that can be passed through the client bridge.
-@Input          psConnection        Services connection
-@Input          hServerExportCookie server export cookie
-@Output         psExportCookie      ptr to export cookie
-@Return         PVRSRV_ERROR:       PVRSRV_OK on success. Otherwise, a PVRSRV_
-                                    error code
-*/ /***************************************************************************/
-PVRSRV_ERROR
-PVRSRVMakeServerExportClientExport(const PVRSRV_CONNECTION *psConnection,
-                                   PVRSRV_DEVMEM_SERVER_EXPORTCOOKIE hServerExportCookie,
-                                   PVRSRV_DEVMEM_EXPORTCOOKIE *psExportCookie);
-
-/**************************************************************************/ /*!
-@Function DevmemUnmakeServerExportClientExport
-@Description    Remove any associated resource from the Make operation
-@Input          psConnection        Services connection
-@Output         psExportCookie      ptr to export cookie
-@Return         PVRSRV_ERROR:       PVRSRV_OK on success. Otherwise, a PVRSRV_
-                                    error code
-*/ /***************************************************************************/
-PVRSRV_ERROR
-PVRSRVUnmakeServerExportClientExport(const PVRSRV_CONNECTION *psConnection,
-                                   PVRSRV_DEVMEM_EXPORTCOOKIE *psExportCookie);
 
 /**************************************************************************/ /*!
 @Function       PVRSRVUnexport
@@ -574,10 +586,11 @@ PVRSRV_ERROR PVRSRVUnexportDevMem(PVRSRV_MEMDESC hMemDesc,
 @Return         PVRSRV_ERROR:   PVRSRV_OK on success. Otherwise, a PVRSRV_
                                 error code
 */ /***************************************************************************/
-PVRSRV_ERROR PVRSRVImportDevMem(const PVRSRV_CONNECTION *psConnection,
+PVRSRV_ERROR PVRSRVImportDevMem(const PVRSRV_DEV_CONNECTION *psConnection,
 								PVRSRV_DEVMEM_EXPORTCOOKIE *phExportCookie,
 								PVRSRV_MEMMAP_FLAGS_T uiFlags,
 								PVRSRV_MEMDESC *phMemDescOut);
+#endif /* SUPPORT_INSECURE_EXPORT */
 
 /**************************************************************************/ /*!
 @Function       PVRSRVIsDeviceMemAddrValid
@@ -708,7 +721,7 @@ PVRSRVExportDevmemContext(PVRSRV_DEVMEMCTX hCtx,
 @Return         None
 */ /***************************************************************************/
 void
-PVRSRVUnexportDevmemContext(PVRSRV_CONNECTION *psConnection,
+PVRSRVUnexportDevmemContext(PVRSRV_DEV_CONNECTION *psConnection,
 							IMG_HANDLE hExport);
 
 /**************************************************************************/ /*!
@@ -725,7 +738,7 @@ PVRSRVUnexportDevmemContext(PVRSRV_CONNECTION *psConnection,
 @Return         None
 */ /***************************************************************************/
 PVRSRV_ERROR
-PVRSRVImportDeviceMemContext(PVRSRV_CONNECTION *psConnection,
+PVRSRVImportDeviceMemContext(PVRSRV_DEV_CONNECTION *psConnection,
 							 IMG_HANDLE hExport,
 							 PVRSRV_DEVMEMCTX *phCtxOut);
 

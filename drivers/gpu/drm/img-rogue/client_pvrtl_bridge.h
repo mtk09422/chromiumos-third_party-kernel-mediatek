@@ -53,7 +53,7 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeTLOpenStream(IMG_HANDLE hBridge,
 							  IMG_CHAR *puiName,
 							  IMG_UINT32 ui32Mode,
 							  IMG_HANDLE *phSD,
-							  DEVMEM_SERVER_EXPORTCOOKIE *phClientBUFExportCookie);
+							  IMG_HANDLE *phTLPMR);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeTLCloseStream(IMG_HANDLE hBridge,
 							   IMG_HANDLE hSD);

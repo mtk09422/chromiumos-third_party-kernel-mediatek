@@ -1,6 +1,8 @@
 /*************************************************************************/ /*!
-@Title          RGX Core BVNC 1.48.2.0
+@File
+@Title          PowerVR Linux fence interface
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
+@Description    drm module
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -39,34 +41,23 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-#ifndef _RGXCORE_KM_1_48_2_0_H_
-#define _RGXCORE_KM_1_48_2_0_H_
+#if !defined(__PVR_LINUX_FENCE_H__)
+#define __PVR_LINUX_FENCE_H__
 
-/***** Automatically generated file (2/4/2015 8:57:33 PM): Do not edit manually ********************/
-/***** Timestamp:  (2/4/2015 8:57:33 PM)************************************************************/
-/***** CS: @2523218 ******************************************************************/
+#include <linux/reservation.h>
 
+#include "img_types.h"
 
-/******************************************************************************
- * BVNC = 1.48.2.0 
- *****************************************************************************/
-#define RGX_BVNC_KM_B 1
-#define RGX_BVNC_KM_V 48
-#define RGX_BVNC_KM_N 2
-#define RGX_BVNC_KM_C 0
+typedef	struct _LINUX_FENCE_CONTEXT_	LINUX_FENCE_CONTEXT;	
+typedef struct _SERVER_SYNC_PRIMITIVE_	SERVER_SYNC_PRIMITIVE;
 
-/******************************************************************************
- * Errata 
- *****************************************************************************/
+int pvr_linux_create_fence_context(LINUX_FENCE_CONTEXT **psContext, bool shared);
+void pvr_linux_destroy_fence_context(LINUX_FENCE_CONTEXT *psContext);
 
-#define FIX_HW_BRN_38344
+int pvr_linux_fence_attach(LINUX_FENCE_CONTEXT *psContext, SERVER_SYNC_PRIMITIVE *psSync, struct reservation_object *resv);
+int pvr_linux_fence_create(LINUX_FENCE_CONTEXT *psContext, SERVER_SYNC_PRIMITIVE *psSync);
 
+int pvr_linux_fence_init(void);
+void pvr_linux_fence_deinit(void);
 
- 
-/******************************************************************************
- * Enhancements 
- *****************************************************************************/
-
-
-
-#endif /* _RGXCORE_KM_1_48_2_0_H_ */
+#endif /* !defined(__PVR_LINUX_FENCE_H__) */

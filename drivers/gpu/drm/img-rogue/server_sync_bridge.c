@@ -60,10 +60,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -79,10 +75,10 @@ PVRSRVBridgeAllocSyncPrimitiveBlock(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_ALLOCSYNCPRIMITIVEBLOCK *psAllocSyncPrimitiveBlockOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	SYNC_PRIMITIVE_BLOCK * psSyncHandleInt = NULL;
-	DEVMEM_EXPORTCOOKIE * psExportCookieInt = NULL;
+	PMR * pshSyncPMRInt = NULL;
 
+	PVR_UNREFERENCED_PARAMETER(psAllocSyncPrimitiveBlockIN);
 
 
 	psAllocSyncPrimitiveBlockOUT->hSyncHandle = NULL;
@@ -90,27 +86,12 @@ PVRSRVBridgeAllocSyncPrimitiveBlock(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psAllocSyncPrimitiveBlockOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psAllocSyncPrimitiveBlockIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psAllocSyncPrimitiveBlockOUT->eError != PVRSRV_OK)
-					{
-						goto AllocSyncPrimitiveBlock_exit;
-					}
-				}
-
-
 	psAllocSyncPrimitiveBlockOUT->eError =
-		PVRSRVAllocSyncPrimitiveBlockKM(psConnection,
-					hDevNodeInt,
+		PVRSRVAllocSyncPrimitiveBlockKM(psConnection, OSGetDevData(psConnection),
 					&psSyncHandleInt,
 					&psAllocSyncPrimitiveBlockOUT->ui32SyncPrimVAddr,
 					&psAllocSyncPrimitiveBlockOUT->ui32SyncPrimBlockSize,
-					&psExportCookieInt);
+					&pshSyncPMRInt);
 	/* Exit early if bridged call fails */
 	if(psAllocSyncPrimitiveBlockOUT->eError != PVRSRV_OK)
 	{
@@ -131,9 +112,9 @@ PVRSRVBridgeAllocSyncPrimitiveBlock(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psAllocSyncPrimitiveBlockOUT->eError = PVRSRVAllocSubHandle(psConnection->psHandleBase,
-							&psAllocSyncPrimitiveBlockOUT->hExportCookie,
-							(void *) psExportCookieInt,
-							PVRSRV_HANDLE_TYPE_SERVER_EXPORTCOOKIE,
+							&psAllocSyncPrimitiveBlockOUT->hhSyncPMR,
+							(void *) pshSyncPMRInt,
+							PVRSRV_HANDLE_TYPE_PMR_LOCAL_EXPORT_HANDLE,
 							PVRSRV_HANDLE_ALLOC_FLAG_NONE
 							,psAllocSyncPrimitiveBlockOUT->hSyncHandle);
 	if (psAllocSyncPrimitiveBlockOUT->eError != PVRSRV_OK)
@@ -419,7 +400,6 @@ PVRSRVBridgeServerSyncAlloc(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_SERVERSYNCALLOC *psServerSyncAllocOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	SERVER_SYNC_PRIMITIVE * psSyncHandleInt = NULL;
 	IMG_CHAR *uiClassNameInt = NULL;
 
@@ -449,23 +429,8 @@ PVRSRVBridgeServerSyncAlloc(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psServerSyncAllocOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psServerSyncAllocIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psServerSyncAllocOUT->eError != PVRSRV_OK)
-					{
-						goto ServerSyncAlloc_exit;
-					}
-				}
-
-
 	psServerSyncAllocOUT->eError =
-		PVRSRVServerSyncAllocKM(
-					hDevNodeInt,
+		PVRSRVServerSyncAllocKM(psConnection, OSGetDevData(psConnection),
 					&psSyncHandleInt,
 					&psServerSyncAllocOUT->ui32SyncPrimVAddr,
 					psServerSyncAllocIN->ui32ClassNameSize,

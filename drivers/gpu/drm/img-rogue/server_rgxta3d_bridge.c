@@ -59,10 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "srvcore.h"
 #include "handle.h"
 
-#if defined (SUPPORT_AUTH)
-#include "osauth.h"
-#endif
-
 #include <linux/slab.h>
 
 
@@ -78,7 +74,6 @@ PVRSRVBridgeRGXCreateHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATEHWRTDATA *psRGXCreateHWRTDataOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	RGX_FREELIST * *psapsFreeListsInt = NULL;
 	IMG_HANDLE *hapsFreeListsInt2 = NULL;
 	RGX_RTDATA_CLEANUP_DATA * psCleanupCookieInt = NULL;
@@ -119,20 +114,6 @@ PVRSRVBridgeRGXCreateHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psRGXCreateHWRTDataOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateHWRTDataIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateHWRTDataOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateHWRTData_exit;
-					}
-				}
-
-
 	{
 		IMG_UINT32 i;
 
@@ -155,8 +136,7 @@ PVRSRVBridgeRGXCreateHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 	}
 
 	psRGXCreateHWRTDataOUT->eError =
-		RGXCreateHWRTData(
-					hDevNodeInt,
+		RGXCreateHWRTData(psConnection, OSGetDevData(psConnection),
 					psRGXCreateHWRTDataIN->ui32RenderTarget,
 					psRGXCreateHWRTDataIN->sPMMlistDevVAddr,
 					psRGXCreateHWRTDataIN->sVFPPageTableAddr,
@@ -297,7 +277,6 @@ PVRSRVBridgeRGXCreateRenderTarget(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATERENDERTARGET *psRGXCreateRenderTargetOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	RGX_RT_CLEANUP_DATA * pssRenderTargetMemDescInt = NULL;
 
 
@@ -306,23 +285,8 @@ PVRSRVBridgeRGXCreateRenderTarget(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-				{
-					/* Look up the address from the handle */
-					psRGXCreateRenderTargetOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateRenderTargetIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateRenderTargetOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateRenderTarget_exit;
-					}
-				}
-
-
 	psRGXCreateRenderTargetOUT->eError =
-		RGXCreateRenderTarget(
-					hDevNodeInt,
+		RGXCreateRenderTarget(psConnection, OSGetDevData(psConnection),
 					psRGXCreateRenderTargetIN->spsVHeapTableDevVAddr,
 					&pssRenderTargetMemDescInt,
 					&psRGXCreateRenderTargetOUT->ui32sRenderTargetFWDevVAddr);
@@ -398,7 +362,6 @@ PVRSRVBridgeRGXCreateZSBuffer(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATEZSBUFFER *psRGXCreateZSBufferOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	DEVMEMINT_RESERVATION * psReservationInt = NULL;
 	PMR * psPMRInt = NULL;
 	RGX_ZSBUFFER_DATA * pssZSBufferKMInt = NULL;
@@ -407,20 +370,6 @@ PVRSRVBridgeRGXCreateZSBuffer(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXCreateZSBufferOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateZSBufferIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateZSBufferOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateZSBuffer_exit;
-					}
-				}
 
 
 				{
@@ -452,8 +401,7 @@ PVRSRVBridgeRGXCreateZSBuffer(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXCreateZSBufferOUT->eError =
-		RGXCreateZSBufferKM(
-					hDevNodeInt,
+		RGXCreateZSBufferKM(psConnection, OSGetDevData(psConnection),
 					psReservationInt,
 					psPMRInt,
 					psRGXCreateZSBufferIN->uiMapFlags,
@@ -630,7 +578,6 @@ PVRSRVBridgeRGXCreateFreeList(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATEFREELIST *psRGXCreateFreeListOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	PMR * pssFreeListPMRInt = NULL;
 	RGX_FREELIST * psCleanupCookieInt = NULL;
 
@@ -638,20 +585,6 @@ PVRSRVBridgeRGXCreateFreeList(IMG_UINT32 ui32DispatchTableEntry,
 
 
 
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXCreateFreeListOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateFreeListIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateFreeListOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateFreeList_exit;
-					}
-				}
 
 
 				{
@@ -669,8 +602,7 @@ PVRSRVBridgeRGXCreateFreeList(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXCreateFreeListOUT->eError =
-		RGXCreateFreeList(
-					hDevNodeInt,
+		RGXCreateFreeList(psConnection, OSGetDevData(psConnection),
 					psRGXCreateFreeListIN->ui32ui32MaxFLPages,
 					psRGXCreateFreeListIN->ui32ui32InitFLPages,
 					psRGXCreateFreeListIN->ui32ui32GrowFLPages,
@@ -832,7 +764,6 @@ PVRSRVBridgeRGXCreateRenderContext(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_OUT_RGXCREATERENDERCONTEXT *psRGXCreateRenderContextOUT,
 					 CONNECTION_DATA *psConnection)
 {
-	IMG_HANDLE hDevNodeInt = NULL;
 	IMG_BYTE *psFrameworkCmdInt = NULL;
 	IMG_HANDLE hPrivDataInt = NULL;
 	RGX_SERVER_RENDER_CONTEXT * psRenderContextInt = NULL;
@@ -867,20 +798,6 @@ PVRSRVBridgeRGXCreateRenderContext(IMG_UINT32 ui32DispatchTableEntry,
 					/* Look up the address from the handle */
 					psRGXCreateRenderContextOUT->eError =
 						PVRSRVLookupHandle(psConnection->psHandleBase,
-											(void **) &hDevNodeInt,
-											psRGXCreateRenderContextIN->hDevNode,
-											PVRSRV_HANDLE_TYPE_DEV_NODE);
-					if(psRGXCreateRenderContextOUT->eError != PVRSRV_OK)
-					{
-						goto RGXCreateRenderContext_exit;
-					}
-				}
-
-
-				{
-					/* Look up the address from the handle */
-					psRGXCreateRenderContextOUT->eError =
-						PVRSRVLookupHandle(psConnection->psHandleBase,
 											(void **) &hPrivDataInt,
 											psRGXCreateRenderContextIN->hPrivData,
 											PVRSRV_HANDLE_TYPE_DEV_PRIV_DATA);
@@ -892,8 +809,7 @@ PVRSRVBridgeRGXCreateRenderContext(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXCreateRenderContextOUT->eError =
-		PVRSRVRGXCreateRenderContextKM(psConnection,
-					hDevNodeInt,
+		PVRSRVRGXCreateRenderContextKM(psConnection, OSGetDevData(psConnection),
 					psRGXCreateRenderContextIN->ui32Priority,
 					psRGXCreateRenderContextIN->sMCUFenceAddr,
 					psRGXCreateRenderContextIN->sVDMCallStackAddr,
@@ -1560,7 +1476,7 @@ PVRSRVBridgeRGXSetRenderContextPriority(IMG_UINT32 ui32DispatchTableEntry,
 
 
 	psRGXSetRenderContextPriorityOUT->eError =
-		PVRSRVRGXSetRenderContextPriorityKM(psConnection,
+		PVRSRVRGXSetRenderContextPriorityKM(psConnection, OSGetDevData(psConnection),
 					psRenderContextInt,
 					psRGXSetRenderContextPriorityIN->ui32Priority);
 

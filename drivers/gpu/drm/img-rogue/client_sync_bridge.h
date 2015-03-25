@@ -50,11 +50,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common_sync_bridge.h"
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeAllocSyncPrimitiveBlock(IMG_HANDLE hBridge,
-								     IMG_HANDLE hDevNode,
 								     IMG_HANDLE *phSyncHandle,
 								     IMG_UINT32 *pui32SyncPrimVAddr,
 								     IMG_UINT32 *pui32SyncPrimBlockSize,
-								     DEVMEM_SERVER_EXPORTCOOKIE *phExportCookie);
+								     IMG_HANDLE *phhSyncPMR);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeFreeSyncPrimitiveBlock(IMG_HANDLE hBridge,
 								    IMG_HANDLE hSyncHandle);
@@ -81,7 +80,6 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeSyncRecordAdd(IMG_HANDLE hBridge,
 							   const IMG_CHAR *puiClassName);
 
 IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeServerSyncAlloc(IMG_HANDLE hBridge,
-							     IMG_HANDLE hDevNode,
 							     IMG_HANDLE *phSyncHandle,
 							     IMG_UINT32 *pui32SyncPrimVAddr,
 							     IMG_UINT32 ui32ClassNameSize,

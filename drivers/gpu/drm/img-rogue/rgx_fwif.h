@@ -44,9 +44,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if !defined (__RGX_FWIF_H__)
 #define __RGX_FWIF_H__
 
-#include "rgx_meta.h"
+#include "rgx_firmware_processor.h"
 #include "rgx_fwif_shared.h"
-
 #include "pvr_tlcommon.h"
 
 /*************************************************************************/ /*!
@@ -132,7 +131,12 @@ typedef void (*PFN_RGXFW_LOG) (const IMG_CHAR* pszFmt, ...);
  * Firmware and host driver. */
 #define RGXFW_HWPERF_L1_SIZE_MIN		(0x004000)
 #define RGXFW_HWPERF_L1_SIZE_DEFAULT    (0x040000)
+#if defined(RGX_FEATURE_META)
 #define RGXFW_HWPERF_L1_SIZE_MAX        (0xC00000)
+#else
+/* For MIPS there is a lower maximum given stricter limits on the firmware heap size */
+#define RGXFW_HWPERF_L1_SIZE_MAX        (0x200000)
+#endif
 /* This padding value must always be greater than or equal to
  * RGX_HWPERF_V2_MAX_PACKET_SIZE for all valid BVNCs. This is asserted in
  * rgxsrvinit.c. This macro is defined with a constant to avoid a KM
@@ -235,7 +239,8 @@ typedef struct _RGXFWIF_TRACEBUF_
 
 	volatile IMG_UINT32			ui32InterruptCount;
 	IMG_UINT32				ui32KCCBCmdsExecuted;
-    IMG_UINT64 RGXFW_ALIGN	ui64StartIdleTime;
+	IMG_UINT64 RGXFW_ALIGN			ui64StartIdleTime;
+	IMG_UINT32				ui32PowMonEnergy;	/* Non-volatile power monitor energy count */
 } UNCACHED_ALIGN RGXFWIF_TRACEBUF;
 
 
@@ -314,14 +319,19 @@ typedef struct _RGXFWIF_TRACEBUF_
  * will read old data, which is still quite ok if the Host is updating the timer
  * correlation at that time.
  */
-#define RGXFWIF_TIME_CORR_ARRAY_SIZE	256
+#define RGXFWIF_TIME_CORR_ARRAY_SIZE            256
+#define RGXFWIF_TIME_CORR_CURR_INDEX(seqcount)  ((seqcount) % RGXFWIF_TIME_CORR_ARRAY_SIZE)
+
+/* Make sure the timer correlation array size is a power of 2 */
+BLD_ASSERT(((RGXFWIF_TIME_CORR_ARRAY_SIZE & (RGXFWIF_TIME_CORR_ARRAY_SIZE - 1)) == 0), rgx_fwif_h)
 
 typedef IMG_UINT64 RGXFWIF_GPU_UTIL_FWCB_ENTRY;
 
 typedef struct _RGXFWIF_GPU_UTIL_FWCB_
 {
 	RGXFWIF_TIME_CORR sTimeCorr[RGXFWIF_TIME_CORR_ARRAY_SIZE];
-	IMG_UINT32        ui32TimeCorrCurrent;
+	IMG_UINT32        ui32TimeCorrSeqCount;
+
 	IMG_UINT32        ui32WriteOffset;
 	IMG_UINT32        ui32LastGpuUtilState;
 	IMG_UINT32        ui32CurrentDVFSId;
@@ -386,22 +396,21 @@ typedef struct _RGX_HWRINFO_
 {
 	union
 	{
-		RGX_BIFINFO		sBIFInfo;
-		RGX_MMUINFO		sMMUInfo;
-		RGX_POLLINFO	sPollInfo;
+		RGX_BIFINFO  sBIFInfo;
+		RGX_MMUINFO  sMMUInfo;
+		RGX_POLLINFO sPollInfo;
 	} uHWRData;
 
-	IMG_UINT64	RGXFW_ALIGN		ui64CRTimer;
-	IMG_UINT32					ui32FrameNum;
-	IMG_UINT32					ui32PID;
-	IMG_UINT32					ui32ActiveHWRTData;
-	IMG_UINT32					ui32HWRNumber;
-	IMG_UINT32					ui32EventStatus;
-	IMG_UINT32					ui32HWRRecoveryFlags;
-	RGX_HWRTYPE 				eHWRType;
-	RGXFWIF_TIME_CORR			sTimeCorr;
-
-	RGXFWIF_DM					eDM;
+	IMG_UINT64 RGXFW_ALIGN ui64CRTimer;
+	IMG_UINT64 RGXFW_ALIGN ui64OSTimer;
+	IMG_UINT32             ui32FrameNum;
+	IMG_UINT32             ui32PID;
+	IMG_UINT32             ui32ActiveHWRTData;
+	IMG_UINT32             ui32HWRNumber;
+	IMG_UINT32             ui32EventStatus;
+	IMG_UINT32             ui32HWRRecoveryFlags;
+	RGX_HWRTYPE            eHWRType;
+	RGXFWIF_DM             eDM;
 } UNCACHED_ALIGN RGX_HWRINFO;
 
 #define RGXFWIF_HWINFO_MAX_FIRST 8							/* Number of first HWR logs recorded (never overwritten by newer logs) */
@@ -418,6 +427,11 @@ typedef struct _RGXFWIF_HWRINFOBUF_
 	IMG_UINT32	ui32DDReqCount;
 } UNCACHED_ALIGN RGXFWIF_HWRINFOBUF;
 
+
+#define RGXFWIF_CTXSWITCH_PROFILE_FAST_EN		(1)
+#define RGXFWIF_CTXSWITCH_PROFILE_MEDIUM_EN		(2)
+#define RGXFWIF_CTXSWITCH_PROFILE_SLOW_EN		(3)
+#define RGXFWIF_CTXSWITCH_PROFILE_NODELAY_EN	(4)
 
 /*!
  ******************************************************************************
@@ -448,7 +462,13 @@ typedef struct _RGXFWIF_HWRINFOBUF_
 #define RGXFWIF_INICFG_CUSTOM_PERF_TIMER_EN	(0x1 << 19)
 #define RGXFWIF_INICFG_CDM_KILL_MODE_RAND_EN	(0x1 << 20)
 #define RGXFWIF_INICFG_DISABLE_DM_OVERLAP	(0x1 << 21)
-#define RGXFWIF_INICFG_ALL					(0x003FFFDFU)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_FAST		(RGXFWIF_CTXSWITCH_PROFILE_FAST_EN << 22)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_MEDIUM		(RGXFWIF_CTXSWITCH_PROFILE_MEDIUM_EN << 22)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_SLOW		(RGXFWIF_CTXSWITCH_PROFILE_SLOW_EN << 22)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_NODELAY	(RGXFWIF_CTXSWITCH_PROFILE_NODELAY_EN << 22)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_MASK		(0x7 << 22)
+#define RGXFWIF_INICFG_CTXSWITCH_PROFILE_SHIFT		(22)
+#define RGXFWIF_INICFG_ALL					(0x00FFFFDFU)
 #define RGXFWIF_SRVCFG_DISABLE_PDP_EN 		(0x1 << 31)
 #define RGXFWIF_SRVCFG_ALL					(0x80000000U)
 #define RGXFWIF_FILTCFG_TRUNCATE_HALF		(0x1 << 3)

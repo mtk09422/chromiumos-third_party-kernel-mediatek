@@ -82,27 +82,28 @@ typedef struct _RGXFWIF_DMA_ADDR_
 typedef IMG_UINT8	RGXFWIF_CCCB;
 
 #if defined(RGX_FIRMWARE)
-typedef RGXFWIF_CCCB					*PRGXFWINT_CCCB;
-typedef struct _RGXFWIF_CCCB_CTL_		*PRGXFWINT_CCCB_CTL;
-typedef struct _RGXFWIF_RENDER_TARGET_	*PRGXFWINT_RENDER_TARGET;
-typedef struct _RGXFWIF_HWRTDATA_		*PRGXFWINT_HWRTDATA;
-typedef struct _RGXFWIF_FREELIST_		*PRGXFWINT_FREELIST;
-typedef struct _RGXFWIF_RAY_FRAME_DATA_	*PRGXFWINT_RAY_FRAME_DATA;
-typedef struct _RGXFWIF_RPM_FREELIST_	*PRGXFWINT_RPM_FREELIST;
-typedef struct _RGXFWIF_RTA_CTL_		*PRGXFWINT_RTA_CTL;
-typedef IMG_UINT32						*PRGXFWINT_UFO_ADDR;
-typedef struct _RGXFWIF_CLEANUP_CTL_	*PRGXFWINT_CLEANUP_CTL;
+typedef RGXFWIF_CCCB                    *PRGXFWINT_CCCB;
+typedef struct _RGXFWIF_CCCB_CTL_       *PRGXFWINT_CCCB_CTL;
+typedef struct _RGXFWIF_RENDER_TARGET_  *PRGXFWINT_RENDER_TARGET;
+typedef struct _RGXFWIF_HWRTDATA_       *PRGXFWINT_HWRTDATA;
+typedef struct _RGXFWIF_FREELIST_       *PRGXFWINT_FREELIST;
+typedef struct _RGXFWIF_RAY_FRAME_DATA_ *PRGXFWINT_RAY_FRAME_DATA;
+typedef struct _RGXFWIF_RPM_FREELIST_   *PRGXFWINT_RPM_FREELIST;
+typedef struct _RGXFWIF_RTA_CTL_        *PRGXFWINT_RTA_CTL;
+typedef IMG_UINT32                      *PRGXFWINT_UFO_ADDR;
+typedef struct _RGXFWIF_CLEANUP_CTL_    *PRGXFWINT_CLEANUP_CTL;
 #endif
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_CCCB;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_CCCB_CTL;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_RENDER_TARGET;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_HWRTDATA;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_FREELIST;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_RAY_FRAME_DATA;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_RPM_FREELIST;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_RTA_CTL;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_UFO_ADDR;
-typedef RGXFWIF_DEV_VIRTADDR	PRGXFWIF_CLEANUP_CTL;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_CCCB;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_CCCB_CTL;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_RENDER_TARGET;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_HWRTDATA;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_FREELIST;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_RAY_FRAME_DATA;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_RPM_FREELIST;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_RTA_CTL;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_UFO_ADDR;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_CLEANUP_CTL;
+typedef RGXFWIF_DEV_VIRTADDR  PRGXFWIF_TIMESTAMP_ADDR;
 
 /* FIXME PRGXFWIF_UFO_ADDR and RGXFWIF_UFO should move back into rgx_fwif_client.h */
 typedef struct _RGXFWIF_UFO_
@@ -369,13 +370,13 @@ typedef struct _RGXFWIF_COMPCHECKS_BVNC_
 
 typedef struct _RGXFWIF_COMPCHECKS_
 {
-	RGXFWIF_COMPCHECKS_BVNC		sHWBVNC;			/*!< hardware BNC (from the RGX registers) */
-	RGXFWIF_COMPCHECKS_BVNC		sFWBVNC;			/*!< firmware BNC */
-	IMG_UINT32					ui32METAVersion;
-	IMG_UINT32					ui32DDKVersion;		/*!< software DDK version */
-	IMG_UINT32					ui32DDKBuild;		/*!< software DDK build no. */
-	IMG_UINT32					ui32BuildOptions;	/*!< build options bit-field */
-	IMG_BOOL					bUpdated;			/*!< Information is valid */
+	RGXFWIF_COMPCHECKS_BVNC		sHWBVNC;				 /*!< hardware BNC (from the RGX registers) */
+	RGXFWIF_COMPCHECKS_BVNC		sFWBVNC;				 /*!< firmware BNC */
+	IMG_UINT32					ui32FWProcessorVersion;  /*!< identifier of the MIPS/META version */
+	IMG_UINT32					ui32DDKVersion;			 /*!< software DDK version */
+	IMG_UINT32					ui32DDKBuild;			 /*!< software DDK build no. */
+	IMG_UINT32					ui32BuildOptions;		 /*!< build options bit-field */
+	IMG_BOOL					bUpdated;				 /*!< Information is valid */
 } UNCACHED_ALIGN RGXFWIF_COMPCHECKS;
 
 
@@ -459,37 +460,58 @@ typedef struct _RGXFWIF_TIME_CORR_
 	IMG_UINT64 RGXFW_ALIGN ui64OSTimeStamp;
 	IMG_UINT64 RGXFW_ALIGN ui64CRTimeStamp;
 	IMG_UINT32             ui32CoreClockSpeed;
+
+	/* Utility variable used to convert CR timer deltas to OS timer deltas (nS),
+	 * where the deltas are relative to the timestamps above:
+	 * deltaOS = (deltaCR * K) >> decimal_shift, see full explanation below */
+	IMG_UINT32             ui32CRDeltaToOSDeltaKNs;
 } UNCACHED_ALIGN RGXFWIF_TIME_CORR;
 
-typedef struct _RGXFWIF_TIMESTAMP_
-{
-	RGXFWIF_TIME_CORR      sTimeCorr;
-	IMG_UINT64 RGXFW_ALIGN ui64Timestamp;
-} UNCACHED_ALIGN RGXFWIF_TIMESTAMP;
 
-
-/* This macros are used to help converting FW timestamps to the Host time domain.
+/* These macros are used to help converting FW timestamps to the Host time domain.
  * On the FW the RGX_CR_TIMER counter is used to keep track of the time;
  * it increments by 1 every 256 GPU clock ticks, so the general formula
  * to perform the conversion is:
  *
- *              (CR2 - CR1) * 256           [ OS timestamps in nS, GPU freq.
- * OS2 - OS1 = ------------------- * 10^9     in Hz, to get the result in uS
- *                GPUclockspeed               multiply by 10^6 rather than 10^9 ]
+ * [ GPU clock speed in Hz, if (scale == 10^9) then deltaOS is in nS,
+ *   otherwise if (scale == 10^6) then deltaOS is in uS ]
  *
- * The calculations are arranged in a way to minimise the errors in the result,
- * but in the nS macro the tradeoff is that the maximum delta OS is slightly more
- * than 5hrs with the GPU running at 1Ghz. This should be enough in most cases.
+ *             deltaCR * 256                                   256 * scale
+ *  deltaOS = --------------- * scale = deltaCR * K    [ K = --------------- ]
+ *             GPUclockspeed                                  GPUclockspeed
+ *
+ * The actual K is multiplied by 2^20 (and deltaCR * K is divided by 2^20)
+ * to get some better accuracy and to avoid returning 0 in the integer
+ * division 256000000/GPUfreq if GPUfreq is greater than 256MHz.
+ * This is the same as keeping K as a decimal number.
+ *
+ * The maximum deltaOS is slightly more than 5hrs for all GPU frequencies
+ * (deltaCR * K is more or less a costant), and it's relative to
+ * the base OS timestamp sampled as a part of the timer correlation data.
+ * This base is refreshed on GPU power-on, DVFS transition and
+ * periodic frequency calibration (executed every few seconds if the FW is
+ * doing some work), so as long as the GPU is doing something and one of these
+ * events is triggered then deltaCR * K will not overflow and deltaOS will be
+ * correct.
  */
-#define RGXFWIF_GET_DELTA_OSTIME(deltacr, scale, clockfreq, remainder) \
-	OSDivide64r64((deltacr) * (256 * (scale)), ((clockfreq) + 500) / 1000, &(remainder))
 
-#define RGXFWIF_GET_DELTA_OSTIME_NS(deltacr, clockfreq, remainder) \
-	RGXFWIF_GET_DELTA_OSTIME(deltacr, 1000000, clockfreq, remainder)
+#define RGXFWIF_CRDELTA_TO_OSDELTA_ACCURACY_SHIFT  (20)
+
+#define RGXFWIF_GET_CRDELTA_TO_OSDELTA_K_NS(clockfreq, remainder) \
+	OSDivide64((256000000ULL << RGXFWIF_CRDELTA_TO_OSDELTA_ACCURACY_SHIFT), \
+	           ((clockfreq) + 500) / 1000, \
+	           &(remainder))
+
+#define RGXFWIF_GET_DELTA_OSTIME_NS(deltaCR, K) \
+	( ((deltaCR) * (K)) >> RGXFWIF_CRDELTA_TO_OSDELTA_ACCURACY_SHIFT)
 
 #define RGXFWIF_GET_DELTA_OSTIME_US(deltacr, clockfreq, remainder) \
-	RGXFWIF_GET_DELTA_OSTIME(deltacr, 1000, clockfreq, remainder)
+	OSDivide64r64((deltacr) * 256000, ((clockfreq) + 500) / 1000, &(remainder))
 
+/* Use this macro to get a more realistic GPU core clock speed than
+ * the one given by the upper layers (used when doing GPU frequency
+ * calibration)
+ */
 #define RGXFWIF_GET_GPU_CLOCK_FREQUENCY_HZ(deltacr_us, deltaos_us, remainder) \
 	OSDivide64((deltacr_us) * 256000000, (deltaos_us), &(remainder))
 
