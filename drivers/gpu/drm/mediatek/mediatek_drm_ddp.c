@@ -299,7 +299,7 @@ void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	int x, int y)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	void __iomem *drm_disp_base = mtk_crtc->regs;
+	void __iomem *drm_disp_base;
 	unsigned int reg;
 /*	unsigned int layer = 1; */
 	unsigned int width = 64;
@@ -310,10 +310,11 @@ void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	unsigned char alpha = 0xFF;
 	unsigned int fmt = OVL_INFMT_ARGB8888;
 
+	BUG_ON(mtk_crtc->pipe >= 2);
+	drm_disp_base = mtk_crtc->ovl_regs[mtk_crtc->pipe];
+
 	if (width + x > crtc->mode.hdisplay)
 		width = crtc->mode.hdisplay - min(x, crtc->mode.hdisplay);
-
-	OVLStop(drm_disp_base, mtk_crtc->pipe);
 
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
 	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
@@ -331,8 +332,6 @@ void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	writel(y << 16 | x, drm_disp_base + DISP_REG_OVL_L1_OFFSET);
 	writel(addr, drm_disp_base + DISP_REG_OVL_L1_ADDR);
 	writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L1_PITCH);
-
-	OVLStart(drm_disp_base, mtk_crtc->pipe);
 }
 
 void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
