@@ -28,7 +28,6 @@
 /* ------------------------------------------------------------------------- */
 static char debug_buffer[2048];
 void __iomem *gdrm_disp_base[9];
-void __iomem *gdrm_hdmi_base[5];
 int gdrm_disp_table[9] = {
 	0x14000000,
 	0x1400c000,
@@ -39,14 +38,6 @@ int gdrm_disp_table[9] = {
 	0x1401b000,
 	0x14020000,
 	0x14023000
-};
-
-int gdrm_hdmi_table[5] = {
-	0x14000000,	/* CONFIG */
-	0x1400d000,	/* OVL1 */
-	0x1400f000,	/* RDMA1 */
-	0x14014000,	/* COLOR1 */
-	0x14016000	/* GAMMA */
 };
 
 /* ------------------------------------------------------------------------- */
@@ -98,15 +89,6 @@ static void process_dbg_opt(const char *opt)
 				break;
 			}
 		}
-
-		for (i = 0; i < sizeof(gdrm_hdmi_table)/sizeof(int); i++) {
-			if (addr > gdrm_hdmi_table[i] &&
-			addr < gdrm_hdmi_table[i] + 0x1000) {
-				addr -= gdrm_hdmi_table[i];
-				writel(val, gdrm_hdmi_base[i] + addr);
-				break;
-			}
-		}
 	} else if (0 == strncmp(opt, "regr:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned long addr;
@@ -122,17 +104,6 @@ static void process_dbg_opt(const char *opt)
 				DRM_INFO("Read register 0x%08X: 0x%08X\n",
 					(unsigned int)addr + gdrm_disp_table[i],
 					readl(gdrm_disp_base[i] + addr));
-				break;
-			}
-		}
-
-		for (i = 0; i < sizeof(gdrm_hdmi_table)/sizeof(int); i++) {
-			if (addr >= gdrm_hdmi_table[i] &&
-			addr < gdrm_hdmi_table[i] + 0x1000) {
-				addr -= gdrm_hdmi_table[i];
-				DRM_INFO("Read register 0x%08X: 0x%08X\n",
-					(unsigned int)addr + gdrm_hdmi_table[i],
-					readl(gdrm_hdmi_base[i] + addr));
 				break;
 			}
 		}
@@ -251,67 +222,6 @@ static void process_dbg_opt(const char *opt)
 			readl(gdrm_disp_base[8] + i + 4),
 			readl(gdrm_disp_base[8] + i + 8),
 			readl(gdrm_disp_base[8] + i + 12));
-	} else if (0 == strncmp(opt, "hdmi:", 5)) {
-		int i;
-
-		/* CONFIG */
-		for (i = 0; i < 0x120; i += 16)
-			DRM_INFO("CFG    0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[0] + i,
-			readl(gdrm_hdmi_base[0] + i),
-			readl(gdrm_hdmi_base[0] + i + 4),
-			readl(gdrm_hdmi_base[0] + i + 8),
-			readl(gdrm_hdmi_base[0] + i + 12));
-
-		/* OVL1 */
-		for (i = 0; i < 0x260; i += 16)
-			DRM_INFO("OVL1   0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[1] + i,
-			readl(gdrm_hdmi_base[1] + i),
-			readl(gdrm_hdmi_base[1] + i + 4),
-			readl(gdrm_hdmi_base[1] + i + 8),
-			readl(gdrm_hdmi_base[1] + i + 12));
-		for (i = 0xf40; i < 0xfc0; i += 16)
-			DRM_INFO("OVL1   0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[1] + i,
-			readl(gdrm_hdmi_base[1] + i),
-			readl(gdrm_hdmi_base[1] + i + 4),
-			readl(gdrm_hdmi_base[1] + i + 8),
-			readl(gdrm_hdmi_base[1] + i + 12));
-
-		/* RDMA1 */
-		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("RDMA1  0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[2] + i,
-			readl(gdrm_hdmi_base[2] + i),
-			readl(gdrm_hdmi_base[2] + i + 4),
-			readl(gdrm_hdmi_base[2] + i + 8),
-			readl(gdrm_hdmi_base[2] + i + 12));
-
-		/* COLOR1 */
-		for (i = 0x400; i < 0x500; i += 16)
-			DRM_INFO("COLOR1 0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[3] + i,
-			readl(gdrm_hdmi_base[3] + i),
-			readl(gdrm_hdmi_base[3] + i + 4),
-			readl(gdrm_hdmi_base[3] + i + 8),
-			readl(gdrm_hdmi_base[3] + i + 12));
-		for (i = 0xC00; i < 0xD00; i += 16)
-			DRM_INFO("COLOR1 0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[3] + i,
-			readl(gdrm_hdmi_base[3] + i),
-			readl(gdrm_hdmi_base[3] + i + 4),
-			readl(gdrm_hdmi_base[3] + i + 8),
-			readl(gdrm_hdmi_base[3] + i + 12));
-
-		/* GAMMA */
-		for (i = 0; i < 0x100; i += 16)
-			DRM_INFO("GAMMA  0x%08X: %08X %08X %08X %08X\n",
-			gdrm_hdmi_table[4] + i,
-			readl(gdrm_hdmi_base[4] + i),
-			readl(gdrm_hdmi_base[4] + i + 4),
-			readl(gdrm_hdmi_base[4] + i + 8),
-			readl(gdrm_hdmi_base[4] + i + 12));
 	} else {
 	    goto Error;
 	}
@@ -389,21 +299,14 @@ void mediatek_drm_debugfs_init(struct drm_crtc *crtc)
 			S_IWUSR | S_IWGRP, NULL, (void *)0, &debug_fops);
 
 	gdrm_disp_base[0] = mtk_crtc->regs;
-	gdrm_disp_base[1] = mtk_crtc->ovl_regs[0];
-	gdrm_disp_base[2] = mtk_crtc->rdma_regs[0];
-	gdrm_disp_base[3] = mtk_crtc->color_regs[0];
+	gdrm_disp_base[1] = mtk_crtc->ovl_regs;
+	gdrm_disp_base[2] = mtk_crtc->rdma_regs;
+	gdrm_disp_base[3] = mtk_crtc->color_regs;
 	gdrm_disp_base[4] = mtk_crtc->aal_regs;
 	gdrm_disp_base[5] = mtk_crtc->ufoe_regs;
 	gdrm_disp_base[6] = mtk_crtc->dsi_reg;
 	gdrm_disp_base[7] = mtk_crtc->mutex_regs;
 	gdrm_disp_base[8] = mtk_crtc->od_regs;
-
-	gdrm_hdmi_base[0] = mtk_crtc->regs;
-	gdrm_hdmi_base[1] = mtk_crtc->ovl_regs[1];
-	gdrm_hdmi_base[2] = mtk_crtc->rdma_regs[1];
-	gdrm_hdmi_base[3] = mtk_crtc->color_regs[1];
-	gdrm_hdmi_base[4] = mtk_crtc->gamma_regs;
-
 }
 
 void mediatek_drm_debugfs_deinit(void)

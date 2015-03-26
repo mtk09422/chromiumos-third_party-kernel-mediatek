@@ -110,23 +110,23 @@ struct mtk_drm_overlay {
 struct mtk_drm_crtc {
 	struct drm_crtc			base;
 	void __iomem			*regs;
-	void __iomem			*ovl_regs[2];
-	void __iomem			*rdma_regs[2];
-	void __iomem			*color_regs[2];
+	void __iomem			*ovl_regs;
+	void __iomem			*rdma_regs;
+	void __iomem			*color_regs;
 	void __iomem			*aal_regs;
-	void __iomem			*gamma_regs;
 	void __iomem			*ufoe_regs;
 	void __iomem			*dsi_reg;
 	void __iomem			*mutex_regs;
 	void __iomem			*od_regs;
+	void __iomem			*debug_regs;
 	void __iomem			*dsi_ana_reg;
 	struct MTK_DISP_REGS		*disp_regs;
 	struct MTK_DISP_CLKS		*disp_clks;
 	unsigned int			cursor_x, cursor_y;
 	unsigned int			cursor_w, cursor_h;
 	struct drm_gem_object		*cursor_obj;
-	unsigned int			pipe;
-	/* struct mtk_drm_overlay	overlay;
+	/* unsigned int			pipe;
+	struct mtk_drm_overlay	overlay;
 	unsigned int			dpms;
 	add count for EGL_CHROMIUM_get_sync_values
 	uint64_t				scb; */

@@ -376,7 +376,7 @@ int mtk_output_init(struct drm_device *dev)
 	drm_connector_register(conn);
 #endif
 
-	out->encoder->possible_crtcs = 0x1;
+	out->encoder->possible_crtcs = 0x3;
 
 	return ret;
 }

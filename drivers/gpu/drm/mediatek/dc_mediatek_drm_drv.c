@@ -1,7 +1,6 @@
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
-#include <linux/component.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -85,15 +84,13 @@ static irqreturn_t mtk_drm_irq(int irq, void *data)
 static int mtk_drm_kms_init(struct drm_device *dev)
 {
 	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
-	struct device *pdev = get_mtk_drm_device(dev);
 	struct mtk_drm_crtc *mtk_crtc;
-	struct mtk_drm_crtc *mtk_crtc_ext;
 	int irq, nr, err;
 
 	drm_mode_config_init(dev);
 
-	dev->mode_config.min_width = 320;
-	dev->mode_config.min_height = 240;
+	dev->mode_config.min_width = 0;
+	dev->mode_config.min_height = 0;
 
 	/*
 	 * set max width and height as default value(4096x4096).
@@ -123,73 +120,41 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	if (IS_ERR(mtk_crtc->regs))
 		return PTR_ERR(mtk_crtc->regs);
 
-	mtk_crtc->ovl_regs[0] = of_iomap(mediatek_drm_pdev->dev.of_node, 1);
-	if (IS_ERR(mtk_crtc->ovl_regs[0]))
-		return PTR_ERR(mtk_crtc->ovl_regs[0]);
+	mtk_crtc->ovl_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 1);
+	if (IS_ERR(mtk_crtc->ovl_regs))
+		return PTR_ERR(mtk_crtc->ovl_regs);
 
-	mtk_crtc->ovl_regs[1] = of_iomap(mediatek_drm_pdev->dev.of_node, 2);
-	if (IS_ERR(mtk_crtc->ovl_regs[1]))
-		return PTR_ERR(mtk_crtc->ovl_regs[1]);
+	mtk_crtc->rdma_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 2);
+	if (IS_ERR(mtk_crtc->rdma_regs))
+		return PTR_ERR(mtk_crtc->rdma_regs);
 
-	mtk_crtc->rdma_regs[0] = of_iomap(mediatek_drm_pdev->dev.of_node, 3);
-	if (IS_ERR(mtk_crtc->rdma_regs[0]))
-		return PTR_ERR(mtk_crtc->rdma_regs[0]);
+	mtk_crtc->color_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 3);
+	if (IS_ERR(mtk_crtc->color_regs))
+		return PTR_ERR(mtk_crtc->color_regs);
 
-	mtk_crtc->rdma_regs[1] = of_iomap(mediatek_drm_pdev->dev.of_node, 4);
-	if (IS_ERR(mtk_crtc->rdma_regs[1]))
-		return PTR_ERR(mtk_crtc->rdma_regs[1]);
-
-	mtk_crtc->color_regs[0] = of_iomap(mediatek_drm_pdev->dev.of_node, 5);
-	if (IS_ERR(mtk_crtc->color_regs[0]))
-		return PTR_ERR(mtk_crtc->color_regs[0]);
-
-	mtk_crtc->color_regs[1] = of_iomap(mediatek_drm_pdev->dev.of_node, 6);
-	if (IS_ERR(mtk_crtc->color_regs[1]))
-		return PTR_ERR(mtk_crtc->color_regs[1]);
-
-	mtk_crtc->aal_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 7);
+	mtk_crtc->aal_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 4);
 	if (IS_ERR(mtk_crtc->aal_regs))
 		return PTR_ERR(mtk_crtc->aal_regs);
 
-	mtk_crtc->gamma_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 8);
-	if (IS_ERR(mtk_crtc->gamma_regs))
-		return PTR_ERR(mtk_crtc->gamma_regs);
-
-	mtk_crtc->ufoe_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 9);
+	mtk_crtc->ufoe_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 5);
 	if (IS_ERR(mtk_crtc->ufoe_regs))
 		return PTR_ERR(mtk_crtc->ufoe_regs);
 
-	mtk_crtc->dsi_reg = of_iomap(mediatek_drm_pdev->dev.of_node, 10);
+	mtk_crtc->dsi_reg = of_iomap(mediatek_drm_pdev->dev.of_node, 6);
 	if (IS_ERR(mtk_crtc->dsi_reg))
 		return PTR_ERR(mtk_crtc->dsi_reg);
 
-	mtk_crtc->mutex_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 11);
+	mtk_crtc->mutex_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 7);
 	if (IS_ERR(mtk_crtc->mutex_regs))
 		return PTR_ERR(mtk_crtc->mutex_regs);
 
-	mtk_crtc->od_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 12);
+	mtk_crtc->od_regs = of_iomap(mediatek_drm_pdev->dev.of_node, 8);
 	if (IS_ERR(mtk_crtc->od_regs))
 		return PTR_ERR(mtk_crtc->od_regs);
 
-	mtk_crtc->dsi_ana_reg = of_iomap(mediatek_drm_pdev->dev.of_node, 13);
+	mtk_crtc->dsi_ana_reg = of_iomap(mediatek_drm_pdev->dev.of_node, 9);
 	if (IS_ERR(mtk_crtc->dsi_ana_reg))
 		return PTR_ERR(mtk_crtc->dsi_ana_reg);
-
-	mtk_crtc_ext = to_mtk_crtc(priv->crtc[1]);
-	mtk_crtc_ext->regs = mtk_crtc->regs;
-	mtk_crtc_ext->ovl_regs[0] = mtk_crtc->ovl_regs[0];
-	mtk_crtc_ext->ovl_regs[1] = mtk_crtc->ovl_regs[1];
-	mtk_crtc_ext->rdma_regs[0] = mtk_crtc->rdma_regs[0];
-	mtk_crtc_ext->rdma_regs[1] = mtk_crtc->rdma_regs[1];
-	mtk_crtc_ext->color_regs[0] = mtk_crtc->color_regs[0];
-	mtk_crtc_ext->color_regs[1] = mtk_crtc->color_regs[1];
-	mtk_crtc_ext->aal_regs = mtk_crtc->aal_regs;
-	mtk_crtc_ext->gamma_regs = mtk_crtc->gamma_regs;
-	mtk_crtc_ext->ufoe_regs = mtk_crtc->ufoe_regs;
-	mtk_crtc_ext->dsi_reg = mtk_crtc->dsi_reg;
-	mtk_crtc_ext->mutex_regs = mtk_crtc->mutex_regs;
-	mtk_crtc_ext->od_regs = mtk_crtc->od_regs;
-	mtk_crtc_ext->dsi_ana_reg = mtk_crtc->dsi_ana_reg;
 
 	mtk_dsi_probe(dev);
 
@@ -229,10 +194,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 
 	DRM_INFO("MainDispPathPowerOn\n");
 	MainDispPathPowerOn(&mtk_crtc->base);
-	ExtDispPathPowerOn(&mtk_crtc->base);
-
-	DRM_INFO("ExtDispPathSetup\n");
-	ExtDispPathSetup(&mtk_crtc->base);
 
 #ifdef CONFIG_MTK_IOMMU
 	{
@@ -240,10 +201,10 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		struct platform_device *pdev;
 		struct dma_iommu_mapping *imu_mapping;
 
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 2, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 3, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 1, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 2, 0);
+		OVLLayerSwitch(mtk_crtc->ovl_regs, 3, 0);
 		DRM_INFO("DBG_YT disable ovl layer\n");
 
 		node = of_parse_phandle(mediatek_drm_pdev->dev.of_node,
@@ -267,10 +228,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
 	mtk_fbdev_create(dev);
 #endif
-
-	err = component_bind_all(pdev, dev);
-	if (err)
-		return err;
 
 	return 0;
 }
@@ -372,7 +329,7 @@ int dc_drmmtk_buffer_alloc(void *display_priv,
 	dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &buffer->base.dma_attrs);
 
 	pages = dma_alloc_attrs(&mediatek_drm_pdev->dev, size,
-				(dma_addr_t *)&buffer->base.mva_addr, GFP_KERNEL,
+				&buffer->base.mva_addr,	GFP_KERNEL,
 				&buffer->base.dma_attrs);
 	if (!pages) {
 		err = -ENOMEM;
@@ -593,49 +550,6 @@ int dc_drmmtk_disable_vblank(void *display_priv, int crtc)
 }
 EXPORT_SYMBOL(dc_drmmtk_disable_vblank);
 
-static int compare_of(struct device *dev, void *data)
-{
-	return dev->of_node == data;
-}
-
-static int mtk_drm_add_components(struct device *master, struct master *m)
-{
-	struct device_node *np = master->of_node;
-	unsigned i;
-	int ret;
-
-	for (i = 0; ; i++) {
-		struct device_node *node;
-
-		node = of_parse_phandle(np, "connectors", i);
-		if (!node)
-			break;
-
-		ret = component_master_add_child(m, compare_of, node);
-		of_node_put(node);
-		if (ret)
-			return ret;
-	}
-
-	return 0;
-}
-
-static int mtk_drm_bind(struct device *dev)
-{
-	return 0; /* drm_platform_init(&mediatek_drm_driver, to_platform_device(dev)); */
-}
-
-static void mtk_drm_unbind(struct device *dev)
-{
-	drm_put_dev(platform_get_drvdata(to_platform_device(dev)));
-}
-
-static const struct component_master_ops mtk_drm_ops = {
-	.add_components	= mtk_drm_add_components,
-	.bind		= mtk_drm_bind,
-	.unbind		= mtk_drm_unbind,
-};
-
 static int mtk_drm_probe(struct platform_device *pdev)
 {
 	DRM_DEBUG_KMS("mtk_drm_probe(%p)\n", pdev);
@@ -646,7 +560,6 @@ static int mtk_drm_probe(struct platform_device *pdev)
 	}
 
 	mediatek_drm_pdev = pdev;
-	component_master_add(&pdev->dev, &mtk_drm_ops);
 
 	return 0;
 }

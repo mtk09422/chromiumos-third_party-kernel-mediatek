@@ -569,11 +569,6 @@
 #define DISP_COLOR_CFG_MAIN			(DISPSYS_COLOR0_BASE+0x400)
 #define DISP_COLOR_START			(DISPSYS_COLOR0_BASE+0xC00)
 
-enum DISPLAY_PATH {
-	PRIMARY_PATH = 0,
-	EXTERNAL_PATH = 1,
-};
-
 enum RDMA_MODE {
 	RDMA_MODE_DIRECT_LINK = 0,
 	RDMA_MODE_MEMORY = 1,
@@ -617,13 +612,9 @@ struct MTK_DISP_CLKS {
 	struct clk *smi_larb4_ck;
 	struct clk *mutex_disp_ck;
 	struct clk *ovl0_disp_ck;
-	struct clk *ovl1_disp_ck;
 	struct clk *rdma0_disp_ck;
-	struct clk *rdma1_disp_ck;
 	struct clk *color0_disp_ck;
-	struct clk *color1_disp_ck;
 	struct clk *aal_disp_ck;
-	struct clk *gamma_disp_ck;
 	struct clk *ufoe_disp_ck;
 	struct clk *od_disp_ck;
 };
@@ -642,10 +633,6 @@ void MainDispPathPowerOff(struct drm_crtc *crtc);
 void MainDispPathSetup(struct drm_crtc *crtc);
 void MainDispPathClear(struct drm_crtc *crtc);
 
-void ExtDispPathPowerOn(struct drm_crtc *crtc);
-void ExtDispPathPowerOff(struct drm_crtc *crtc);
-void ExtDispPathSetup(struct drm_crtc *crtc);
-
 void DispClockSetup(struct device *dev, struct MTK_DISP_CLKS	**pdisp_clks);
 void DispClockOn(struct MTK_DISP_CLKS *disp_clks);
 void DispClockOff(struct MTK_DISP_CLKS *disp_clks);
@@ -657,7 +644,6 @@ void RDMADumpRegister(void __iomem *disp_base);
 void DispConfigDumpRegister(void __iomem *disp_base);
 void MutexDumpRegister(void __iomem *mutex_base);
 
-void OVLLayerSwitch(void __iomem *ovl_base[2], unsigned idx,
-	unsigned layer, bool en);
+void OVLLayerSwitch(void __iomem *ovl_base, unsigned layer, bool en);
 
 #endif

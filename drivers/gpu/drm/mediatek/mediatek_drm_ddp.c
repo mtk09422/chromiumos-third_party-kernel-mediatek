@@ -70,145 +70,108 @@ static void DispConfigMainPathMutex(void __iomem *mutex_base)
 	writel(1, mutex_base + DISP_REG_CONFIG_MUTEX_EN(ID));
 }
 
-static void DispConfigExtPathConnection(void __iomem *disp_base)
+/* work on OVL0 only now */
+static void OVLStart(void __iomem *ovl_base)
 {
-	/* OVL1 output to COLOR1 */
-	writel(0x1, disp_base + DISP_REG_CONFIG_DISP_OVL1_MOUT_EN);
-
-	/* GAMME output to RDMA1 */
-	writel(0x1, disp_base + DISP_REG_CONFIG_DISP_GAMMA_MOUT_EN);
-
-	/* PATH1 output to DPI */
-	writel(0x2, disp_base + DISP_REG_CONFIG_DISP_PATH1_SOUT_SEL_IN);
-
-	/* DPI input from PATH1 */
-	writel(0x1, disp_base + DISP_REG_CONFIG_DPI_SEL_IN);
-
-	/* COLOR1 input from OVL1 */
-	writel(0x1, disp_base + DISP_REG_CONFIG_DISP_COLOR1_SEL_IN);
+	writel(0x01, ovl_base + DISP_REG_OVL_EN);
+	writel(0x0f, ovl_base + DISP_REG_OVL_INTEN);
 }
 
-static void DispConfigExtPathMutex(void __iomem *mutex_base)
+static void OVLStop(void __iomem *ovl_base)
 {
-	unsigned int ID = 1;
-
-	/* Module: OVL1=12, RDMA1=14, COLOR1=19, GAMMA=21 */
-	writel((1 << 12 | 1 << 14 | 1 << 19 | 1 << 21),
-		mutex_base + DISP_REG_CONFIG_MUTEX_MOD(ID));
-
-	/* Clock source from DSI0 */
-	writel(1, mutex_base + DISP_REG_CONFIG_MUTEX_SOF(ID));
-	writel(1, mutex_base + DISP_REG_CONFIG_MUTEX_EN(ID));
+	writel(0x00, ovl_base + DISP_REG_OVL_INTEN);
+	writel(0x00, ovl_base + DISP_REG_OVL_EN);
+	writel(0x00, ovl_base + DISP_REG_OVL_INTSTA);
 }
 
-static void OVLStart(void __iomem *ovl_base[2], unsigned idx)
+static void OVLROI(void __iomem *ovl_base, unsigned int W, unsigned int H,
+	unsigned int bgColor)
 {
-	BUG_ON(idx >= 2);
-
-	writel(0x01, ovl_base[idx] + DISP_REG_OVL_EN);
-	writel(0x0f, ovl_base[idx] + DISP_REG_OVL_INTEN);
+	writel(H << 16 | W, ovl_base + DISP_REG_OVL_ROI_SIZE);
+	writel(bgColor, ovl_base + DISP_REG_OVL_ROI_BGCLR);
 }
 
-static void OVLStop(void __iomem *ovl_base[2], unsigned idx)
-{
-	BUG_ON(idx >= 2);
-
-	writel(0x00, ovl_base[idx] + DISP_REG_OVL_INTEN);
-	writel(0x00, ovl_base[idx] + DISP_REG_OVL_EN);
-	writel(0x00, ovl_base[idx] + DISP_REG_OVL_INTSTA);
-}
-
-static void OVLROI(void __iomem *ovl_base[2], unsigned idx,
-	unsigned int W, unsigned int H,	unsigned int bgColor)
-{
-	BUG_ON(idx >= 2);
-
-	writel(H << 16 | W, ovl_base[idx] + DISP_REG_OVL_ROI_SIZE);
-	writel(bgColor, ovl_base[idx] + DISP_REG_OVL_ROI_BGCLR);
-}
-
-void OVLLayerSwitch(void __iomem *ovl_base[2], unsigned idx,
-	unsigned layer, bool en)
+void OVLLayerSwitch(void __iomem *ovl_base, unsigned layer, bool en)
 {
 	u32 reg;
 
-	BUG_ON(idx >= 2);
+	reg = readl(ovl_base + DISP_REG_OVL_SRC_CON);
 
-	reg = readl(ovl_base[idx] + DISP_REG_OVL_SRC_CON);
 	if (en)
 		reg |= (1U<<layer);
 	else
 		reg &= ~(1U<<layer);
 
-	writel(reg, ovl_base[idx] + DISP_REG_OVL_SRC_CON);
-	writel(0x1, ovl_base[idx] + DISP_REG_OVL_RST);
-	writel(0x0, ovl_base[idx] + DISP_REG_OVL_RST);
+	writel(reg, ovl_base + DISP_REG_OVL_SRC_CON);
+	writel(0x1, ovl_base + DISP_REG_OVL_RST);
+	writel(0x0, ovl_base + DISP_REG_OVL_RST);
 }
 
-static void RDMAStart(void __iomem *rdma_base[2], unsigned idx)
+#define RDMA_N_OFST 0x1000
+static void RDMAStart(void __iomem *rdma_base, unsigned idx)
 {
 	unsigned int reg;
 
 	BUG_ON(idx >= 2);
 
-	writel(0x4, rdma_base[idx] + DISP_REG_RDMA_INT_ENABLE);
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	writel(0x4, rdma_base + DISP_REG_RDMA_INT_ENABLE + idx * RDMA_N_OFST);
+	reg = readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 	reg |= 1;
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	writel(reg, rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 }
 
-static void RDMAStop(void __iomem *rdma_base[2], unsigned idx)
+static void RDMAStop(void __iomem *rdma_base, unsigned idx)
 {
 	unsigned int reg;
 
 	BUG_ON(idx >= 2);
 
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	reg = readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 	reg &= ~(1U);
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
-	writel(0, rdma_base[idx] + DISP_REG_RDMA_INT_ENABLE);
-	writel(0, rdma_base[idx] + DISP_REG_RDMA_INT_STATUS);
+	writel(reg, rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
+	writel(0, rdma_base + DISP_REG_RDMA_INT_ENABLE + idx * RDMA_N_OFST);
+	writel(0, rdma_base + DISP_REG_RDMA_INT_STATUS + idx * RDMA_N_OFST);
 }
 
-static void RDMAReset(void __iomem *rdma_base[2], unsigned idx)
+static void RDMAReset(void __iomem *rdma_base, unsigned idx)
 {
 	unsigned int reg;
 	unsigned int delay_cnt;
 
 	BUG_ON(idx >= 2);
 
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	reg = readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 	reg |= 0x10;
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	writel(reg, rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 
 	delay_cnt = 0;
-	while ((readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON)
+	while ((readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST)
 		& 0x700) == 0x100) {
 
 		delay_cnt++;
 		if (delay_cnt > 10000) {
-			DRM_ERROR("RDMA[%d] Reset timeout\n", idx);
+			DRM_ERROR("RDMAReset timeout\n");
 			break;
 		}
 	}
 
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	reg = readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 	reg &= ~(0x10U);
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	writel(reg, rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 
 	delay_cnt = 0;
-	while ((readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON)
+	while ((readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST)
 		& 0x700) != 0x100) {
 
 		delay_cnt++;
 		if (delay_cnt > 10000) {
-			DRM_ERROR("RDMA[%d] Reset timeout\n", idx);
+			DRM_ERROR("RDMAReset timeout\n");
 			break;
 		}
 	}
 }
 
-static void RDMAConfigDirectLink(void __iomem *rdma_base[2], unsigned idx,
+static void RDMAConfigDirectLink(void __iomem *rdma_base, unsigned idx,
 	unsigned width, unsigned height)
 {
 	unsigned int reg;
@@ -218,32 +181,32 @@ static void RDMAConfigDirectLink(void __iomem *rdma_base[2], unsigned idx,
 	BUG_ON(idx >= 2);
 
 	/* Config mode */
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	reg = readl(rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 	if (mode == RDMA_MODE_DIRECT_LINK)
 		reg &= ~(0x2U);
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_GLOBAL_CON);
+	writel(reg, rdma_base + DISP_REG_RDMA_GLOBAL_CON + idx * RDMA_N_OFST);
 
 	/* Config output format */
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_0);
+	reg = readl(rdma_base + DISP_REG_RDMA_SIZE_CON_0 + idx * RDMA_N_OFST);
 	if (outputFormat == RDMA_OUTPUT_FORMAT_ARGB)
 		reg &= ~(0x20000000U);
 	else
 		reg |= 0x20000000U;
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_0);
+	writel(reg, rdma_base + DISP_REG_RDMA_SIZE_CON_0 + idx * RDMA_N_OFST);
 
 	/* Config width */
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_0);
+	reg = readl(rdma_base + DISP_REG_RDMA_SIZE_CON_0 + idx * RDMA_N_OFST);
 	reg = (reg & ~(0xFFFU)) | (width & 0xFFFU);
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_0);
+	writel(reg, rdma_base + DISP_REG_RDMA_SIZE_CON_0 + idx * RDMA_N_OFST);
 
 	/* Config height */
-	reg = readl(rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_1);
+	reg = readl(rdma_base + DISP_REG_RDMA_SIZE_CON_1 + idx * RDMA_N_OFST);
 	reg = (reg & ~(0xFFFFFU)) | (height & 0xFFFFFU);
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_SIZE_CON_1);
+	writel(reg, rdma_base + DISP_REG_RDMA_SIZE_CON_1 + idx * RDMA_N_OFST);
 
 	/* Config FIFO control */
 	reg = 0x80F00008;
-	writel(reg, rdma_base[idx] + DISP_REG_RDMA_FIFO_CON);
+	writel(reg, rdma_base + DISP_REG_RDMA_FIFO_CON + idx * RDMA_N_OFST);
 }
 
 static void ODStart(void __iomem *od_base, unsigned int W, unsigned int H)
@@ -259,10 +222,10 @@ static void UFOEStart(void __iomem *ufoe_base)
 	writel(0x4, ufoe_base + DISPSYS_UFOE_BASE); /* default, BYPASS */
 }
 
-static void ColorStart(void __iomem *color_base[2], unsigned idx)
+static void ColorStart(void __iomem *color_base)
 {
-	writel(0x2080, color_base[idx] + DISP_COLOR_CFG_MAIN); /* default, BYPASS */
-	writel(0x1, color_base[idx] + DISP_COLOR_START);
+	writel(0x2080, color_base + DISP_COLOR_CFG_MAIN); /* default, BYPASS */
+	writel(0x1, color_base + DISP_COLOR_START);
 }
 
 static unsigned int ovl_fmt_convert(unsigned int fmt)
@@ -295,6 +258,7 @@ static unsigned int ovl_fmt_convert(unsigned int fmt)
 	}
 }
 
+#define OVL_N_OFST 0x1000
 void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	int x, int y)
 {
@@ -313,7 +277,7 @@ void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	if (width + x > crtc->mode.hdisplay)
 		width = crtc->mode.hdisplay - min(x, crtc->mode.hdisplay);
 
-	OVLStop(drm_disp_base, mtk_crtc->pipe);
+	OVLStop(drm_disp_base);
 
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
 	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
@@ -332,14 +296,14 @@ void OVLLayerConfigCursor(struct drm_crtc *crtc, unsigned int addr,
 	writel(addr, drm_disp_base + DISP_REG_OVL_L1_ADDR);
 	writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L1_PITCH);
 
-	OVLStart(drm_disp_base, mtk_crtc->pipe);
+	OVLStart(drm_disp_base);
 }
 
 void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int format)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	void __iomem *drm_disp_base;
+	void __iomem *drm_disp_base = mtk_crtc->ovl_regs;
 	unsigned int reg;
 /*	unsigned int layer = 0; */
 	unsigned int source = 0;	/* from memory */
@@ -357,9 +321,6 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 
 	unsigned int rgb_swap, bpp;
 	unsigned int fmt = ovl_fmt_convert(format);
-
-	BUG_ON(mtk_crtc->pipe >= 2);
-	drm_disp_base = mtk_crtc->ovl_regs[mtk_crtc->pipe];
 
 	if (fmt == OVL_INFMT_BGR888 || fmt == OVL_INFMT_BGR565 ||
 		fmt == OVL_INFMT_ABGR8888 || fmt == OVL_INFMT_BGRA8888) {
@@ -387,7 +348,7 @@ void OVLLayerConfig(struct drm_crtc *crtc, unsigned int addr,
 	}
 
 	src_pitch = crtc->mode.hdisplay * bpp;
-	OVLLayerSwitch(mtk_crtc->ovl_regs, mtk_crtc->pipe, 0, 1);
+	OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1);
 
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
 	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
@@ -451,17 +412,17 @@ void MainDispPathPowerOn(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 
-	OVLStart(mtk_crtc->ovl_regs, mtk_crtc->pipe);
-	RDMAStart(mtk_crtc->rdma_regs, mtk_crtc->pipe);
+	OVLStart(mtk_crtc->ovl_regs);
+	RDMAStart(mtk_crtc->rdma_regs, 0);
 }
 
 void MainDispPathPowerOff(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 
-	OVLStop(mtk_crtc->ovl_regs, mtk_crtc->pipe);
-	RDMAStop(mtk_crtc->rdma_regs, mtk_crtc->pipe);
-	RDMAReset(mtk_crtc->rdma_regs, mtk_crtc->pipe);
+	OVLStop(mtk_crtc->ovl_regs);
+	RDMAStop(mtk_crtc->rdma_regs, 0);
+	RDMAReset(mtk_crtc->rdma_regs, 0);
 
 	DispConfigDumpRegister(mtk_crtc->regs);
 }
@@ -485,13 +446,12 @@ void MainDispPathSetup(struct drm_crtc *crtc)
 		return;
 
 	DRM_INFO("DBG_YT MainDispPathSetup %d %d\n", width, height);
-
-	/* Setup OVL0 */
-	OVLROI(mtk_crtc->ovl_regs, PRIMARY_PATH, width, height, 0x00000000);
-	OVLLayerSwitch(mtk_crtc->ovl_regs, PRIMARY_PATH, 0, 1);
+	/* Setup OVL */
+	OVLROI(mtk_crtc->ovl_regs, width, height, 0x00000000);
+	OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1);
 
 	/* Setup RDMA0 */
-	RDMAConfigDirectLink(mtk_crtc->rdma_regs, PRIMARY_PATH, width, height);
+	RDMAConfigDirectLink(mtk_crtc->rdma_regs, 0, width, height);
 
 	/* Setup OD */
 	ODStart(mtk_crtc->od_regs, width, height);
@@ -499,8 +459,8 @@ void MainDispPathSetup(struct drm_crtc *crtc)
 	/* Setup UFOE */
 	UFOEStart(mtk_crtc->ufoe_regs);
 
-	/* Setup Color0 */
-	ColorStart(mtk_crtc->color_regs, PRIMARY_PATH);
+	/* Setup Color */
+	ColorStart(mtk_crtc->color_regs);
 
 	/* Setup main path connection */
 	DispConfigMainPathConnection(mtk_crtc->regs);
@@ -519,13 +479,13 @@ void MainDispPathClear(struct drm_crtc *crtc)
 		writel(0, mtk_crtc->regs + i);
 
 	for (i = 0; i < 0x1000; i += 4) /* OVL */
-		writel(0, mtk_crtc->ovl_regs[0] + i);
+		writel(0, mtk_crtc->ovl_regs + i);
 
 	for (i = 0; i < 0x1000; i += 4) /* RDMA */
-		writel(0, mtk_crtc->rdma_regs[0] + i);
+		writel(0, mtk_crtc->rdma_regs + i);
 
 	for (i = 0x400; i < 0x1000; i += 4) /* COLOR */
-		writel(0, mtk_crtc->color_regs[0] + i);
+		writel(0, mtk_crtc->color_regs + i);
 
 	for (i = 0; i < 0x1000; i += 4) /* AAL */
 		writel(0, mtk_crtc->aal_regs + i);
@@ -542,52 +502,6 @@ void MainDispPathClear(struct drm_crtc *crtc)
 	for (i = 0; i < 0x1000; i += 4) /* OD */
 		writel(0, mtk_crtc->od_regs + i);
 }
-
-void ExtDispPathPowerOn(struct drm_crtc *crtc)
-{
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-
-	OVLStart(mtk_crtc->ovl_regs, EXTERNAL_PATH);
-	RDMAStart(mtk_crtc->rdma_regs, EXTERNAL_PATH);
-}
-
-void ExtDispPathPowerOff(struct drm_crtc *crtc)
-{
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-
-	OVLStop(mtk_crtc->ovl_regs, EXTERNAL_PATH);
-	RDMAStop(mtk_crtc->rdma_regs, EXTERNAL_PATH);
-	RDMAReset(mtk_crtc->rdma_regs, EXTERNAL_PATH);
-
-	DispConfigDumpRegister(mtk_crtc->regs);
-}
-
-void ExtDispPathSetup(struct drm_crtc *crtc)
-{
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	unsigned int width, height;
-
-	width = 1920;
-	height = 1080;
-	DRM_INFO("DBG_YT ExtDispPathSetup %d %d\n", width, height);
-
-	/* Setup OVL1 */
-	OVLROI(mtk_crtc->ovl_regs, EXTERNAL_PATH, width, height, 0x00000000);
-	OVLLayerSwitch(mtk_crtc->ovl_regs, EXTERNAL_PATH, 0, 1);
-
-	/* Setup RDMA1 */
-	RDMAConfigDirectLink(mtk_crtc->rdma_regs, EXTERNAL_PATH, width, height);
-
-	/* Setup Color1 */
-	ColorStart(mtk_crtc->color_regs, EXTERNAL_PATH);
-
-	/* Setup main path connection */
-	DispConfigExtPathConnection(mtk_crtc->regs);
-
-	/* Setup main path mutex */
-	DispConfigExtPathMutex(mtk_crtc->mutex_regs);
-}
-
 
 void DispClockSetup(struct device *dev, struct MTK_DISP_CLKS **pdisp_clks)
 {
@@ -617,33 +531,17 @@ void DispClockSetup(struct device *dev, struct MTK_DISP_CLKS **pdisp_clks)
 	if (IS_ERR((*pdisp_clks)->ovl0_disp_ck))
 		DRM_ERROR("DispClockSetup: Get ovl0_disp_ck fail.\n");
 
-	(*pdisp_clks)->ovl1_disp_ck = devm_clk_get(dev, "ovl1_disp_ck");
-	if (IS_ERR((*pdisp_clks)->ovl1_disp_ck))
-		DRM_ERROR("DispClockSetup: Get ovl1_disp_ck fail.\n");
-
 	(*pdisp_clks)->rdma0_disp_ck = devm_clk_get(dev, "rdma0_disp_ck");
 	if (IS_ERR((*pdisp_clks)->rdma0_disp_ck))
 		DRM_ERROR("DispClockSetup: Get rdma0_disp_ck.\n");
-
-	(*pdisp_clks)->rdma1_disp_ck = devm_clk_get(dev, "rdma1_disp_ck");
-	if (IS_ERR((*pdisp_clks)->rdma1_disp_ck))
-		DRM_ERROR("DispClockSetup: Get rdma1_disp_ck.\n");
 
 	(*pdisp_clks)->color0_disp_ck = devm_clk_get(dev, "color0_disp_ck");
 	if (IS_ERR((*pdisp_clks)->color0_disp_ck))
 		DRM_ERROR("DispClockSetup: Get color0_disp_ck fail.\n");
 
-	(*pdisp_clks)->color1_disp_ck = devm_clk_get(dev, "color1_disp_ck");
-	if (IS_ERR((*pdisp_clks)->color1_disp_ck))
-		DRM_ERROR("DispClockSetup: Get color1_disp_ck fail.\n");
-
 	(*pdisp_clks)->aal_disp_ck = devm_clk_get(dev, "aal_disp_ck");
 	if (IS_ERR((*pdisp_clks)->aal_disp_ck))
 		DRM_ERROR("DispClockSetup: Get aal_disp_ck fail.\n");
-
-	(*pdisp_clks)->gamma_disp_ck = devm_clk_get(dev, "gamma_disp_ck");
-	if (IS_ERR((*pdisp_clks)->gamma_disp_ck))
-		DRM_ERROR("DispClockSetup: Get gamma_disp_ck fail.\n");
 
 	(*pdisp_clks)->ufoe_disp_ck = devm_clk_get(dev, "ufoe_disp_ck");
 	if (IS_ERR((*pdisp_clks)->ufoe_disp_ck))
@@ -713,15 +611,6 @@ void DispClockOn(struct MTK_DISP_CLKS *disp_clks)
 	if (ret != 0)
 		DRM_ERROR("clk_enable(disp_clks->ovl0_disp_ck) error!\n");
 
-	/* ovl1_disp_ck */
-	ret = clk_prepare(disp_clks->ovl1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->ovl1_disp_ck) error!\n");
-
-	ret = clk_enable(disp_clks->ovl1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->ovl1_disp_ck) error!\n");
-
 	/* rdma0_disp_ck */
 	ret = clk_prepare(disp_clks->rdma0_disp_ck);
 	if (ret != 0)
@@ -730,15 +619,6 @@ void DispClockOn(struct MTK_DISP_CLKS *disp_clks)
 	ret = clk_enable(disp_clks->rdma0_disp_ck);
 	if (ret != 0)
 		DRM_ERROR("clk_enable(disp_clks->rdma0_disp_ck) error!\n");
-
-	/* rdma1_disp_ck */
-	ret = clk_prepare(disp_clks->rdma1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->rdma1_disp_ck) error!\n");
-
-	ret = clk_enable(disp_clks->rdma1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->rdma1_disp_ck) error!\n");
 
 	/* color0_disp_ck */
 	ret = clk_prepare(disp_clks->color0_disp_ck);
@@ -749,15 +629,6 @@ void DispClockOn(struct MTK_DISP_CLKS *disp_clks)
 	if (ret != 0)
 		DRM_ERROR("clk_enable(disp_clks->color0_disp_ck) error!\n");
 
-	/* color1_disp_ck */
-	ret = clk_prepare(disp_clks->color1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->color1_disp_ck) error!\n");
-
-	ret = clk_enable(disp_clks->color1_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->color1_disp_ck) error!\n");
-
 	/* aal_disp_ck */
 	ret = clk_prepare(disp_clks->aal_disp_ck);
 	if (ret != 0)
@@ -766,15 +637,6 @@ void DispClockOn(struct MTK_DISP_CLKS *disp_clks)
 	ret = clk_enable(disp_clks->aal_disp_ck);
 	if (ret != 0)
 		DRM_ERROR("clk_enable(disp_clks->aal_disp_ck) error!\n");
-
-	/* gamma_disp_ck */
-	ret = clk_prepare(disp_clks->gamma_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->gamma_disp_ck) error!\n");
-
-	ret = clk_enable(disp_clks->gamma_disp_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->gamma_disp_ck) error!\n");
 
 	/* ufoe_disp_ck */
 	ret = clk_prepare(disp_clks->ufoe_disp_ck);
@@ -822,33 +684,17 @@ void DispClockOff(struct MTK_DISP_CLKS *disp_clks)
 	clk_disable(disp_clks->ovl0_disp_ck);
 	clk_unprepare(disp_clks->ovl0_disp_ck);
 
-	/* ovl1_disp_ck */
-	clk_disable(disp_clks->ovl1_disp_ck);
-	clk_unprepare(disp_clks->ovl1_disp_ck);
-
 	/* rdma0_disp_ck */
 	clk_disable(disp_clks->rdma0_disp_ck);
 	clk_unprepare(disp_clks->rdma0_disp_ck);
-
-	/* rdma1_disp_ck */
-	clk_disable(disp_clks->rdma1_disp_ck);
-	clk_unprepare(disp_clks->rdma1_disp_ck);
 
 	/* color0_disp_ck */
 	clk_disable(disp_clks->color0_disp_ck);
 	clk_unprepare(disp_clks->color0_disp_ck);
 
-	/* color1_disp_ck */
-	clk_disable(disp_clks->color1_disp_ck);
-	clk_unprepare(disp_clks->color1_disp_ck);
-
 	/* aal_disp_ck */
 	clk_disable(disp_clks->aal_disp_ck);
 	clk_unprepare(disp_clks->aal_disp_ck);
-
-	/* gamma_disp_ck */
-	clk_disable(disp_clks->gamma_disp_ck);
-	clk_unprepare(disp_clks->gamma_disp_ck);
 
 	/* ufoe_disp_ck */
 	clk_disable(disp_clks->ufoe_disp_ck);
