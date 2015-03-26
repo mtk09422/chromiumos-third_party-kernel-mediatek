@@ -529,12 +529,10 @@
 			      <0 0x10215000 0 0x1000>;  /* MIPITX */
 			#interrupts = <0 182 0x8>;	/* RDMA */
 			interrupts = <0 196 0x8>;	/* OD */
+			larb = <&larb0>;
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
 				 <&iommu M4U_PORT_DISP_RDMA0>;
 			clocks = <&scpsys SCP_SYS_DIS>,
-				 <&mmsys MM_SMI_COMMON>,
-				 <&mmsys MM_SMI_LARB0>,
-				 <&mmsys MM_SMI_LARB4>,
 				 <&mmsys MM_MUTEX_32K>,
 				 <&mmsys MM_DISP_OVL0>,
 				 <&mmsys MM_DISP_OVL1>,
@@ -549,9 +547,6 @@
 				 <&mmsys MM_DSI0_ENGINE>,
 				 <&mmsys MM_DSI0_DIGITAL>;
 			clock-names = "disp_mtcmos",
-				      "smi_common_ck",
-				      "smi_larb0_ck",
-				      "smi_larb4_ck",
 				      "mutex_disp_ck",
 				      "ovl0_disp_ck",
 				      "ovl1_disp_ck",

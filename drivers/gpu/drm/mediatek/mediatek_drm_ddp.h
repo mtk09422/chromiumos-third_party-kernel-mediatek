@@ -612,9 +612,6 @@ struct MTK_DISP_REGS {
 
 struct MTK_DISP_CLKS {
 	struct clk *disp_mtcmos;
-	struct clk *smi_common_ck;
-	struct clk *smi_larb0_ck;
-	struct clk *smi_larb4_ck;
 	struct clk *mutex_disp_ck;
 	struct clk *ovl0_disp_ck;
 	struct clk *ovl1_disp_ck;

@@ -1,7 +1,9 @@
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
+#include <linux/of_platform.h>
 #include <linux/component.h>
+#include <linux/mtk-smi.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -23,11 +25,6 @@
 #include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_dev_if.h"
-
-#ifdef CONFIG_MTK_IOMMU
-#include <asm/dma-iommu.h>
-#include <linux/of_platform.h>
-#endif
 
 static struct drm_mode_config_funcs mediatek_drm_mode_config_funcs = {
 	.fb_create = mtk_drm_mode_fb_create,
@@ -234,11 +231,9 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	DRM_INFO("ExtDispPathSetup\n");
 	ExtDispPathSetup(&mtk_crtc->base);
 
-#ifdef CONFIG_MTK_IOMMU
 	{
 		struct device_node *node;
 		struct platform_device *pdev;
-		struct dma_iommu_mapping *imu_mapping;
 
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0, 0);
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1, 0);
@@ -246,6 +241,7 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 3, 0);
 		DRM_INFO("DBG_YT disable ovl layer\n");
 
+#ifdef CONFIG_MTK_IOMMU
 		node = of_parse_phandle(mediatek_drm_pdev->dev.of_node,
 					"iommus", 0);
 		if (!node)
@@ -256,13 +252,27 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 			of_node_put(node);
 			return -EINVAL;
 		}
-
-		imu_mapping = pdev->dev.archdata.mapping;
-
-		DRM_INFO("find dev name %s map %p\n", pdev->name, imu_mapping);
-		arm_iommu_attach_device(&mediatek_drm_pdev->dev, imu_mapping);
-	}
+		err = iommu_dma_attach_device(&mediatek_drm_pdev->dev,
+				arch_get_dma_domain(&pdev->dev));
+		if (err)
+			DRM_ERROR("iommu_dma_attach_device fail %d\n", err);
 #endif
+
+		node = of_parse_phandle(mediatek_drm_pdev->dev.of_node,
+					"larb", 0);
+		if (!node)
+			return 0;
+
+		pdev = of_find_device_by_node(node);
+		if (WARN_ON(!pdev)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		err = mtk_smi_larb_get(&pdev->dev);
+		if (err)
+			DRM_ERROR("mtk_smi_larb_get fail %d\n", err);
+	}
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
 	mtk_fbdev_create(dev);
@@ -345,7 +355,6 @@ int dc_drmmtk_buffer_alloc(void *display_priv,
 			   struct pvr_drm_display_buffer **buffer_out)
 {
 	struct pvr_drm_display_buffer *buffer;
-	struct mtk_display_device *display_dev = display_priv;
 	struct page **pages;
 	void *kvaddr;
 #ifndef CONFIG_MTK_IOMMU
@@ -396,6 +405,7 @@ int dc_drmmtk_buffer_alloc(void *display_priv,
 	kvaddr = vmap(pages, npages, 0, PAGE_KERNEL);
 	if (!kvaddr) {
 		err = -ENOMEM;
+		DRM_ERROR("vmap error\n");
 		goto err_free_pages;
 	}
 
@@ -439,7 +449,7 @@ int dc_drmmtk_buffer_alloc(void *display_priv,
 
 err_free_pages:
 #ifdef CONFIG_MTK_IOMMU
-	dma_free_attrs(display_dev->dev->dev, size, pages,
+	dma_free_attrs(&mediatek_drm_pdev->dev, size, pages,
 		       buffer->base.mva_addr, &buffer->base.dma_attrs);
 #else
 	kfree(pages);

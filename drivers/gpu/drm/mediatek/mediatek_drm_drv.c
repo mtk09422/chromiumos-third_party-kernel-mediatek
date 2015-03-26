@@ -16,9 +16,9 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
-#include <asm/dma-iommu.h>
 #include <linux/of_platform.h>
 #include <linux/component.h>
+#include <linux/mtk-smi.h>
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
@@ -229,7 +229,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	{
 		struct device_node *node;
 		struct platform_device *pdev;
-		struct dma_iommu_mapping *imu_mapping;
 
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0, 0);
 		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1, 0);
@@ -246,11 +245,24 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 			of_node_put(node);
 			return -EINVAL;
 		}
+		err = iommu_dma_attach_device(dev->dev,
+				arch_get_dma_domain(&pdev->dev));
+		if (err)
+			DRM_ERROR("iommu_dma_attach_device fail %d\n", err);
 
-		imu_mapping = pdev->dev.archdata.mapping;
+		node = of_parse_phandle(dev->dev->of_node, "larb", 0);
+		if (!node)
+			return 0;
 
-		DRM_INFO("find dev name %s map %p\n", pdev->name, imu_mapping);
-		arm_iommu_attach_device(dev->dev, imu_mapping);
+		pdev = of_find_device_by_node(node);
+		if (WARN_ON(!pdev)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		err = mtk_smi_larb_get(&pdev->dev);
+		if (err)
+			DRM_ERROR("mtk_smi_larb_get fail %d\n", err);
 	}
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV

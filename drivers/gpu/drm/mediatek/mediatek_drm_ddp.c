@@ -596,18 +596,6 @@ void DispClockSetup(struct device *dev, struct MTK_DISP_CLKS **pdisp_clks)
 	if (IS_ERR((*pdisp_clks)->disp_mtcmos))
 		DRM_ERROR("DispClockSetup: Get disp_mtcmos fail.\n");
 
-	(*pdisp_clks)->smi_common_ck = devm_clk_get(dev, "smi_common_ck");
-	if (IS_ERR((*pdisp_clks)->smi_common_ck))
-		DRM_ERROR("DispClockSetup: Get smi_common_ck fail.\n");
-
-	(*pdisp_clks)->smi_larb0_ck = devm_clk_get(dev, "smi_larb0_ck");
-	if (IS_ERR((*pdisp_clks)->smi_larb0_ck))
-		DRM_ERROR("DispClockSetup: Get smi_larb0_ck fail.\n");
-
-	(*pdisp_clks)->smi_larb4_ck = devm_clk_get(dev, "smi_larb4_ck");
-	if (IS_ERR((*pdisp_clks)->smi_larb4_ck))
-		DRM_ERROR("DispClockSetup: Get smi_larb4_ck fail.\n");
-
 	(*pdisp_clks)->mutex_disp_ck = devm_clk_get(dev, "mutex_disp_ck");
 	if (IS_ERR((*pdisp_clks)->mutex_disp_ck))
 		DRM_ERROR("DispClockSetup: Get mutex_disp_ck fail.\n");
@@ -666,33 +654,6 @@ void DispClockOn(struct MTK_DISP_CLKS *disp_clks)
 	ret = clk_enable(disp_clks->disp_mtcmos);
 	if (ret != 0)
 		DRM_ERROR("clk_enable(disp_clks->disp_mtcmos) error!\n");
-
-	/* smi_common_ck */
-	ret = clk_prepare(disp_clks->smi_common_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->smi_common_ck) error!\n");
-
-	ret = clk_enable(disp_clks->smi_common_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->smi_common_ck) error!\n");
-
-	/* smi_larb0_ck */
-	ret = clk_prepare(disp_clks->smi_larb0_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->smi_larb0_ck) error!\n");
-
-	ret = clk_enable(disp_clks->smi_larb0_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->smi_larb0_ck) error!\n");
-
-	/* smi_larb4_ck */
-	ret = clk_prepare(disp_clks->smi_larb4_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->smi_larb4_ck) error!\n");
-
-	ret = clk_enable(disp_clks->smi_larb4_ck);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->smi_larb4_ck) error!\n");
 
 	/* mutex_disp_ck */
 	ret = clk_prepare(disp_clks->mutex_disp_ck);
@@ -800,18 +761,6 @@ void DispClockOff(struct MTK_DISP_CLKS *disp_clks)
 	/* disp_mtcmos */
 	clk_disable(disp_clks->disp_mtcmos);
 	clk_unprepare(disp_clks->disp_mtcmos);
-
-	/* smi_common_ck */
-	clk_disable(disp_clks->smi_common_ck);
-	clk_unprepare(disp_clks->smi_common_ck);
-
-	/* smi_larb0_ck */
-	clk_disable(disp_clks->smi_larb0_ck);
-	clk_unprepare(disp_clks->smi_larb0_ck);
-
-	/* smi_larb4_ck */
-	clk_disable(disp_clks->smi_larb4_ck);
-	clk_unprepare(disp_clks->smi_larb4_ck);
 
 	/* mutex_disp_ck */
 	clk_disable(disp_clks->mutex_disp_ck);
