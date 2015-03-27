@@ -1,0 +1,60 @@
+config DRM_MEDIATEK_ROGUE
+	tristate "DRM Support for Mediatek KMS and PVR ROGUE GPU"
+	depends on DRM
+	depends on MTK_IOMMU
+	depends on ARCH_MEDIATEK || (ARM && COMPILE_TEST)
+	select DRM_PANEL
+	select DRM_MIPI_DSI
+	select DRM_PANEL_SIMPLE
+	select DRM_KMS_HELPER
+	select POWERVR_ROGUE
+	help
+	  Choose this option if you have a Mediatek SoCs with PVR Rogue.
+	  The module will be called by pvr drm module
+	  This driver provides kernel mode setting and
+	  buffer management to userspace.
+
+config DRM_MEDIATEK
+	tristate "DRM Support for Mediatek SoCs"
+	depends on DRM
+	depends on MTK_IOMMU
+	depends on ARCH_MEDIATEK || (ARM && COMPILE_TEST)
+	depends on !DRM_MEDIATEK_ROGUE
+	select DRM_PANEL
+	select DRM_MIPI_DSI
+	select DRM_PANEL_SIMPLE
+	select DRM_KMS_HELPER
+	help
+	  Choose this option if you have a Mediatek SoCs.
+	  The module will be called mediatek-drm
+	  This driver provides kernel mode setting and
+	  buffer management to userspace.
+
+config DRM_MEDIATEK_FBDEV
+	bool "Enable legacy fbdev support for Mediatek DRM"
+	depends on DRM_MEDIATEK || DRM_MEDIATEK_ROGUE
+	select FB_SYS_FILLRECT
+	select FB_SYS_COPYAREA
+	select FB_SYS_IMAGEBLIT
+	select DRM_KMS_FB_HELPER
+	help
+	  Choose this option if you have a need for the legacy
+	  fbdev support.  Note that this support also provides
+	  the Linux console on top of the Mediatek DRM mode
+	  setting driver.
+
+config DRM_MEDIATEK_IT6151
+	bool "Enable IT6151FN : MIPI to eDP Converter"
+	depends on DRM_MEDIATEK || DRM_MEDIATEK_ROGUE
+	help
+	  Choose this option if you have IT6151 for display
+	  The IT6151 is a high-performance and low-power
+	  MIPI to eDP converter
+	  This driver is used for test
+
+config DRM_MEDIATEK_HDMI
+	tristate "DRM HDMI Support for Mediatek SoCs"
+	depends on DRM_MEDIATEK || DRM_MEDIATEK_ROGUE
+	default y
+	help
+	  DRM/KMS HDMI driver for Mediatek SoCs
