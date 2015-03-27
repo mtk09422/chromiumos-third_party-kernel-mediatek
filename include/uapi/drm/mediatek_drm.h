@@ -20,16 +20,16 @@
 /**
  * User-desired buffer creation information structure.
  *
- * @handle: returned a handle to created gem object.
- *	- this handle will be set by gem module of kernel side.
- * @flags: user request for setting memory type or cache attributes.
  * @size: user-desired memory allocation size.
  *	- this size value would be page-aligned internally.
+ * @flags: user request for setting memory type or cache attributes.
+ * @handle: returned a handle to created gem object.
+ *	- this handle will be set by gem module of kernel side.
  */
 struct drm_mtk_gem_create {
-	uint32_t handle;
-	uint32_t flags;
 	uint64_t size;
+	uint32_t flags;
+	uint32_t handle;
 };
 
 /**
