@@ -160,7 +160,7 @@ static int mtk_drm_crtc_cursor_set(struct drm_crtc *crtc,
 
 finish:
 	if (mtk_crtc->cursor_obj)
-		drm_gem_object_unreference(mtk_crtc->cursor_obj);
+		drm_gem_object_unreference_unlocked(mtk_crtc->cursor_obj);
 
 	mtk_crtc->cursor_w = width;
 	mtk_crtc->cursor_h = height;
