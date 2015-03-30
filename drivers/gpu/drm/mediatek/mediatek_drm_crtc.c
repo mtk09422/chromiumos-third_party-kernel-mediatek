@@ -46,6 +46,13 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 	struct drm_device *dev = mtk_crtc->base.dev;
 	unsigned long flags;
 
+	if (mtk_crtc->pending_ovl_config) {
+		mtk_crtc->pending_ovl_config = false;
+		ovl_layer_config(&mtk_crtc->base,
+			mtk_crtc->pending_ovl_addr,
+			mtk_crtc->pending_ovl_format);
+	}
+
 #ifndef MEDIATEK_DRM_UPSTREAM
 	if (mtk_crtc->pending_ovl_cursor_config) {
 		mtk_crtc->pending_ovl_cursor_config = false;
@@ -157,8 +164,10 @@ static void mtk_drm_crtc_update_cb(struct drm_reservation_cb *rcb, void *params)
 	struct drm_device *dev = mtk_crtc->base.dev;
 	unsigned long flags;
 
-	ovl_layer_config(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr,
-		mtk_crtc->base.primary->fb->pixel_format);
+	mtk_crtc->pending_ovl_addr = mtk_crtc->flip_buffer->mva_addr;
+	mtk_crtc->pending_ovl_format =
+			mtk_crtc->base.primary->fb->pixel_format;
+	mtk_crtc->pending_ovl_config = true;
 
 	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->event) {
