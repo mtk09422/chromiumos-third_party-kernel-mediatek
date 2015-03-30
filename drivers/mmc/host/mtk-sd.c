@@ -1124,7 +1124,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		events = readl(host->base + MSDC_INT);
 		event_mask = readl(host->base + MSDC_INTEN);
 		/* clear interrupts */
-		writel(events, host->base + MSDC_INT);
+		writel(events & event_mask, host->base + MSDC_INT);
 
 		mrq = ACCESS_ONCE(host->mrq);
 		cmd = ACCESS_ONCE(host->cmd);
@@ -1359,7 +1359,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		clk_prepare(host->h_clk);
 		clk_enable(host->h_clk);
 		dev_err(&pdev->dev,
-				"hclk rate: %d\n", clk_get_rate(host->h_clk));
+				"hclk rate: %ld\n", clk_get_rate(host->h_clk));
 	}
 
 	host->irq = platform_get_irq(pdev, 0);
