@@ -46,6 +46,16 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 	struct drm_device *dev = mtk_crtc->base.dev;
 	unsigned long flags;
 
+#ifndef MEDIATEK_DRM_UPSTREAM
+	if (mtk_crtc->pending_ovl_cursor_config) {
+		mtk_crtc->pending_ovl_cursor_config = false;
+		ovl_layer_config_cursor(&mtk_crtc->base,
+			mtk_crtc->pending_ovl_cursor_addr,
+			mtk_crtc->pending_ovl_cursor_x,
+			mtk_crtc->pending_ovl_cursor_y);
+	}
+#endif /* MEDIATEK_DRM_UPSTREAM */
+
 	drm_handle_vblank(dev, 0);
 	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->pending_needs_vblank) {
@@ -99,9 +109,12 @@ finish:
 	mtk_crtc->cursor_h = height;
 	mtk_crtc->cursor_obj = obj;
 
-	if (buffer) /* need else: to furn off cursor */
-		ovl_layer_config_cursor(&mtk_crtc->base, buffer->mva_addr,
-			mtk_crtc->cursor_x, mtk_crtc->cursor_y);
+	if (buffer) {/* need else: to furn off cursor */
+		mtk_crtc->pending_ovl_cursor_addr = buffer->mva_addr;
+		mtk_crtc->pending_ovl_cursor_x = mtk_crtc->cursor_x;
+		mtk_crtc->pending_ovl_cursor_y = mtk_crtc->cursor_y;
+		mtk_crtc->pending_ovl_cursor_config = true;
+	}
 
 	return 0;
 fail:
@@ -130,7 +143,10 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	mtk_crtc->cursor_x = x;
 	mtk_crtc->cursor_y = y;
 
-	ovl_layer_config_cursor(&mtk_crtc->base, buffer->mva_addr, x, y);
+	mtk_crtc->pending_ovl_cursor_addr = buffer->mva_addr;
+	mtk_crtc->pending_ovl_cursor_x = x;
+	mtk_crtc->pending_ovl_cursor_y = y;
+	mtk_crtc->pending_ovl_cursor_config = true;
 
 	return 0;
 }

@@ -64,6 +64,13 @@ struct mtk_drm_crtc {
 	struct fence *pending_fence;
 	bool pending_needs_vblank;
 #endif /* MEDIATEK_DRM_UPSTREAM */
+
+#ifndef MEDIATEK_DRM_UPSTREAM
+	bool pending_ovl_cursor_config;
+	unsigned int pending_ovl_cursor_addr;
+	int pending_ovl_cursor_x;
+	int pending_ovl_cursor_y;
+#endif /* MEDIATEK_DRM_UPSTREAM */
 };
 
 #define to_mtk_crtc(x) container_of(x, struct mtk_drm_crtc, base)
