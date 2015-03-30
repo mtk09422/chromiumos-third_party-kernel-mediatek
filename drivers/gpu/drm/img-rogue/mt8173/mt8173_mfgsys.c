@@ -151,39 +151,55 @@ static DEFINE_MUTEX(g_DevPostMutex);
 
 int MTKMFGGetClocks(struct platform_device *pdev)
 {
-	int volt, enable;
+	int volt, enable, err;
 
 	gbRegBase = of_iomap(pdev->dev.of_node, 1);
-	if (!gbRegBase)
+	if (!gbRegBase) {
 		mtk_mfg_debug("Unable to ioremap registers pdev %p\n", pdev);
+		return -ENOMEM;
+	}
 
 	g_mfgclk_sys = devm_clk_get(&pdev->dev, "scp_sys_mfg");
-	if (IS_ERR(g_mfgclk_sys))
-		return PTR_ERR(g_mfgclk_sys);
+	if (IS_ERR(g_mfgclk_sys)) {
+		err = PTR_ERR(g_mfgclk_sys);
+		goto err_iounmap_reg_base;
+	}
 
 	g_mfgclk_axi = devm_clk_get(&pdev->dev, "mfg_axi");
-	if (IS_ERR(g_mfgclk_axi))
-		return PTR_ERR(g_mfgclk_axi);
+	if (IS_ERR(g_mfgclk_axi)) {
+		err = PTR_ERR(g_mfgclk_axi);
+		goto err_clk_put_mfgclk_sys;
+	}
 
 	g_mfgclk_mem = devm_clk_get(&pdev->dev, "mfg_mem");
-	if (IS_ERR(g_mfgclk_mem))
-		return PTR_ERR(g_mfgclk_mem);
+	if (IS_ERR(g_mfgclk_mem)) {
+		err = PTR_ERR(g_mfgclk_mem);
+		goto err_clk_put_mfgclk_axi;
+	}
 
 	g_mfgclk_g3d = devm_clk_get(&pdev->dev, "mfg_g3d");
-	if (IS_ERR(g_mfgclk_g3d))
-		return PTR_ERR(g_mfgclk_g3d);
+	if (IS_ERR(g_mfgclk_g3d)) {
+		err = PTR_ERR(g_mfgclk_g3d);
+		goto err_clk_put_mfgclk_mem;
+	}
 
 	g_mfgclk_26m = devm_clk_get(&pdev->dev, "mfg_26m");
-	if (IS_ERR(g_mfgclk_26m))
-		return PTR_ERR(g_mfgclk_26m);
+	if (IS_ERR(g_mfgclk_26m)) {
+		err = PTR_ERR(g_mfgclk_26m);
+		goto err_clk_put_mfgclk_g3d;
+	}
 
 	g_mmpll = devm_clk_get(&pdev->dev, "mmpll_clk");
-	if (IS_ERR(g_mmpll))
-		return PTR_ERR(g_mmpll);
+	if (IS_ERR(g_mmpll)) {
+		err = PTR_ERR(g_mmpll);
+		goto err_clk_put_mfgclk_26m;
+	}
 
 	g_vgpu = devm_regulator_get(&pdev->dev, "mfgsys-power");
-	if (IS_ERR(g_vgpu))
-		return PTR_ERR(g_vgpu);
+	if (IS_ERR(g_vgpu)) {
+		err = PTR_ERR(g_vgpu);
+		goto err_clk_put_mmpll;
+	}
 
 	bGetClock = true;
 	mtkBackupPVRLDMDev = pdev;
@@ -209,6 +225,22 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 		MTKMFGSystemInit();
 
 	return 0;
+
+err_clk_put_mmpll:
+	devm_clk_put(&pdev->dev, g_mmpll);
+err_clk_put_mfgclk_26m:
+	devm_clk_put(&pdev->dev, g_mfgclk_26m);
+err_clk_put_mfgclk_g3d:
+	devm_clk_put(&pdev->dev, g_mfgclk_g3d);
+err_clk_put_mfgclk_mem:
+	devm_clk_put(&pdev->dev, g_mfgclk_mem);
+err_clk_put_mfgclk_axi:
+	devm_clk_put(&pdev->dev, g_mfgclk_axi);
+err_clk_put_mfgclk_sys:
+	devm_clk_put(&pdev->dev, g_mfgclk_sys);
+err_iounmap_reg_base:
+	iounmap(gbRegBase);
+	return err;
 }
 
 static PVRSRV_DEV_POWER_STATE g_eCurrPowerState = PVRSRV_DEV_POWER_STATE_ON;

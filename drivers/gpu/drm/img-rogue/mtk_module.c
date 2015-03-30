@@ -198,6 +198,10 @@ static int PVRSRVDriverProbe(struct platform_device *pDevice)
 	if (OSStringCompare(pDevice->name,DEVNAME) != 0)
 	{
 		result = MTKMFGGetClocks(pDevice);
+		if (result)
+		{
+			return result;
+		}
 	}
 
 	result = drm_platform_init(&sPVRDRMDriver, pDevice);
