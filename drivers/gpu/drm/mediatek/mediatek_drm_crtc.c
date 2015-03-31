@@ -116,8 +116,13 @@ finish:
 	mtk_crtc->cursor_h = height;
 	mtk_crtc->cursor_obj = obj;
 
-	if (buffer) {/* need else: to furn off cursor */
+	if (buffer) {
 		mtk_crtc->pending_ovl_cursor_addr = buffer->mva_addr;
+		mtk_crtc->pending_ovl_cursor_x = mtk_crtc->cursor_x;
+		mtk_crtc->pending_ovl_cursor_y = mtk_crtc->cursor_y;
+		mtk_crtc->pending_ovl_cursor_config = true;
+	} else {
+		mtk_crtc->pending_ovl_cursor_addr = 0;
 		mtk_crtc->pending_ovl_cursor_x = mtk_crtc->cursor_x;
 		mtk_crtc->pending_ovl_cursor_y = mtk_crtc->cursor_y;
 		mtk_crtc->pending_ovl_cursor_config = true;

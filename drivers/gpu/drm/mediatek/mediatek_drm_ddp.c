@@ -405,7 +405,6 @@ static unsigned int ovl_fmt_convert(unsigned int fmt)
 	case DRM_FORMAT_UYVY:
 		return OVL_INFMT_UYVY;
 	default:
-		DRM_ERROR("drm format %X is not supported\n", fmt);
 		return OVL_INFMT_UNKNOWN;
 	}
 }
@@ -420,11 +419,11 @@ void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 /*	unsigned int layer = 1; */
 	unsigned int width = 64;
 	unsigned int src_pitch = 64 * 4;
-	bool keyEn = 1;
-	unsigned int key = 0xFF000000;	/* color key */
+	bool keyEn = 0;
 	bool aen = 1;			/* alpha enable */
 	unsigned char alpha = 0xFF;
-	unsigned int fmt = OVL_INFMT_ARGB8888;
+	unsigned int fmt = OVL_INFMT_RGBA8888;
+	unsigned int src_con, new_set;
 
 	BUG_ON(mtk_crtc->pipe >= 2);
 	drm_disp_base = mtk_crtc->ovl_regs[mtk_crtc->pipe];
@@ -432,22 +431,24 @@ void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 	if (width + x > crtc->mode.hdisplay)
 		width = crtc->mode.hdisplay - min(x, crtc->mode.hdisplay);
 
-	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
-	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
+	src_con = readl(drm_disp_base + DISP_REG_OVL_SRC_CON);
+	if (mtk_crtc->cursor_obj)
+		new_set = src_con | 0x2;
+	else
+		new_set = src_con & ~(0x2);
 
-	writel(0x3, drm_disp_base + DISP_REG_OVL_SRC_CON);
+	if (new_set != src_con) {
+		writel(new_set, drm_disp_base + DISP_REG_OVL_SRC_CON);
+		writel(0x00000001, drm_disp_base + DISP_REG_OVL_RDMA1_CTRL);
+		writel(0x40402020, drm_disp_base + DISP_REG_OVL_RDMA1_MEM_GMC_SETTING);
 
-	writel(0x00000001, drm_disp_base + DISP_REG_OVL_RDMA1_CTRL);
-	writel(0x40402020, drm_disp_base + DISP_REG_OVL_RDMA1_MEM_GMC_SETTING);
-	writel(0x01000000, drm_disp_base + DISP_REG_OVL_RDMA1_FIFO_CTRL);
-
-	reg = keyEn << 30 | fmt << 12 | aen << 8 | alpha;
-	writel(reg, drm_disp_base + DISP_REG_OVL_L1_CON);
-	writel(key, drm_disp_base + DISP_REG_OVL_L1_SRCKEY);
+		reg = keyEn << 30 | fmt << 12 | aen << 8 | alpha;
+		writel(reg, drm_disp_base + DISP_REG_OVL_L1_CON);
+		writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L1_PITCH);
+	}
 	writel(64 << 16 | width, drm_disp_base + DISP_REG_OVL_L1_SRC_SIZE);
 	writel(y << 16 | x, drm_disp_base + DISP_REG_OVL_L1_OFFSET);
 	writel(addr, drm_disp_base + DISP_REG_OVL_L1_ADDR);
-	writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L1_PITCH);
 }
 #endif /* MEDIATEK_DRM_UPSTREAM */
 
