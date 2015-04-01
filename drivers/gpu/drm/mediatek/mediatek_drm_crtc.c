@@ -138,23 +138,22 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 static void mtk_drm_crtc_update_cb(struct drm_reservation_cb *rcb, void *params)
 {
 	struct mtk_drm_crtc *mtk_crtc = params;
+	struct drm_device *dev = mtk_crtc->base.dev;
+	unsigned long flags;
 
 	ovl_layer_config(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr,
 		mtk_crtc->base.primary->fb->pixel_format);
 
+	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->event) {
-		struct drm_device *dev = mtk_crtc->base.dev;
-		unsigned long flags;
-
-		spin_lock_irqsave(&dev->event_lock, flags);
 		mtk_crtc->pending_needs_vblank = true;
-		spin_unlock_irqrestore(&dev->event_lock, flags);
 	} else {
 		if (mtk_crtc->fence)
 			drm_fence_signal_and_put(&mtk_crtc->fence);
 		mtk_crtc->fence = mtk_crtc->pending_fence;
 		mtk_crtc->pending_fence = NULL;
 	}
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 }
 
 static int mtk_drm_crtc_update_sync(struct mtk_drm_crtc *mtk_crtc,
@@ -162,8 +161,11 @@ static int mtk_drm_crtc_update_sync(struct mtk_drm_crtc *mtk_crtc,
 {
 	struct fence *fence;
 	int ret;
+	struct drm_device *dev = mtk_crtc->base.dev;
+	unsigned long flags;
 
 	ww_mutex_lock(&resv->lock, NULL);
+	spin_lock_irqsave(&dev->event_lock, flags);
 	ret = reservation_object_reserve_shared(resv);
 	if (ret < 0) {
 		DRM_ERROR("Reserving space for shared fence failed: %d.\n",
@@ -188,12 +190,14 @@ static int mtk_drm_crtc_update_sync(struct mtk_drm_crtc *mtk_crtc,
 	}
 	drm_reservation_cb_done(&mtk_crtc->rcb);
 	reservation_object_add_shared_fence(resv, mtk_crtc->pending_fence);
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 	ww_mutex_unlock(&resv->lock);
 	return 0;
 err_fence:
 	fence_put(mtk_crtc->pending_fence);
 	mtk_crtc->pending_fence = NULL;
 err_mutex:
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 	ww_mutex_unlock(&resv->lock);
 
 	return ret;
@@ -260,14 +264,19 @@ static void mtk_drm_crtc_destroy(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 
-	drm_crtc_cleanup(crtc);
 #ifndef MEDIATEK_DRM_UPSTREAM
+	struct drm_device *dev = crtc->dev;
+	unsigned long flags;
+
+	spin_lock_irqsave(&dev->event_lock, flags);
 	if (mtk_crtc->fence)
 		drm_fence_signal_and_put(&mtk_crtc->fence);
 
 	if (mtk_crtc->pending_fence)
 		drm_fence_signal_and_put(&mtk_crtc->pending_fence);
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 #endif /* MEDIATEK_DRM_UPSTREAM */
+	drm_crtc_cleanup(crtc);
 	kfree(mtk_crtc);
 }
 
