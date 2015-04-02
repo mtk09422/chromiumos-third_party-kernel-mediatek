@@ -68,6 +68,7 @@ struct mtk_drm_crtc {
 	bool pending_ovl_config;
 	unsigned int pending_ovl_addr;
 	unsigned int pending_ovl_format;
+	bool pending_enabled;
 
 #ifndef MEDIATEK_DRM_UPSTREAM
 	bool pending_ovl_cursor_config;

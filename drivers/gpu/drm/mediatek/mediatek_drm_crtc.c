@@ -50,7 +50,8 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 		mtk_crtc->pending_ovl_config = false;
 		ovl_layer_config(&mtk_crtc->base,
 			mtk_crtc->pending_ovl_addr,
-			mtk_crtc->pending_ovl_format);
+			mtk_crtc->pending_ovl_format,
+			mtk_crtc->pending_enabled);
 	}
 
 #ifndef MEDIATEK_DRM_UPSTREAM
@@ -172,6 +173,7 @@ static void mtk_drm_crtc_update_cb(struct drm_reservation_cb *rcb, void *params)
 	mtk_crtc->pending_ovl_addr = mtk_crtc->flip_buffer->mva_addr;
 	mtk_crtc->pending_ovl_format =
 			mtk_crtc->base.primary->fb->pixel_format;
+	mtk_crtc->pending_enabled = true;
 	mtk_crtc->pending_ovl_config = true;
 
 	spin_lock_irqsave(&dev->event_lock, flags);
@@ -285,7 +287,7 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 	} else
 #endif /* MEDIATEK_DRM_UPSTREAM */
 	ovl_layer_config(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr,
-		mtk_crtc->base.primary->fb->pixel_format);
+		mtk_crtc->base.primary->fb->pixel_format, true);
 
 	return ret;
 }
@@ -351,7 +353,7 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 #ifndef MEDIATEK_DRM_UPSTREAM
 	DRM_INFO("DBG_YT mtk_drm_crtc_mode_set[%d] %X\n", mtk_crtc->pipe, buffer->mva_addr);
 #endif /* MEDIATEK_DRM_UPSTREAM */
-	ovl_layer_config(&mtk_crtc->base, buffer->mva_addr, fb->pixel_format);
+	ovl_layer_config(&mtk_crtc->base, buffer->mva_addr, fb->pixel_format, true);
 	/*
 	 * copy the mode data adjusted by mode_fixup() into crtc->mode
 	 * so that hardware can be seet to proper mode.
@@ -366,7 +368,8 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 
 static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 {
-	/* drm framework doesn't check NULL */
+	DRM_INFO("mtk_drm_crtc_disable\n");
+	ovl_layer_config(crtc, 0, 0, false);
 }
 
 static struct drm_crtc_funcs mediatek_crtc_funcs = {

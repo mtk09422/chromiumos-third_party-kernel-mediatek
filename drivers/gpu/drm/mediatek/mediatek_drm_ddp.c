@@ -453,7 +453,7 @@ void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 #endif /* MEDIATEK_DRM_UPSTREAM */
 
 void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
-	unsigned int format)
+	unsigned int format, bool enabled)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	void __iomem *drm_disp_base;
@@ -467,6 +467,8 @@ void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int color_key = 0xFF000000;
 	bool alpha_en = 0;
 	unsigned char alpha = 0x0;
+	unsigned int src_con, new_set;
+
 	unsigned int rgb_swap, bpp;
 	unsigned int fmt = ovl_fmt_convert(format);
 
@@ -498,12 +500,21 @@ void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
 		bpp = 1;
 	}
 
-	src_pitch = crtc->primary->fb->pitches[0];
+	if (crtc->primary->fb && crtc->primary->fb->pitches[0])
+		src_pitch = crtc->primary->fb->pitches[0];
+	else
+		src_pitch = crtc->mode.hdisplay * bpp;
+
+	src_con = readl(drm_disp_base + DISP_REG_OVL_SRC_CON);
+	if (enabled == true)
+		new_set = src_con | 0x1;
+	else
+		new_set = src_con & ~(0x1);
 
 	writel(0x1, drm_disp_base + DISP_REG_OVL_RST);
 	writel(0x0, drm_disp_base + DISP_REG_OVL_RST);
 
-	writel(0x3, drm_disp_base + DISP_REG_OVL_SRC_CON);
+	writel(new_set, drm_disp_base + DISP_REG_OVL_SRC_CON);
 
 	writel(0x00000001, drm_disp_base + DISP_REG_OVL_RDMA0_CTRL);
 	writel(0x40402020, drm_disp_base + DISP_REG_OVL_RDMA0_MEM_GMC_SETTING);
@@ -516,8 +527,6 @@ void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
 	writel(dst_y << 16 | dst_x, drm_disp_base + DISP_REG_OVL_L0_OFFSET);
 	writel(addr, drm_disp_base + DISP_REG_OVL_L0_ADDR);
 	writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L0_PITCH);
-
-	ovl_layer_switch(mtk_crtc->ovl_regs, mtk_crtc->pipe, 0, 1);
 }
 
 void main_disp_path_power_on(struct drm_crtc *crtc)

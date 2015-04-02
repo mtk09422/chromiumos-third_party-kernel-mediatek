@@ -43,7 +43,7 @@ void mtk_enable_vblank(void __iomem *drm_disp_base);
 void mtk_disable_vblank(void __iomem *drm_disp_base);
 void mtk_clear_vblank(void __iomem *drm_disp_base);
 void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
-	unsigned int format);
+	unsigned int format, bool enabled);
 #ifndef MEDIATEK_DRM_UPSTREAM
 void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 	int x, int y);
