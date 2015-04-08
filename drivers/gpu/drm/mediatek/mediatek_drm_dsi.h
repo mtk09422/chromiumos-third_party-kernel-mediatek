@@ -18,7 +18,6 @@ enum mtk_dsi_format {
 	MTK_DSI_FORMAT_24P,
 };
 
-extern void  it6151_pre_enable_temp(void);
 
 #define DSI_START		0x00
 #define DSI_INTEN		0x08
@@ -290,4 +289,48 @@ extern void  it6151_pre_enable_temp(void);
 
 
 #define		MIPITX_DSI0_MPPLL_SDM_CON2	0x94
+
+
+
+struct mtk_dsi {
+	struct drm_device *drm_dev;
+	struct drm_encoder encoder;
+	struct drm_connector conn;
+	struct drm_panel *panel;
+	struct mipi_dsi_host host;
+	struct regulator *disp_supplies;
+
+	void __iomem *dsi_reg_base;
+	void __iomem *dsi_tx_reg_base;
+
+	struct clk *dsi_disp_clk_cg;
+	struct clk *dsi_dsi_clk_cg;
+	struct clk *dsi_div2_clk_cg;
+
+	struct clk *dsi0_engine_clk_cg;
+	struct clk *dsi0_digital_clk_cg;
+
+	u32 pll_clk_rate;
+
+	unsigned long mode_flags;
+	enum mipi_dsi_pixel_format format;
+	unsigned int lanes;
+	struct videomode vm;
+	bool enabled;
+};
+
+
+static inline struct mtk_dsi *host_to_mtk(struct mipi_dsi_host *host)
+{
+	return container_of(host, struct mtk_dsi, host);
+}
+
+static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)
+{
+	return container_of(e, struct mtk_dsi, encoder);
+}
+
+#define connector_to_dsi(c) container_of(c, struct mtk_dsi, conn)
+
+
 

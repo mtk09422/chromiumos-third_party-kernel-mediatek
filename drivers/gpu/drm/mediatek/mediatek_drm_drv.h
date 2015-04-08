@@ -31,6 +31,5 @@ struct mtk_drm_private {
 	struct drm_crtc *crtc[MAX_CRTC];
 };
 
-int mtk_dsi_probe(struct drm_device *dev);
 
 #endif

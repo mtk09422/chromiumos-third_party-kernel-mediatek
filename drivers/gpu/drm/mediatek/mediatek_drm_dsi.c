@@ -28,6 +28,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
 #include <linux/of_platform.h>
+#include <linux/component.h>
 
 #include <linux/regulator/consumer.h>
 
@@ -46,6 +47,7 @@
 #include "mediatek_drm_gem.h"
 #include "mediatek_drm_dev_if.h"
 #include "mediatek_drm_dsi.h"
+#include "it6151.h"
 
 
 
@@ -53,49 +55,7 @@
 #define DSI_VIDEO_FIFO_DEPTH (1920 / 4)
 #define DSI_HOST_FIFO_DEPTH 64
 
-struct mtk_dsi {
-	struct mtk_output output;
-	struct device *dev;
 
-	void __iomem *dsi_reg_base;
-	void __iomem *dsi_tx_reg_base;
-
-	struct clk *dsi_disp_clk_cg;
-	struct clk *dsi_dsi_clk_cg;
-	struct clk *dsi_div2_clk_cg;
-
-	struct clk *dsi0_engine_clk_cg;
-	struct clk *dsi0_digital_clk_cg;
-
-
-	struct drm_minor *minor;
-
-	u32 pll_clk_rate;
-	unsigned long mode_flags;
-	enum mipi_dsi_pixel_format format;
-	unsigned int lanes;
-	struct videomode vm;
-	struct mipi_dsi_host host;
-
-
-	bool enabled;
-
-/*  temp test  */
-	unsigned int it6151_rst;
-	unsigned int bl_en_gpio;
-	unsigned int it6151_pwr1v2_gpio;
-	unsigned int bl_pwmasr_gpio;
-};
-
-static inline struct mtk_dsi *host_to_mtk(struct mipi_dsi_host *host)
-{
-	return container_of(host, struct mtk_dsi, host);
-}
-
-static inline struct mtk_dsi *to_dsi(struct mtk_output *output)
-{
-	return container_of(output, struct mtk_dsi, output);
-}
 
 static inline unsigned long mtk_dsi_readl(struct mtk_dsi *dsi,
 	unsigned long reg)
@@ -109,8 +69,6 @@ static inline void mtk_dsi_writel(struct mtk_dsi *dsi, unsigned long value,
 	writel(value, dsi->dsi_reg_base + (reg << 2));
 }
 
-#if 0
-def CONFIG_DRM_MEDIATEK_IT6151
 static int mtk_dsi_of_read_u32(const struct device_node *np,
 				  const char *propname, u32 *out_value)
 {
@@ -122,7 +80,6 @@ static int mtk_dsi_of_read_u32(const struct device_node *np,
 
 	return ret;
 }
-#endif
 
 void DSI_PHY_clk_switch(struct mtk_dsi *dsi, bool on)
 {
@@ -190,7 +147,7 @@ return;
 		writel(tmp_reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE3);
 
 
-		mdelay(1);
+		udelay(100);
 
 		tmp_reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_CON);
 		tmp_reg = tmp_reg & (~(RG_DSI0_CKG_LDOOUT_EN |
@@ -202,7 +159,7 @@ return;
 		writel(tmp_reg, dsi->dsi_tx_reg_base + MIPITX_DSI_BG_CON);
 
 
-		mdelay(1);
+		udelay(100);
 	}
 
 	if (on) {
@@ -215,174 +172,6 @@ return;
 		writel(tmp_reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
 	}
 }
-
-#if 0
-void DSI_PHY_clk_setting(struct mtk_dsi *dsi)
-{
-	u32 reg, txdiv = 0, pcw = 0;
-	unsigned int data_Rate = dsi->pll_clk_rate*2;
-
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
-	reg = (reg & (~RG_DSI_LNT_IMP_CAL_CODE)) | (8<<4);
-	reg = (reg & (~RG_DSI_LNT_HS_BIAS_EN)) | (1<<1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_TOP_CON);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_BG_CON);
-	reg = (reg & (~RG_DSI_V032_SEL)) | (4<<17);
-	reg = (reg & (~RG_DSI_V04_SEL)) | (4<<14);
-	reg = (reg & (~RG_DSI_V072_SEL)) | (4<<11);
-	reg = (reg & (~RG_DSI_V10_SEL)) | (4<<8);
-	reg = (reg & (~RG_DSI_V12_SEL)) | (4<<5);
-	reg = (reg & (~RG_DSI_BG_CKEN)) | (1<<1);
-	reg = (reg & (~RG_DSI_BG_CORE_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_BG_CON);
-	mdelay(10);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_CON);
-	reg = (reg & (~RG_DSI0_CKG_LDOOUT_EN)) | (1<<1);
-	reg = (reg & (~RG_DSI0_LDOCORE_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_CON);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_MPPLL_SDM_CON1);
-	reg = (reg & (~RG_DSI0_MPPLL_PWR_ON)) | (1<<2);
-	reg = (reg & (~RG_DSI0_MPPLL_ISO_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_MPPLL_SDM_CON1);
-	mdelay(1);
-
-	reg = (reg & (~RG_DSI0_MPPLL_ISO_EN));
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_MPPLL_SDM_CON1);
-
-	if (0 != data_Rate) {
-		if (data_Rate > 1250)
-			udelay(1);
-		else if (data_Rate >= 500)
-			txdiv = 1;
-		else if (data_Rate >= 250)
-			txdiv = 2;
-		else if (data_Rate >= 125)
-			txdiv = 4;
-		else if (data_Rate > 62)
-			txdiv = 8;
-		else if (data_Rate >= 50)
-			txdiv = 16;
-		else
-			udelay(1);
-
-	}
-
-		reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-	switch (txdiv) {
-	case 1:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (0<<4);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<6);
-
-		break;
-	case 2:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (1<<4);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<6);
-		break;
-	case 4:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<4);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (0<<6);
-		break;
-	case 8:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<4);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (1<<6);
-		break;
-	case 16:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2<<4);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (2<<6);
-		break;
-
-	default:
-		break;
-	}
-
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
-	reg = (reg & (~RG_DSI0_MPPLL_SDM_SSC_EN));
-	reg = (reg & (~RG_DSI0_MPPLL_SDM_SSC_PH_INIT))  |  (1<<1);
-	/*reg = (reg & (~RG_DSI0_MPPLL_SDM_FRA_EN)) |  (1<<0);*/
-	reg = (reg & (~RG_DSI0_MPPLL_SDM_FRA_EN));
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON1);
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-	reg = (reg & (~RG_DSI0_MPPLL_VOD_EN))  |  (1<<0);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-	pcw = data_Rate * txdiv / 13;
-
-/*	reg = ((pcw & 0x7F)<<24) + (((256*(data_Rate*txdiv%13)/13) & 0xFF)<<16)
-		+ (((256*(256*(data_Rate*txdiv%13)%13)/13) & 0xFF)<<8)
-		+((256*(256*(256*(data_Rate*txdiv%13)%13)%13)/13) & 0xFF);*/
-
-	reg = ((0x3E & 0x7F)<<24);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON2);
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-	reg = (reg & (~RG_DSI0_MPPLL_PREDIV));
-	reg = (reg & (~RG_DSI0_MPPLL_POSDIV));
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_MPPLL_SDM_CON1);
-	reg = (reg & (~RG_DSI0_MPPLL_ISO_EN));
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_MPPLL_SDM_CON1);
-
-
-
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_CLOCK_LANE);
-	reg = (reg & (~RG_DSI0_LNTC_RT_CODE)) | (8<<8);
-	reg = (reg & (~RG_DSI0_LNTC_LDOOUT_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_CLOCK_LANE);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE0);
-	reg = (reg & (~RG_DSI0_LNT0_RT_CODE)) | (8<<7);
-	reg = (reg & (~RG_DSI0_LNT0_LDOOUT_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE0);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE1);
-	reg = (reg & (~RG_DSI0_LNT1_RT_CODE)) | (8<<5);
-	reg = (reg & (~RG_DSI0_LNT1_LDOOUT_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE1);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE2);
-	reg = (reg & (~RG_DSI0_LNT2_RT_CODE)) | (8<<5);
-	reg = (reg & (~RG_DSI0_LNT2_LDOOUT_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE2);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE3);
-	reg = (reg & (~RG_DSI0_LNT3_RT_CODE)) | (8<<5);
-	reg = (reg & (~RG_DSI0_LNT3_LDOOUT_EN)) | (1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI0_DATA_LANE3);
-
-	reg = (reg & (~RG_DSI0_MPPLL_PLL_EN));
-
-
-	udelay(1000);
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-	reg = (reg & (~RG_DSI0_MPPLL_PLL_EN)) | (1<<1);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-	mdelay(20);
-
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_TOP);
-	reg = (reg & (~RG_MPPLL_PRESERVE)) | (3<<16);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_TOP);
-
-}
-
-#endif
 
 
 void DSI_PHY_clk_setting(struct mtk_dsi *dsi)
@@ -656,6 +445,7 @@ void mtk_dsi_reset(struct mtk_dsi *dsi)
 static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 {
 	int ret;
+	struct drm_device *dev = dsi->drm_dev;
 
 
 		DSI_PHY_clk_setting(dsi);
@@ -663,13 +453,13 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 
 	ret = clk_prepare_enable(dsi->dsi0_engine_clk_cg);
 	if (ret < 0) {
-		dev_err(dsi->dev, "can't enable dsi0_engine_clk_cg %d\n", ret);
+		dev_err(dev->dev, "can't enable dsi0_engine_clk_cg %d\n", ret);
 		goto err_dsi0_engine_clk_cg;
 	}
 
 	ret = clk_prepare_enable(dsi->dsi0_digital_clk_cg);
 	if (ret < 0) {
-		dev_err(dsi->dev, "can't enable dsi0_digital_clk_cg %d\n", ret);
+		dev_err(dev->dev, "can't enable dsi0_digital_clk_cg %d\n", ret);
 		goto err_dsi0_digital_clk_cg;
 	}
 
@@ -950,12 +740,14 @@ void mtk_dsi_start(struct mtk_dsi *dsi)
 	writel(0, dsi->dsi_reg_base + DSI_START);
 	writel(1, dsi->dsi_reg_base + DSI_START);
 
+	writel(0x00ff00, dsi->dsi_reg_base + 0x178);
+	writel(0x40, dsi->dsi_reg_base + 0x17C);
+
 }
 
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
 
-	return;
 	clk_disable_unprepare(dsi->dsi0_engine_clk_cg);
 	clk_disable_unprepare(dsi->dsi0_digital_clk_cg);
 
@@ -965,10 +757,10 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 }
 
 
-int mtk_output_dsi_enable(struct mtk_output *output)
+int mtk_output_dsi_enable(struct mtk_dsi *dsi)
 {
 	int ret;
-	struct mtk_dsi *dsi = to_dsi(output);
+
 
 	if (dsi->enabled == true)
 		return 0;
@@ -1005,69 +797,14 @@ int mtk_output_dsi_enable(struct mtk_output *output)
 
 	dsi->enabled = true;
 
-
 	return 0;
 }
 
-
-
-int mtk_output_dsi_enable_temp(struct mtk_dsi *dsi)
-{
-	int ret;
-
-	if (dsi->enabled == true)
-		return 0;
-
-	ret = mtk_dsi_poweron(dsi);
-	if (ret < 0)
-		return ret;
-
-	dsi_rxtx_control(dsi);
-
-
-	DSI_clk_ULP_mode(dsi, 0);
-
-	DSI_lane0_ULP_mode(dsi, 0);
-
-	DSI_clk_HS_mode(dsi, 0);
-
-
-	DSI_SetMode(dsi);
-
-
-/*
-	ret = drm_panel_enable(dsi->output.panel);
-	if (ret < 0) {
-		mtk_dsi_poweroff(dsi);
-		return ret;
-	}
-*/
-
-	DSI_PS_Control(dsi);
-
-
-	DSI_Config_VDO_Timing(dsi);
-
-
-
-	DSI_SetMode(dsi);
-	DSI_clk_HS_mode(dsi, 1);
-
-
-
-	mtk_dsi_start(dsi);
-
-
-	dsi->enabled = true;
-
-
-	return 0;
-}
 
 
 int mtk_output_dsi_disable(struct mtk_dsi *dsi)
 {
-	return 0;
+
 	if (dsi->enabled == false)
 		return 0;
 
@@ -1078,15 +815,388 @@ int mtk_output_dsi_disable(struct mtk_dsi *dsi)
 	DSI_PHY_clk_switch(dsi, 0);
 
 
-
 	dsi->enabled = false;
 	return 0;
 }
 
 
+static void mtk_dsi_encoder_destroy(struct drm_encoder *encoder)
+{
+	drm_encoder_cleanup(encoder);
+}
+
+
+static const struct drm_encoder_funcs mtk_dsi_encoder_funcs = {
+	.destroy	= mtk_dsi_encoder_destroy,
+};
+
+static void mtk_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
+{
+	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
+	struct drm_panel *panel = dsi->panel;
+
+	if (mode != DRM_MODE_DPMS_ON) {
+		drm_panel_disable(panel);
+		mtk_output_dsi_disable(dsi);
+	} else {
+		mtk_output_dsi_enable(dsi);
+		drm_panel_enable(panel);
+	}
+}
+
+
+static bool mtk_dsi_encoder_mode_fixup(struct drm_encoder *encoder,
+			       const struct drm_display_mode *mode,
+			       struct drm_display_mode *adjusted_mode)
+{
+	return true;
+	}
+
+
+static void mtk_dsi_encoder_prepare(struct drm_encoder *encoder)
+{
+	/* DRM_MODE_DPMS_OFF? */
+
+	/* drm framework doesn't check NULL. */
+}
+
+static void mtk_dsi_encoder_mode_set(struct drm_encoder *encoder,
+	struct drm_display_mode *mode, struct drm_display_mode *adjusted)
+{
+}
+
+static void mtk_dsi_encoder_commit(struct drm_encoder *encoder)
+{
+	/* DRM_MODE_DPMS_ON? */
+}
+
+static enum drm_connector_status mtk_dsi_connector_detect(
+	struct drm_connector *connector, bool force)
+{
+	enum drm_connector_status status = connector_status_unknown;
+
+	status = connector_status_connected; /* FIXME? */
+
+	return status;
+}
+
+static void mtk_dsi_connector_destroy(struct drm_connector *connector)
+{
+	drm_connector_unregister(connector);
+	drm_connector_cleanup(connector);
+}
+
+static const struct drm_display_mode default_modes[] = {
+	/* 1368x768@60Hz */
+	{ DRM_MODE("1368x768", DRM_MODE_TYPE_DRIVER, 72070,
+	1368, 1368 + 58, 1368 + 58 + 58, 1368 + 58 + 58 + 58, 0,
+	768, 768 + 4, 768 + 4 + 4, 768 + 4 + 4 + 4, 0, 0) },
+};
+
+
+static int mtk_dsi_connector_get_modes(struct drm_connector *connector)
+{
+	const struct drm_display_mode *ptr = &default_modes[0];
+	struct drm_display_mode *mode;
+	int count = 0;
+	/* struct mtk_drm_manager *manager = mtk_conn->manager;
+	void *edid = NULL; */
+
+	mode = drm_mode_duplicate(connector->dev, ptr);
+	if (mode) {
+		drm_mode_probed_add(connector, mode);
+		count++;
+	}
+
+	connector->display_info.width_mm = mode->hdisplay;
+	connector->display_info.height_mm = mode->vdisplay;
+
+	/*
+	 * If the panel provides one or more modes, use them exclusively and
+	 * ignore any other means of obtaining a mode.
+	 */
+	/* if (output->panel) {
+		err = output->panel->funcs->get_modes(output->panel);
+		if (err > 0)
+		return err;
+	} */
+
+	/* output->panel = of_drm_find_panel(device->dev.of_node);
+	if (output->panel) {
+		if (output->connector.dev)
+			drm_helper_hpd_irq_event(output->connector.dev);
+	} */
+
+	/*
+	 * if get_edid() exists then get_edid() callback of hdmi side
+	 * is called to get edid data through i2c interface else
+	 * get timing from the FIMD driver(display controller).
+	 *
+	 * P.S. in case of lcd panel, count is always 1 if success
+	 * because lcd panel has only one mode.
+	 */
+	/* if (manager->get_edid) {
+	    int ret;
+		edid = kzalloc(MAX_EDID, GFP_KERNEL);
+		if (!edid) {
+			DRM_ERROR("failed to allocate edid\n");
+			goto out;
+		}
+
+		ret = manager->get_edid(manager->dev, connector,
+						edid, MAX_EDID);
+		if (ret < 0) {
+			DRM_ERROR("failed to get edid data.\n");
+			goto out;
+		}
+
+		count = drm_add_edid_modes(connector, edid);
+		if (!count) {
+			DRM_ERROR("Add edid modes failed %d\n", count);
+			goto out;
+		}
+
+		drm_mode_connector_update_edid_property(connector, edid);
+	} else {
+		struct drm_display_mode *mode = drm_mode_create(connector->dev);
+		struct mtk_drm_panel_info *panel;
+
+		if (manager->get_panel)
+			panel = manager->get_panel(manager->dev);
+		else {
+			drm_mode_destroy(connector->dev, mode);
+			return 0;
+		}
+
+		convert_to_display_mode(mode, panel);
+		connector->display_info.width_mm = mode->width_mm;
+		connector->display_info.height_mm = mode->height_mm;
+
+		mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+		drm_mode_set_name(mode);
+		drm_mode_probed_add(connector, mode);
+
+		count = 1;
+	}
+
+out:
+	kfree(edid); */
+	return 1;
+}
+
+
+static struct drm_encoder *
+mtk_dsi_connector_best_encoder(struct drm_connector *connector)
+{
+	struct mtk_dsi *dsi = connector_to_dsi(connector);
+
+	return &dsi->encoder;
+}
+
+
+static const struct drm_encoder_helper_funcs mtk_dsi_encoder_helper_funcs = {
+	.dpms = mtk_dsi_encoder_dpms,
+	.mode_fixup = mtk_dsi_encoder_mode_fixup,
+	.prepare = mtk_dsi_encoder_prepare,
+	.mode_set = mtk_dsi_encoder_mode_set,
+	.commit = mtk_dsi_encoder_commit,
+};
+
+static const struct drm_connector_funcs mtk_dsi_connector_funcs = {
+	.dpms	= drm_helper_connector_dpms,
+	.detect	= mtk_dsi_connector_detect,
+	.fill_modes	= drm_helper_probe_single_connector_modes,
+	/* .set_property	= mtk_drm_connector_set_property, */
+	.destroy	= mtk_dsi_connector_destroy,
+};
+
+static const struct drm_connector_helper_funcs
+	mtk_dsi_connector_helper_funcs = {
+	.get_modes	= mtk_dsi_connector_get_modes,
+	/* .mode_valid	= , // FIXME: optional? */
+	.best_encoder	= mtk_dsi_connector_best_encoder,
+};
+
+struct bridge_init {
+	struct i2c_client *mipirx_client;
+	struct i2c_client *dptx_client;
+	struct device_node *node_mipirx;
+	struct device_node *node_dptx;
+};
+
+static bool find_bridge(const char *mipirx,
+		const char *dptx, struct bridge_init *bridge)
+{
+
+	bridge->mipirx_client = NULL;
+	bridge->node_mipirx = of_find_compatible_node(NULL, NULL, mipirx);
+
+
+	if (!bridge->node_mipirx)
+		return false;
+
+	bridge->mipirx_client = of_find_i2c_device_by_node(bridge->node_mipirx);
+	if (!bridge->mipirx_client)
+		return false;
+
+
+
+	bridge->dptx_client = NULL;
+	bridge->node_dptx = of_find_compatible_node(NULL, NULL, dptx);
+	if (!bridge->node_dptx)
+		return false;
+
+
+
+	bridge->dptx_client = of_find_i2c_device_by_node(bridge->node_dptx);
+	if (!bridge->dptx_client)
+		return false;
+
+
+
+	return true;
+}
+
+static int mtk_drm_attach_lcm_bridge(struct drm_device *dev,
+		struct drm_encoder *encoder)
+{
+	struct bridge_init *bridge;
+	int ret;
+
+
+	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
+
+	if (find_bridge("ite,it6151mipirx", "ite,it6151dptx", bridge)) {
+		ret = it6151_init(dev, encoder, bridge->mipirx_client,
+				bridge->dptx_client, bridge->node_mipirx);
+		if (ret != 0)
+			return 1;
+	}
+
+	return 0;
+}
+
+static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
+{
+	int ret;
+
+	ret = drm_encoder_init(dsi->drm_dev, &dsi->encoder,
+			&mtk_dsi_encoder_funcs, DRM_MODE_ENCODER_DSI);
+
+	if (ret)
+		goto errcode;
+
+	drm_encoder_helper_add(&dsi->encoder, &mtk_dsi_encoder_helper_funcs);
+
+
+	dsi->encoder.possible_crtcs = 0x3;
+
+
+	/* Pre-empt DP connector creation if there's a bridge */
+	ret = mtk_drm_attach_lcm_bridge(dsi->drm_dev, &dsi->encoder);
+	if (ret)
+		return 0;
+
+
+
+	ret = drm_connector_init(dsi->drm_dev, &dsi->conn,
+		&mtk_dsi_connector_funcs, DRM_MODE_CONNECTOR_DSI);
+	if (ret)
+		goto errcode;
+
+	drm_connector_helper_add(&dsi->conn, &mtk_dsi_connector_helper_funcs);
+
+
+	ret = drm_connector_register(&dsi->conn);
+	if (ret)
+		goto errcode;
+
+
+
+	dsi->conn.dpms = DRM_MODE_DPMS_OFF;
+	dsi->conn.encoder = &dsi->encoder;
+
+
+	drm_mode_connector_attach_encoder(&dsi->conn, &dsi->encoder);
+
+
+	if (dsi->panel)
+		ret = drm_panel_attach(dsi->panel, &dsi->conn);
+
+
+	return 0;
+
+errcode:
+	drm_encoder_cleanup(&dsi->encoder);
+	drm_connector_unregister(&dsi->conn);
+	drm_connector_cleanup(&dsi->conn);
+
+	return ret;
+
+}
+
+static void mtk_dsi_destroy_conn_enc(struct mtk_dsi *dsi)
+{
+	if (dsi == NULL)
+		return;
+
+	drm_encoder_cleanup(&dsi->encoder);
+	drm_connector_unregister(&dsi->conn);
+	drm_connector_cleanup(&dsi->conn);
+}
+
+
+static int mtk_dsi_bind(struct device *dev, struct device *master,
+				void *data)
+{
+	int ret;
+	struct mtk_dsi *dsi = NULL;
+
+
+	dsi = platform_get_drvdata(to_platform_device(dev));
+	if (!dsi) {
+		ret = -EFAULT;
+		goto errcode;
+	}
+
+	dsi->drm_dev = data;
+
+	ret = mtk_dsi_create_conn_enc(dsi);
+	if (ret) {
+		DRM_ERROR("Encoder create  failed with %d\n", ret);
+		return ret;
+	}
+
+
+	return 0;
+
+errcode:
+	return ret;
+
+	}
+
+
+static void mtk_dsi_unbind(struct device *dev, struct device *master,
+				void *data)
+{
+	struct mtk_dsi *dsi = NULL;
+
+	dsi = platform_get_drvdata(to_platform_device(dev));
+	mtk_dsi_destroy_conn_enc(dsi);
+
+	dsi->drm_dev = NULL;
+}
+
+
+
+static const struct component_ops mtk_dsi_component_ops = {
+	.bind	= mtk_dsi_bind,
+	.unbind	= mtk_dsi_unbind,
+};
+
 
 struct mtk_output_ops dsi_ops = {
-	.enable = mtk_output_dsi_enable,
+/*	.enable = mtk_output_dsi_enable,*/
 /*	.disable = mtk_output_dsi_disable,*/
 };
 
@@ -1095,16 +1205,15 @@ static int mtk_dsi_host_attach(struct mipi_dsi_host *host,
 				 struct mipi_dsi_device *device)
 {
 	struct mtk_dsi *dsi = host_to_mtk(host);
-	struct mtk_output *output = &dsi->output;
 
 	dsi->mode_flags = device->mode_flags;
 	dsi->format = device->format;
 	dsi->lanes = device->lanes;
 
-	output->panel = of_drm_find_panel(device->dev.of_node);
-	if (output->panel) {
-		if (output->connector->dev)
-			drm_helper_hpd_irq_event(output->connector->dev);
+	dsi->panel = of_drm_find_panel(device->dev.of_node);
+	if (dsi->panel) {
+		if (dsi->conn.dev)
+			drm_helper_hpd_irq_event(dsi->conn.dev);
 	}
 
 	return 0;
@@ -1114,332 +1223,186 @@ static int mtk_dsi_host_detach(struct mipi_dsi_host *host,
 				 struct mipi_dsi_device *device)
 {
 	struct mtk_dsi *dsi = host_to_mtk(host);
-	struct mtk_output *output = &dsi->output;
 
-	if (output->panel && &device->dev == output->panel->dev) {
-		if (output->connector->dev)
-			drm_helper_hpd_irq_event(output->connector->dev);
+	if (dsi->panel && &device->dev == dsi->panel->dev) {
+		if (dsi->conn.dev)
+			drm_helper_hpd_irq_event(dsi->conn.dev);
 
-		output->panel = NULL;
+		dsi->panel = NULL;
 	}
 
 	return 0;
-}
+	}
 
 static const struct mipi_dsi_host_ops mtk_dsi_host_ops = {
 	.attach = mtk_dsi_host_attach,
 	.detach = mtk_dsi_host_detach,
 };
 
-
-
-
-
-
-
-int mtk_dsi_probe(struct drm_device *dev)
+static int mtk_dsi_probe(struct platform_device *pdev)
 {
-	struct mtk_dsi *dsi;
-	int err;
-	struct drm_bridge *bridge;
-	/*int ret;
+
+	struct mtk_dsi *dsi = NULL;
+	struct device *dev = &pdev->dev;
+	struct device_node *panel_node;
 	struct resource *regs;
-	struct device_node *node;*/
-	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
-	struct device *pdev = get_mtk_drm_device(dev);
-	struct mtk_drm_crtc *mtk_crtc;
-/*	u32 reg,i; */
-
-	mtk_crtc = to_mtk_crtc(priv->crtc[0]);
-
-	bridge = devm_kzalloc(dev->dev, sizeof(*bridge), GFP_KERNEL);
-	if (!bridge)
-		return -ENOMEM;
+	int err;
+	int ret;
+	unsigned int it6151_rst = 94;
+	unsigned int it6151_pwr1v2_gpio = 93;
 
 
 
-	dsi = devm_kzalloc(dev->dev, sizeof(*dsi), GFP_KERNEL);
-	if (!dsi)
-		return -ENOMEM;
 
-	/*dsi->output.dev = dsi->dev = dev;
+	dsi = kzalloc(sizeof(struct mtk_dsi), GFP_KERNEL);
 
-	err = mtk_output_probe(&dsi->output);
-	if (err < 0)
-		return err;*/
-
-	/*
-	 * Assume these values by default. When a DSI peripheral driver
-	 * attaches to the DSI host, the parameters will be taken from
-	 * the attached device.
-	 */
 	dsi->mode_flags = MIPI_DSI_MODE_VIDEO;
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->lanes = 4;
-	dsi->pll_clk_rate = 200;
+
+	dsi->vm.pixelclock = 76000;
+	dsi->vm.hactive	 = 1368;
+	dsi->vm.hback_porch = 100;
+	dsi->vm.hfront_porch = 106;
+	dsi->vm.hsync_len = 26;
+	dsi->vm.vactive   = 768;
+	dsi->vm.vback_porch = 10;
+	dsi->vm.vfront_porch = 10;
+	dsi->vm.vsync_len = 12;
 
 
-#if 0
-	/* #ifdef CONFIG_DRM_MEDIATEK_IT6151 */
-	err = mtk_dsi_of_read_u32(pdev->of_node,
-		"mediatek,mipi-tx-burst-freq", &dsi->pll_clk_rate);
+	err = mtk_dsi_of_read_u32(dev->of_node, "mediatek,mipi-tx-burst-freq",
+				     &dsi->pll_clk_rate);
+
 	if (err < 0)
 		return err;
-#endif
 
-	dsi->dsi0_engine_clk_cg = devm_clk_get(pdev, "dsi0_engine_disp_ck");
+
+	dsi->dsi0_engine_clk_cg = devm_clk_get(dev, "dsi0_engine_disp_ck");
 	if (IS_ERR(dsi->dsi0_engine_clk_cg)) {
-		dev_err(pdev, "cannot get dsi0_engine_clk_cg\n");
+		dev_err(dev, "cannot get dsi0_engine_clk_cg\n");
 		return PTR_ERR(dsi->dsi0_engine_clk_cg);
 	}
 
 	err = clk_prepare_enable(dsi->dsi0_engine_clk_cg);
 	if (err < 0) {
-		dev_err(pdev, "cannot enable dsi0_engine_clk_cg\n");
+		dev_err(dev, "cannot enable dsi0_engine_clk_cg\n");
 		return err;
 	}
 
-
-	dsi->dsi0_digital_clk_cg = devm_clk_get(pdev, "dsi0_digital_disp_ck");
+	dsi->dsi0_digital_clk_cg = devm_clk_get(dev, "dsi0_digital_disp_ck");
 	if (IS_ERR(dsi->dsi0_digital_clk_cg)) {
-		dev_err(pdev, "cannot get dsi0_digital_clk_cg\n");
+		dev_err(dev, "cannot get dsi0_digital_disp_ck\n");
 		return PTR_ERR(dsi->dsi0_digital_clk_cg);
 	}
 
 	err = clk_prepare_enable(dsi->dsi0_digital_clk_cg);
 	if (err < 0) {
-		dev_err(pdev, "cannot enable dsi0_digital_clk_cg\n");
+		dev_err(dev, "cannot enable dsi0_digital_disp_ck clock\n");
 		return err;
 	}
 
+	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	dsi->dsi_reg_base = devm_ioremap_resource(dev, regs);
 
-
-#if 0
-	err = mtk_dsi_setup_clocks(dsi);
-	if (err < 0) {
-		dev_err(pdev, "cannot setup clocks\n");
-		return err;
-	}
-#endif
-	/*regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);*/
-	dsi->dsi_reg_base = mtk_crtc->dsi_reg;
-	/*if (IS_ERR(dsi->dsi_reg_base))
+	if (IS_ERR(dsi->dsi_reg_base)) {
+		dev_err(dev, "cannot get dsi->dsi_reg_base\n");
 		return PTR_ERR(dsi->dsi_reg_base);
-
-
-
-	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 1);*/
-	dsi->dsi_tx_reg_base = mtk_crtc->dsi_ana_reg;
-	/*if (IS_ERR(dsi->dsi_tx_reg_base))
-	return PTR_ERR(dsi->dsi_tx_reg_base);*/
-
-
-/*
-	dsi->host.ops = &mtk_dsi_host_ops;
-	dsi->host.dev = &dev;
-
-
-	err = mipi_dsi_host_register(&dsi->host);
-	if (err < 0) {
-		dev_err(&dev->platformdev,
-			"failed to register DSI host: %d\n", err);
-		return err;
 	}
-*/
-	/* only for bringup */
-	dsi->output.type = MTK_OUTPUT_DSI;
-	dsi->output.ops = &dsi_ops;
 
 
-	/*platform_set_drvdata(dev->platformdev, dsi);*/
+	regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	dsi->dsi_tx_reg_base = devm_ioremap_resource(dev, regs);
+	if (IS_ERR(dsi->dsi_tx_reg_base)) {
+		dev_err(dev, "cannot get dsi->dsi_tx_reg_base\n");
+		return PTR_ERR(dsi->dsi_tx_reg_base);
+}
 
+	dsi->disp_supplies = devm_regulator_get(&pdev->dev, "disp-bdg");
+	if (IS_ERR(dsi->disp_supplies)) {
+		dev_err(dev, "cannot get dsi->disp_supplies\n");
+		return PTR_ERR(dsi->disp_supplies);
+	}
+
+	ret = regulator_set_voltage(dsi->disp_supplies, 1800000, 1800000);
+	if (ret != 0)	{
+		dev_err(dev, "lcm failed to set lcm_vgp voltage:  %d\n", ret);
+		return PTR_ERR(dsi->disp_supplies);
+	}
+
+	ret = regulator_enable(dsi->disp_supplies);
+	if (ret != 0) {
+		dev_err(dev, "Failed to enable lcm_vgp: %d\n", ret);
+		return PTR_ERR(dsi->disp_supplies);
+	}
+
+	panel_node = of_parse_phandle(dev->of_node, "mediatek,panel", 0);
+	if (panel_node) {
+		dsi->panel = of_drm_find_panel(panel_node);
+		of_node_put(panel_node);
+		if (!dsi->panel)
+			return -EPROBE_DEFER;
+
+	} else
+		return -EPROBE_DEFER;
+
+
+	mtk_output_dsi_enable(dsi);
+
+	platform_set_drvdata(pdev, dsi);
 
 
 /*     for test       */
 
-dsi->vm.pixelclock = 76000;
-dsi->vm.hactive   = 1368;
-dsi->vm.hback_porch = 100;
-dsi->vm.hfront_porch = 106;
-dsi->vm.hsync_len = 26;
 
-dsi->vm.vactive   = 768;
-dsi->vm.vback_porch = 10;
-dsi->vm.vfront_porch = 10;
-dsi->vm.vsync_len = 12;
-
-#ifdef CONFIG_DRM_MEDIATEK_IT6151
-
-dsi->it6151_rst = 94;
-
-/*
+#if 1
 
 
-dsi->bl_en_gpio = 23;
-dsi->it6151_pwr1v2_gpio = 93;
+gpio_request(it6151_pwr1v2_gpio, "it6151pwr12-gpio");
+gpio_direction_output(it6151_pwr1v2_gpio, 1);
 
-
-
-gpio_request(dsi->bl_en_gpio, "bl-en-gpio");
-gpio_direction_output(dsi->bl_en_gpio, 1);
-
-gpio_request(dsi->it6151_pwr1v2_gpio, "it6151pwr12-gpio");
-gpio_direction_output(dsi->it6151_pwr1v2_gpio, 1);
-*/
-
-gpio_request(dsi->it6151_rst, "it6151reset-gpio");
-gpio_direction_output(dsi->it6151_rst, 0);
-udelay(15);
-gpio_direction_output(dsi->it6151_rst, 1);
-
-
-
-/*
-dsi->bl_en_gpio = devm_gpiod_get(pdev, "bl-en-gpio");
-if (IS_ERR(dsi->bl_en_gpio)) {
-	err = PTR_ERR(dsi->bl_en_gpio);
-	if (err != -ENOENT) {
-		printk("dsi->bl_en_gpio GPIO: %d\n", err);
-		return err;
-	}
-
-	dsi->bl_en_gpio = NULL;
-} else {
-	err = gpiod_direction_output(dsi->bl_en_gpio, 0);
-	if (err < 0) {
-		printk( "failed to setup GPIO: %d\n", err);
-		return err;
-	}
-
-	printk( "failed11 to setup GPIO: %d\n", err);
-}
-
-
-dsi->it6151_pwr1v2_gpio = devm_gpiod_get(pdev, "bl-en-gpio");
-if (IS_ERR(dsi->it6151_pwr1v2_gpio)) {
-	err = PTR_ERR(dsi->it6151_pwr1v2_gpio);
-	if (err != -ENOENT) {
-		printk("dsi->it6151_pwr1v2_gpio GPIO: %d\n", err);
-		return err;
-	}
-
-	dsi->bl_en_gpio = NULL;
-} else {
-	err = gpiod_direction_output(dsi->bl_en_gpio, 0);
-	if (err < 0) {
-		printk( "failed to it6151_pwr1v2_gpio GPIO: %d\n", err);
-		return err;
-	}
-
-	printk( "failed11 to it6151_pwr1v2_gpio GPIO: %d\n", err);
-}
-
-
-
-dsi->bl_pwmasr_gpio = devm_gpiod_get(pdev, "bl-en-gpio");
-if (IS_ERR(dsi->bl_pwmasr_gpio)) {
-	err = PTR_ERR(dsi->bl_pwmasr_gpio);
-	if (err != -ENOENT) {
-		printk("dsi->bl_pwmasr_gpio GPIO: %d\n", err);
-		return err;
-	}
-	printk( "failed1 to bl_pwmasr_gpio GPIO: %d\n", err);
-
-	dsi->bl_pwmasr_gpio = NULL;
-} else {
-	err = gpiod_direction_output(dsi->bl_pwmasr_gpio, 0);
-	if (err < 0) {
-		printk( "failed to bl_pwmasr_gpio GPIO: %d\n", err);
-		return err;
-	}
-
-	printk( "failed11 to bl_pwmasr_gpio GPIO: %d\n", err);
-}
-
-
-
-
-node = of_find_node_by_name(NULL,"bl-en-gpio");
-*/
-/*
-dsi->bl_en_gpio = of_get_named_gpio(node, "bl-en-gpio", 0);
-if (gpio_is_valid(dsi->bl_en_gpio)) {
-	ret = gpio_request_one(dsi->bl_en_gpio, GPIOF_OUT_INIT_HIGH,
-		"PANEL_BL_EN");
-	if (ret) {
-		printk("Request bl_en-gpio failed (%d)\n", ret);
-		return ret;
-	}
-}
-else
-	printk("DBG_jitao bl_en_gpio error 1\n");
-
-
-dsi->it6151_pwr1v2_gpio = of_get_named_gpio(node, "it6151pwr12-gpio", 0);
-if (gpio_is_valid(dsi->it6151_pwr1v2_gpio)) {
-	ret = gpio_request_one(dsi->it6151_pwr1v2_gpio, GPIOF_OUT_INIT_HIGH,
-		"it6151pwr12-gpio");
-	if (ret) {
-		printk("Request it6151pwr12--gpio failed (%d)\n", ret);
-		return ret;
-	}
-}
-else
-	printk("DBG_jitao it6151_pwr1v2_gpio error 1\n");
-
-dsi->bl_pwmasr_gpio = of_get_named_gpio(node, "bl-pwmas-gpio", 0);
-if (gpio_is_valid(dsi->bl_pwmasr_gpio)) {
-	ret = gpio_request_one(dsi->bl_pwmasr_gpio,	GPIOF_OUT_INIT_HIGH,
-		"bl-pwmas-gpio");
-	if (ret) {
-		printk("Request bl_pwm as--gpio failed (%d)\n", ret);
-		return ret;
-	}
-}
-else
-	printk("DBG_jitao bl_pwmasr_gpio error 1\n");
-
-*/
-
-
-mtk_output_dsi_enable_temp(dsi);
-
-it6151_pre_enable_temp();
-
+gpio_request(it6151_rst, "it6151pwr12-gpio");
+gpio_direction_output(it6151_rst, 0);
+udelay(5);
+gpio_direction_output(it6151_rst, 1);
 
 #endif
 
-	/*mtk_output_init(pdev, &dsi->output);*/
+	ret = component_add(&pdev->dev, &mtk_dsi_component_ops);
+	if (ret)
+		goto err_del_component;
 
-/*     for test end */
 	return 0;
+
+err_del_component:
+	component_del(&pdev->dev, &mtk_dsi_component_ops);
+	return -EPROBE_DEFER;
+
 }
 
-/*
+
 static int mtk_dsi_remove(struct platform_device *pdev)
 {
 	struct mtk_dsi *dsi = platform_get_drvdata(pdev);
 
-
-	mipi_dsi_host_unregister(&dsi->host);
-
 	mtk_output_dsi_disable(dsi);
+	component_del(&pdev->dev, &mtk_dsi_component_ops);
 
 	return 0;
 }
-*/
 
 static const struct of_device_id mtk_dsi_of_match[] = {
-	{ .compatible = "mediatek,mt8135-dsi" },
+	{ .compatible = "mediatek,mt8173-dsi" },
 	{ },
 };
-/*
+
 struct platform_driver mtk_dsi_driver = {
+	.probe = mtk_dsi_probe,
+	.remove = mtk_dsi_remove,
 	.driver = {
 		.name = "mtk-dsi",
 		.of_match_table = mtk_dsi_of_match,
+		.owner	= THIS_MODULE,
 	},
-	.probe = mtk_dsi_probe,
-	.remove = mtk_dsi_remove,
 };
-*/
+

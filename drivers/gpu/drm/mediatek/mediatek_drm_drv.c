@@ -148,24 +148,14 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		return PTR_ERR(mtk_crtc->ufoe_regs);
 
 	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 10);
-	mtk_crtc->dsi_reg = devm_ioremap_resource(dev->dev, regs);
-	if (IS_ERR(mtk_crtc->dsi_reg))
-		return PTR_ERR(mtk_crtc->dsi_reg);
-
-	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 11);
 	mtk_crtc->mutex_regs = devm_ioremap_resource(dev->dev, regs);
 	if (IS_ERR(mtk_crtc->mutex_regs))
 		return PTR_ERR(mtk_crtc->mutex_regs);
 
-	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 12);
+	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 11);
 	mtk_crtc->od_regs = devm_ioremap_resource(dev->dev, regs);
 	if (IS_ERR(mtk_crtc->od_regs))
 		return PTR_ERR(mtk_crtc->od_regs);
-
-	regs = platform_get_resource(dev->platformdev, IORESOURCE_MEM, 13);
-	mtk_crtc->dsi_ana_reg = devm_ioremap_resource(dev->dev, regs);
-	if (IS_ERR(mtk_crtc->dsi_ana_reg))
-		return PTR_ERR(mtk_crtc->dsi_ana_reg);
 
 	mtk_crtc_ext = to_mtk_crtc(priv->crtc[1]);
 	mtk_crtc_ext->regs = mtk_crtc->regs;
@@ -178,12 +168,9 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	mtk_crtc_ext->aal_regs = mtk_crtc->aal_regs;
 	mtk_crtc_ext->gamma_regs = mtk_crtc->gamma_regs;
 	mtk_crtc_ext->ufoe_regs = mtk_crtc->ufoe_regs;
-	mtk_crtc_ext->dsi_reg = mtk_crtc->dsi_reg;
 	mtk_crtc_ext->mutex_regs = mtk_crtc->mutex_regs;
 	mtk_crtc_ext->od_regs = mtk_crtc->od_regs;
-	mtk_crtc_ext->dsi_ana_reg = mtk_crtc->dsi_ana_reg;
 
-	mtk_dsi_probe(dev);
 
 	/*
 	 * We don't use the drm_irq_install() helpers provided by the DRM
@@ -204,7 +191,7 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	if (err < 0)
 		goto err_crtc;
 
-	mtk_output_init(dev);
+	/*mtk_output_init(dev);*/
 	mtk_enable_vblank(mtk_crtc->od_regs);
 
 	drm_kms_helper_poll_init(dev);
@@ -349,9 +336,8 @@ static void mtk_drm_disable_vblank(struct drm_device *drm, int pipe)
 	struct mtk_drm_private *priv = get_mtk_drm_private(drm);
 	struct mtk_drm_crtc *mtk_crtc;
 
-	if (pipe >= MAX_CRTC || pipe < 0) {
+	if (pipe >= MAX_CRTC || pipe < 0)
 		DRM_ERROR(" - %s: invalid crtc (%d)\n", __func__, pipe);
-	}
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[pipe]);
 	if (pipe == 0)
@@ -463,12 +449,6 @@ static const struct component_master_ops mtk_drm_ops = {
 	.unbind		= mtk_drm_unbind,
 };
 
-/*
-static int mtk_drm_probe(struct platform_device *pdev)
-{
-	return drm_platform_init(&mediatek_drm_driver, pdev);
-}
-*/
 
 static int mtk_drm_probe(struct platform_device *pdev)
 {
@@ -505,17 +485,12 @@ static int mediatek_drm_init(void)
 {
 	int err;
 
-#ifdef CONFIG_DRM_MEDIATEK_IT6151
-		DRM_INFO("DBG_YT it6151mipirx_i2c_driver\n");
-		err = i2c_add_driver(&it6151mipirx_i2c_driver);
-		if (err < 0)
-			return err;
 
-		DRM_INFO("DBG_YT it6151dptx_i2c_driver\n");
-		err = i2c_add_driver(&it6151dptx_i2c_driver);
-		if (err < 0)
-			return err;
-#endif
+	err = platform_driver_register(&mtk_dsi_driver);
+	if (err < 0) {
+		DRM_DEBUG_DRIVER("register dsi driver fail.\n");
+		return err;
+	}
 
 
 	DRM_INFO("DBG_YT mediatek_drm_init\n");
@@ -529,7 +504,7 @@ static int mediatek_drm_init(void)
 static void mediatek_drm_exit(void)
 {
 	platform_driver_unregister(&mediatek_drm_platform_driver);
-	/* platform_driver_unregister(&mtk_dsi_driver); */
+	platform_driver_unregister(&mtk_dsi_driver);
 }
 
 late_initcall(mediatek_drm_init);
