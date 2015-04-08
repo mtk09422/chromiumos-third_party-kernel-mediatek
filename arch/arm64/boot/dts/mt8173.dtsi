@@ -523,10 +523,8 @@
 			      <0 0x14015000 0 0x1000>,	/* AAL */
 			      <0 0x14016000 0 0x1000>,	/* GAMMA */
 			      <0 0x1401A000 0 0x1000>,	/* UFOE */
-			      <0 0x1401B000 0 0x1000>,	/* DSI0 */
 			      <0 0x14020000 0 0x1000>,	/* MUTEX */
-			      <0 0x14023000 0 0x1000>,	/* OD */
-			      <0 0x10215000 0 0x1000>;  /* MIPITX */
+			      <0 0x14023000 0 0x1000>;	/* OD */
 			#interrupts = <0 182 0x8>;	/* RDMA */
 			interrupts = <0 196 0x8>;	/* OD */
 			larb = <&larb0>;
@@ -543,9 +541,7 @@
 				 <&mmsys MM_DISP_AAL>,
 				 <&mmsys MM_DISP_GAMMA>,
 				 <&mmsys MM_DISP_UFOE>,
-				 <&mmsys MM_DISP_OD>,
-				 <&mmsys MM_DSI0_ENGINE>,
-				 <&mmsys MM_DSI0_DIGITAL>;
+				 <&mmsys MM_DISP_OD>;
 			clock-names = "disp_mtcmos",
 				      "mutex_disp_ck",
 				      "ovl0_disp_ck",
@@ -557,10 +553,8 @@
 				      "aal_disp_ck",
 				      "gamma_disp_ck",
 				      "ufoe_disp_ck",
-				      "od_disp_ck",
-				      "dsi0_engine_disp_ck",
-				      "dsi0_digital_disp_ck";
-			connectors = <&hdmi0>;
+				      "od_disp_ck";
+			connectors = <&dsi>, <&hdmi0>;
 		};
 
 		hdmiddc0:hdmiddc@000009f0 {
@@ -569,6 +563,16 @@
 				<&pio 20 GPIO_ACTIVE_HIGH>; /* hdmi sd  */
 			reg = <0 0x11012000 0 0x1C>;
 		};
+
+		dsi: dsi {
+			compatible = "mediatek,mt8173-dsi";
+			reg = <0 0x1401B000 0 0x1000>,	/* DSI0 */
+				<0 0x10215000 0 0x1000>;  /* MIPITX */
+			clocks = <&mmsys MM_DSI0_ENGINE>,	<&mmsys MM_DSI0_DIGITAL>;
+			clock-names = "dsi0_engine_disp_ck", "dsi0_digital_disp_ck";
+			disp-bdg-supply = <&mt6397_vgp2_reg>;
+		};
+
 
 		hdmidpi0:hdmidpi@1401d000{
 			compatible = "mediatek,mt8173-hdmi-dpi";

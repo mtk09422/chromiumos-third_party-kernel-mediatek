@@ -91,7 +91,7 @@
 	};
 
 	panel: panel {
-		compatible = "lg,ld070wx3-sl01";/* for 800 x 1280 panel */
+		compatible = "innolux,n116bge";
 	};
 };
 
@@ -641,7 +641,7 @@
 	p1-gpio = <&pio 3 GPIO_ACTIVE_HIGH>;
 };
 
-&drm0 {
+&dsi {
 	mediatek,width = <1368>;
 	mediatek,height = <768>;
 	mediatek,mipi-tx-burst-freq = <150>;
