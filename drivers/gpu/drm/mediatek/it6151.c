@@ -580,6 +580,10 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 
 
 	/*ret = drm_bridge_init(dev, bridge, &it6151_bridge_funcs);*/
+
+	bridge->funcs = &it6151_bridge_funcs;
+	ret = drm_bridge_attach(dev, bridge);
+
 	if (ret)
 		goto err;
 

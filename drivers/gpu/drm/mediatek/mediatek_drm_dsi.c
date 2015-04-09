@@ -740,9 +740,6 @@ void mtk_dsi_start(struct mtk_dsi *dsi)
 	writel(0, dsi->dsi_reg_base + DSI_START);
 	writel(1, dsi->dsi_reg_base + DSI_START);
 
-	writel(0x00ff00, dsi->dsi_reg_base + 0x178);
-	writel(0x40, dsi->dsi_reg_base + 0x17C);
-
 }
 
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
@@ -805,6 +802,7 @@ int mtk_output_dsi_enable(struct mtk_dsi *dsi)
 int mtk_output_dsi_disable(struct mtk_dsi *dsi)
 {
 
+	return 0;
 	if (dsi->enabled == false)
 		return 0;
 
@@ -834,6 +832,8 @@ static void mtk_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
 {
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
 	struct drm_panel *panel = dsi->panel;
+
+return;
 
 	if (mode != DRM_MODE_DPMS_ON) {
 		drm_panel_disable(panel);
