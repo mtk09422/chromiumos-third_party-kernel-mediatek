@@ -152,14 +152,6 @@
 			#reset-cells = <1>;
 		};
 
-		scpsys: scpsys@10001000 {
-			compatible = "mediatek,mt8173-scpsys";
-			reg = <0 0x10001000 0 0x1000>,
-			      <0 0x10006000 0 0x1000>,
-			      <0 0x13fff000 0 0x1000>;
-			#clock-cells = <1>;
-		};
-
 		pericfg: pericfg@10003000 {
 			compatible = "mediatek,mt8173-pericfg", "syscon";
 			reg = <0 0x10003000 0 0x1000>;

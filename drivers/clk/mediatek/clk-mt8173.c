@@ -20,7 +20,6 @@
 #include "clk-mtk.h"
 #include "clk-gate.h"
 #include "clk-cpumux.h"
-#include "clk-mt8173-pg.h"
 
 #include <dt-bindings/clock/mt8173-clk.h>
 
@@ -1299,32 +1298,6 @@ static void __init mtk_audiosys_init(struct device_node *node)
 			__func__, r);
 }
 CLK_OF_DECLARE(mtk_audiosys, "mediatek,mt8173-audiosys", mtk_audiosys_init);
-
-static void __init mt_scpsys_init(struct device_node *node)
-{
-	struct clk_onecell_data *clk_data;
-	void __iomem *infracfg_reg;
-	void __iomem *spm_reg;
-	int r;
-
-	infracfg_reg = of_iomap(node, 0);
-	spm_reg = of_iomap(node, 1);
-
-	if (!infracfg_reg || !spm_reg) {
-		pr_err("clk-pg-mt8173: missing reg\n");
-		return;
-	}
-
-	clk_data = mtk_alloc_clk_data(SCP_NR_CLK);
-
-	init_clk_scpsys(infracfg_reg, spm_reg, clk_data, &lock);
-
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
-	if (r)
-		pr_err("%s(): could not register clock provider: %d\n",
-			__func__, r);
-}
-CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt8173-scpsys", mt_scpsys_init);
 
 static int __init clk_critical_init(void)
 {
