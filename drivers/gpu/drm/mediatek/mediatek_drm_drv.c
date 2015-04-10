@@ -31,7 +31,6 @@
 
 #include "mediatek_drm_ddp.h"
 
-#include "mediatek_drm_dev_if.h"
 #include "drm/mediatek_drm.h"
 
 #define DRIVER_NAME "mediatek"
@@ -59,7 +58,8 @@ static irqreturn_t mtk_drm_irq(int irq, void *data)
 
 static int mtk_drm_kms_init(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)dev->dev_private;
 	struct mtk_drm_crtc *mtk_crtc;
 	struct mtk_drm_crtc *mtk_crtc_ext;
 	struct resource *regs;
@@ -316,7 +316,8 @@ static void mediatek_drm_lastclose(struct drm_device *drm)
 
 static int mtk_drm_enable_vblank(struct drm_device *drm, int pipe)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(drm);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)drm->dev_private;
 	struct mtk_drm_crtc *mtk_crtc;
 
 	if (pipe >= MAX_CRTC || pipe < 0) {
@@ -333,7 +334,8 @@ static int mtk_drm_enable_vblank(struct drm_device *drm, int pipe)
 
 static void mtk_drm_disable_vblank(struct drm_device *drm, int pipe)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(drm);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)drm->dev_private;
 	struct mtk_drm_crtc *mtk_crtc;
 
 	if (pipe >= MAX_CRTC || pipe < 0)

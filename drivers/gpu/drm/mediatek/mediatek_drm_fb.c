@@ -20,7 +20,6 @@
 #include "mediatek_drm_fb.h"
 #include "mediatek_drm_gem.h"
 
-#include "mediatek_drm_dev_if.h"
 
 static int mtk_drm_fb_create_handle(struct drm_framebuffer *fb,
 					struct drm_file *file_priv,
@@ -81,9 +80,10 @@ static struct mtk_drm_fb *mtk_drm_framebuffer_init(struct drm_device *dev,
 static int mtk_drm_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 	struct drm_fb_helper *helper = info->par;
-	struct device *dev = get_mtk_drm_device(helper->dev);
+	struct device *dev = ((struct drm_device *)helper->dev)->dev;
 	struct mtk_drm_fb *mtk_fb = to_mtk_fb(helper->fb);
-	struct mtk_drm_gem_buf *buffer = get_mtk_gem_buffer(mtk_fb->gem_obj[0]);
+	struct mtk_drm_gem_buf *buffer =
+		to_mtk_gem_obj(mtk_fb->gem_obj[0])->buffer;
 	int ret;
 
 	vma->vm_flags |= VM_MIXEDMAP;
@@ -124,11 +124,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 	struct drm_mode_fb_cmd2 mode = { 0 };
 	struct mtk_drm_fb *mtk_fb;
 	struct mtk_drm_gem_buf *buffer;
-#ifdef PVRDRM
-	struct pvr_drm_display_buffer *pvr_obj;
-#else
 	struct mtk_drm_gem_obj *mtk_gem;
-#endif
 	struct drm_gem_object *gem;
 	struct fb_info *info;
 	struct drm_framebuffer *fb;
@@ -148,17 +144,6 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 		mode.width, mode.height, sizes->surface_bpp, mode.pitches[0],
 		size);
 
-#ifdef PVRDRM
-	err = pvr_drm_gem_create(dev, size, &gem);
-	if (err)
-		goto fini;
-
-	pvr_obj = pvr_drm_gem_buffer(gem);
-	if (pvr_obj)
-		buffer = &pvr_obj->base;
-	else
-		goto free;
-#else
 	mtk_gem = mtk_drm_gem_create(dev, 3, size);
 	if (IS_ERR(mtk_gem)) {
 		err = PTR_ERR(mtk_gem);
@@ -167,7 +152,6 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	gem = &mtk_gem->base;
 	buffer = mtk_gem->buffer;
-#endif
 
 	mtk_fb = mtk_drm_framebuffer_init(dev, &mode, &gem);
 	if (IS_ERR(mtk_fb)) {
@@ -219,11 +203,7 @@ destroy:
 release:
 	framebuffer_release(info);
 free:
-#ifdef PVRDRM
-	dev_err(dev->dev, "memory leak !! pvr_drm_gem_create no free\n");
-#else
 	mtk_drm_gem_free_object(&mtk_gem->base);
-#endif
 fini:
 	dev_err(dev->dev, "mtk_fbdev_probe fail\n");
 	return err;
@@ -235,7 +215,8 @@ static struct drm_fb_helper_funcs mediatek_drm_fb_helper_funcs = {
 
 int mtk_fbdev_create(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)dev->dev_private;
 	struct drm_fb_helper *fbdev;
 	int ret;
 
@@ -277,7 +258,8 @@ fini:
 
 void mtk_fbdev_destroy(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)dev->dev_private;
 	struct drm_fb_helper *fbdev = priv->fb_helper;
 	struct fb_info *info = priv->fb_helper->fbdev;
 
@@ -305,7 +287,8 @@ void mtk_fbdev_destroy(struct drm_device *dev)
 
 void mtk_drm_mode_output_poll_changed(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv = get_mtk_drm_private(dev);
+	struct mtk_drm_private *priv =
+		(struct mtk_drm_private *)dev->dev_private;
 
 	if (priv->fb_helper)
 		drm_fb_helper_hotplug_event(priv->fb_helper);

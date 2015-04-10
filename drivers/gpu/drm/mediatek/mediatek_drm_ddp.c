@@ -19,7 +19,7 @@
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_gem.h"
-#include "mediatek_drm_dev_if.h"
+
 
 /* These are locked by dev->vbl_lock */
 void mtk_enable_vblank(void __iomem *disp_base)
@@ -468,7 +468,7 @@ void MainDispPathPowerOff(struct drm_crtc *crtc)
 void MainDispPathSetup(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	struct device *pdev = get_mtk_drm_device(crtc->dev);
+	struct device *pdev = ((struct drm_device *)crtc->dev)->dev;
 
 	unsigned int width, height;
 	int err;

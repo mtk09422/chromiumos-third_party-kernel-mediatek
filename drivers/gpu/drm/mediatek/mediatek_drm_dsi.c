@@ -45,7 +45,6 @@
 #include "mediatek_drm_ddp.h"
 
 #include "mediatek_drm_gem.h"
-#include "mediatek_drm_dev_if.h"
 #include "mediatek_drm_dsi.h"
 #include "it6151.h"
 

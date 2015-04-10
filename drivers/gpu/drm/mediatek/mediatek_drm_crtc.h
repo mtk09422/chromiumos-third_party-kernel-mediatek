@@ -14,15 +14,6 @@
 #include "mediatek_drm_ddp.h"
 #include "drm_sync_helper.h"
 
-#ifdef PVRDRM
-#include <pvr_drm_display.h>
-
-enum mtk_drm_crtc_flip_status {
-	MTK_DRM_CRTC_FLIP_STATUS_NONE = 0,
-	MTK_DRM_CRTC_FLIP_STATUS_PENDING,
-	MTK_DRM_CRTC_FLIP_STATUS_DONE,
-};
-#endif
 
 #define MAX_FB_BUFFER	4
 #define DEFAULT_ZPOS	-1
@@ -131,12 +122,7 @@ struct mtk_drm_crtc {
 	add count for EGL_CHROMIUM_get_sync_values
 	uint64_t				scb; */
 	struct drm_pending_vblank_event	*event;
-#ifdef PVRDRM
-	enum mtk_drm_crtc_flip_status	flip_status;
-	struct pvr_drm_sync_op		*flip_sync_op;
-#else
 	struct mtk_drm_gem_buf *flip_buffer;
-#endif
 	struct workqueue_struct *wq;
 
 	unsigned fence_context;
