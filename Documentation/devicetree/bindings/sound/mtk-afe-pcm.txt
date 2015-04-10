@@ -1,0 +1,105 @@
+Mediatek AFE PCM controller
+
+The AFE unit can be illustrated by this figure:
+
+| MEMIF    |      AFE      |     IO     |
+           *****************
+DL1------> *I5           O3* <----I2S--->
+           *I6           O4*
+           *             I3*
+           *             I4*
+           *             O0* <--2ndI2S-->
+           *             O1*
+           *             I0*
+           *             I1*
+AWB<------ *O5             * <--MTKIF--->
+           *O6             *
+VUL<------ *O9             * <---HDMI--->
+           *O10            *
+           *      AFE      *
+HDMI-----> * inter-connect *
+           *****************
+AFE comprises several memory interfaces (DL1, DL2, VUL, DAI, AWB, MOD_DAI
+and HDMI) that communicate with CPU, a multi input multi output digital audio
+interconnect, and several external interfaces (I2S, proprietary MTKIF, HDMI).
+Each external interface (called "IO" in this driver) is presented as a
+DAI to ASoC. An IO must be connected via the interconnect to a memif.
+The connection paths are configured through the device tree.
+
+Required properties:
+- compatible = "mediatek,mt8173-afe-pcm";
+- reg: array of register and sram location and size:
+       <register base address, size>,
+       <sram base address, size>;
+- interrupts: Should contain AFE interrupt
+- clock-names: should have these clock names:
+		"infra_sys_audio_clk",
+		"top_pdn_audio",
+		"top_pdn_aud_intbus",
+		"bck0",
+		"bck1",
+		"i2s0_m",
+		"i2s1_m",
+		"i2s2_m",
+		"i2s3_m",
+		"i2s3_b";
+
+DAI subnodes:
+  A DAI subnode describes which io connects to which memif.
+
+Required subnode properties:
+- io: which I/O to be used
+      (defined in include/dt-bindings/sound/mtk-afe.h)
+- connections: AFE connection pairs definition of this dai
+	       For example, <5 3 6 4> means I5->O3, I6->O4
+	       check SoC datasheet for a complete description
+- mem-interface-playback:
+  mem-interface-capture: property of memif, format is: <memif irq use_sram>;
+	                 memif: which memif to be used
+			        (defined in include/dt-bindings/sound/mtk-afe.h)
+		         irq: which irq to be used
+			      (defined in include/dt-bindings/sound/mtk-afe.h)
+		         use_sram: 1 is yes, 0 is no
+
+  Each DAI should describes at least playback or capture
+
+Example:
+
+	afe: mt8173-afe-pcm@11220000  {
+		compatible = "mediatek,mt8173-afe-pcm";
+		reg = <0 0x11220000 0 0x1000>,
+		      <0 0x11221000 0 0x9000>;
+		interrupts = <GIC_SPI 134 IRQ_TYPE_EDGE_FALLING>;
+		clocks = <&infracfg INFRA_AUDIO>,
+			<&topckgen TOP_AUDIO_SEL>,
+			<&topckgen TOP_AUD_INTBUS_SEL>,
+			<&topckgen TOP_APLL1_DIV0>,
+			<&topckgen TOP_APLL2_DIV0>,
+			<&topckgen TOP_I2S0_M_CK_SEL>,
+			<&topckgen TOP_I2S1_M_CK_SEL>,
+			<&topckgen TOP_I2S2_M_CK_SEL>,
+			<&topckgen TOP_I2S3_M_CK_SEL>,
+			<&topckgen TOP_I2S3_B_CK_SEL>;
+		clock-names = "infra_sys_audio_clk",
+				"top_pdn_audio",
+				"top_pdn_aud_intbus",
+				"bck0",
+				"bck1",
+				"i2s0_m",
+				"i2s1_m",
+				"i2s2_m",
+				"i2s3_m",
+				"i2s3_b";
+		dai@0 {
+			io = <MTK_AFE_IO_I2S>;
+			connections = <5 3 6 4 3 9 4 10>;
+			mem-interface-playback = <MTK_AFE_MEMIF_DL1 MTK_AFE_IRQ_1 1>;
+			mem-interface-capture = <MTK_AFE_MEMIF_VUL MTK_AFE_IRQ_2 0>;
+		};
+
+		dai@1 {
+			io = <MTK_AFE_IO_HDMI>;
+			connections = <36 36 37 37 34 32 35 33 32 34 33 35 30 30 31 31>;
+			mem-interface-playback = <MTK_AFE_MEMIF_HDMI MTK_AFE_IRQ_5 0>;
+		};
+	};
