@@ -529,7 +529,9 @@
 			interrupts = <0 196 0x8>;	/* OD */
 			larb = <&larb0>;
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
-				 <&iommu M4U_PORT_DISP_RDMA0>;
+				<&iommu M4U_PORT_DISP_RDMA0>,
+				<&iommu M4U_PORT_DISP_OVL1>,
+				<&iommu M4U_PORT_DISP_RDMA1>;
 			clocks = <&scpsys SCP_SYS_DIS>,
 				 <&mmsys MM_MUTEX_32K>,
 				 <&mmsys MM_DISP_OVL0>,
@@ -595,6 +597,7 @@
 				 <&mmsys MM_HDMI_PIXEL>,
 				 <&mmsys MM_HDMI_PLLCK>,
 				 <&mmsys MM_DPI_PIXEL>,
+				 <&mmsys MM_DPI_ENGINE>,
 				 <&mmsys MM_HDMI_AUDIO>,
 				 <&mmsys MM_HDMI_SPDIF>;
 			clock-names = "tvdpll-clk",
@@ -609,6 +612,7 @@
 				      "hdmi-id-clk-gate",
 				      "hdmi-pll-clk-gate",
 				      "dpi-clk-gate",
+				      "dpi-eng-clk-gate",
 				      "aud-bclk-gate",
 				      "aud-spdif-gate";
 			prenode = <&hdmidpi0>;
