@@ -280,7 +280,6 @@ static irqreturn_t mtk_afe_irq_handler(int irq, void *dev_id)
 	unsigned int reg_value = 0;
 
 	regmap_read(afe_info->regmap, AFE_IRQ_STATUS, &reg_value);
-	reg_value &= AFE_IRQ_STATUS_BITS;
 
 	if (reg_value & AFE_IRQ1_BIT)
 		mtk_afe_dl_interrupt_handler(afe_info, MTK_AFE_PIN_DL1);
@@ -291,15 +290,9 @@ static irqreturn_t mtk_afe_irq_handler(int irq, void *dev_id)
 	if (reg_value & AFE_HDMI_IRQ_BIT)
 		mtk_afe_dl_interrupt_handler(afe_info, MTK_AFE_PIN_HDMI);
 
-	if (reg_value == 0) {
+	if (reg_value == 0)
 		/* error: interrupt is trigger but no status */
-		int i;
-
 		dev_err(afe_info->dev, "%s reg_value == 0\n", __func__);
-		for (i = 0; i < AFE_IRQ_TYPE_COUNT; i++)
-			regmap_write(afe_info->regmap, AFE_IRQ_CLR, 1 << i);
-		return IRQ_HANDLED;
-	}
 
 	/* clear irq */
 	regmap_write(afe_info->regmap, AFE_IRQ_CLR, reg_value);
