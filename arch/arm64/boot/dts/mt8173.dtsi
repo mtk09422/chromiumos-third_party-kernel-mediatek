@@ -659,6 +659,38 @@
 			interrupt-names = "RGX";
 		};
 
+		afe: mt8173-afe-pcm@11220000  {
+			compatible = "mediatek,mt8173-afe-pcm";
+			reg = <0 0x11220000 0 0x1000>,
+				  <0 0x11221000 0 0x9000>;
+			interrupts = <GIC_SPI 134 IRQ_TYPE_EDGE_FALLING>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_AUDIO>;
+			clocks = <&infracfg INFRA_AUDIO>,
+					 <&topckgen TOP_AUDIO_SEL>,
+					 <&topckgen TOP_AUD_INTBUS_SEL>,
+					 <&topckgen TOP_APLL1_DIV0>,
+					 <&topckgen TOP_APLL2_DIV0>,
+					 <&topckgen TOP_I2S0_M_CK_SEL>,
+					 <&topckgen TOP_I2S1_M_CK_SEL>,
+					 <&topckgen TOP_I2S2_M_CK_SEL>,
+					 <&topckgen TOP_I2S3_M_CK_SEL>,
+					 <&topckgen TOP_I2S3_B_CK_SEL>;
+			clock-names = "infra_sys_audio_clk",
+						  "top_pdn_audio",
+						  "top_pdn_aud_intbus",
+						  "bck0",
+						  "bck1",
+						  "i2s0_m",
+						  "i2s1_m",
+						  "i2s2_m",
+						  "i2s3_m",
+						  "i2s3_b";
+			assigned-clocks = <&topckgen TOP_AUD_1_SEL>,
+					  <&topckgen TOP_AUD_2_SEL>;
+			assigned-clock-parents = <&topckgen TOP_APLL1_CK>,
+						 <&topckgen TOP_APLL2_CK>;
+		};
+
 		u3phy: usb-phy@11271000 {
 			compatible = "mediatek,mt8173-u3phy";
 			reg = <0 0x11271000 0 0x3000>,
