@@ -34,11 +34,6 @@
 	};
 
 	chosen { };
-
-	sound {
-		compatible = "mediatek,mt8173-evb";
-		mediatek,audio-codec = <&mt6397codec>;
-	};
 };
 
 &pwrap {
@@ -60,10 +55,6 @@
 			compatible = "mediatek,mt6397-pinctrl";
 			mediatek,pctl-regmap = <&syscfg_pctl_pmic>;
 			gpio-controller;
-		};
-
-		mt6397codec: mt6397codec {
-			compatible = "mediatek,mt6397-codec";
 		};
 
 		mt6397regulator: mt6397regulator {
