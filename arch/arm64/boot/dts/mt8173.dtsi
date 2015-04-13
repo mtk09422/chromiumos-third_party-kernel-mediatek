@@ -543,8 +543,8 @@
 				<&iommu M4U_PORT_DISP_RDMA0>,
 				<&iommu M4U_PORT_DISP_OVL1>,
 				<&iommu M4U_PORT_DISP_RDMA1>;
-			clocks = <&scpsys SCP_SYS_DIS>,
-				 <&mmsys MM_MUTEX_32K>,
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_DIS>;
+			clocks = <&mmsys MM_MUTEX_32K>,
 				 <&mmsys MM_DISP_OVL0>,
 				 <&mmsys MM_DISP_OVL1>,
 				 <&mmsys MM_DISP_RDMA0>,
@@ -555,8 +555,7 @@
 				 <&mmsys MM_DISP_GAMMA>,
 				 <&mmsys MM_DISP_UFOE>,
 				 <&mmsys MM_DISP_OD>;
-			clock-names = "disp_mtcmos",
-				      "mutex_disp_ck",
+			clock-names = "mutex_disp_ck",
 				      "ovl0_disp_ck",
 				      "ovl1_disp_ck",
 				      "rdma0_disp_ck",

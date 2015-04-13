@@ -19,6 +19,7 @@
 #include <linux/of_platform.h>
 #include <linux/component.h>
 #include <linux/mtk-smi.h>
+#include <linux/pm_runtime.h>
 
 #include "mediatek_drm_drv.h"
 #include "mediatek_drm_crtc.h"
@@ -304,6 +305,8 @@ static void mtk_drm_kms_deinit(struct drm_device *dev)
 
 	drm_vblank_cleanup(dev);
 	drm_mode_config_cleanup(dev);
+
+	pm_runtime_disable(dev->dev);
 }
 
 static int mtk_drm_unload(struct drm_device *dev)

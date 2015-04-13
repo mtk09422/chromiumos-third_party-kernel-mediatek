@@ -13,6 +13,7 @@
 
 #include <drm/drmP.h>
 #include <linux/clk.h>
+#include <linux/pm_runtime.h>
 
 #include "mediatek_drm_crtc.h"
 #include "mediatek_drm_ddp.h"
@@ -630,9 +631,8 @@ void disp_clock_setup(struct device *dev, struct MTK_DISP_CLKS **pdisp_clks)
 {
 	*pdisp_clks = vmalloc(sizeof(struct MTK_DISP_CLKS));
 
-	(*pdisp_clks)->disp_mtcmos = devm_clk_get(dev, "disp_mtcmos");
-	if (IS_ERR((*pdisp_clks)->disp_mtcmos))
-		DRM_ERROR("disp_clock_setup: Get disp_mtcmos fail.\n");
+	pm_runtime_enable(dev);
+	(*pdisp_clks)->dev = dev;
 
 	(*pdisp_clks)->mutex_disp_ck = devm_clk_get(dev, "mutex_disp_ck");
 	if (IS_ERR((*pdisp_clks)->mutex_disp_ck))
@@ -692,13 +692,10 @@ void disp_clock_on(struct MTK_DISP_CLKS *disp_clks)
 {
 	int ret;
 
-	ret = clk_prepare(disp_clks->disp_mtcmos);
-	if (ret != 0)
-		DRM_ERROR("clk_prepare(disp_clks->disp_mtcmos) error!\n");
-
-	ret = clk_enable(disp_clks->disp_mtcmos);
-	if (ret != 0)
-		DRM_ERROR("clk_enable(disp_clks->disp_mtcmos) error!\n");
+	/* disp_mtcmos */
+	ret = pm_runtime_get_sync(disp_clks->dev);
+	if (ret < 0)
+		DRM_ERROR("failed to get_sync(%d)\n", ret);
 
 	ret = clk_prepare(disp_clks->mutex_disp_ck);
 	if (ret != 0)
@@ -804,8 +801,8 @@ void disp_clock_on(struct MTK_DISP_CLKS *disp_clks)
 
 void disp_clock_off(struct MTK_DISP_CLKS *disp_clks)
 {
-	clk_disable(disp_clks->disp_mtcmos);
-	clk_unprepare(disp_clks->disp_mtcmos);
+	/* disp_mtcmos */
+	pm_runtime_put_sync(disp_clks->dev);
 
 	clk_disable(disp_clks->mutex_disp_ck);
 	clk_unprepare(disp_clks->mutex_disp_ck);
