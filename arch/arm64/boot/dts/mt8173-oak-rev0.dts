@@ -458,12 +458,6 @@
 			bias-pull-down;
 		};
 	};
-	max98090_irq: max98090_irq {
-		pins1 {
-			pinmux = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
-			bias-pull-up;
-		};
-	};
 
 	spi_gpio0_pins: spi@ec0 {
 		pins1 {
@@ -544,10 +538,6 @@
 	max98090: audio-codec@10 {
 		compatible = "maxim,max98090";
 		reg = <0x10>;
-		interrupt-parent = <&pio>;
-		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&max98090_irq>;
 	};
 };
 

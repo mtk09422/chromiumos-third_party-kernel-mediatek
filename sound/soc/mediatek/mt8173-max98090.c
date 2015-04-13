@@ -105,7 +105,7 @@ static struct snd_soc_dai_link mt8173_max98090_dais[] = {
 		.cpu_dai_name = "DL1",
 		.platform_name = "11220000.mt8173-afe-pcm",
 		.codec_dai_name = "HiFi",
-		.codec_name = "max98090.0-0010",
+		.codec_name = "max98090.1-0010",
 		.init = mt8173_max98090_init,
 		.ops = &mt8173_max98090_ops,
 		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
@@ -118,7 +118,7 @@ static struct snd_soc_dai_link mt8173_max98090_dais[] = {
 		.cpu_dai_name = "AWB",
 		.platform_name = "11220000.mt8173-afe-pcm",
 		.codec_dai_name = "HiFi",
-		.codec_name = "max98090.0-0010",
+		.codec_name = "max98090.1-0010",
 		.ops = &mt8173_max98090_ops,
 	},
 	{
