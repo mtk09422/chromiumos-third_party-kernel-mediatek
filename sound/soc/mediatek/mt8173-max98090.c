@@ -36,7 +36,7 @@ static struct snd_soc_jack_pin mt8173_max98090_jack_pins[] = {
 
 static const struct snd_soc_dapm_widget mt8173_max98090_widgets[] = {
 	SND_SOC_DAPM_SPK("Speaker", NULL),
-	SND_SOC_DAPM_MIC("Int Mic", NULL),
+	SND_SOC_DAPM_MIC("Buildin Mic", NULL),
 	SND_SOC_DAPM_HP("Headphone", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 };
@@ -44,7 +44,7 @@ static const struct snd_soc_dapm_widget mt8173_max98090_widgets[] = {
 static const struct snd_soc_dapm_route mt8173_max98090_routes[] = {
 	{"Speaker", NULL, "SPKL"},
 	{"Speaker", NULL, "SPKR"},
-	{"DMICL", NULL, "Int Mic"},
+	{"DMICL", NULL, "Buildin Mic"},
 	{"Headphone", NULL, "HPL"},
 	{"Headphone", NULL, "HPR"},
 	{"Headset Mic", NULL, "MICBIAS"},
@@ -53,7 +53,7 @@ static const struct snd_soc_dapm_route mt8173_max98090_routes[] = {
 
 static const struct snd_kcontrol_new mt8173_max98090_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Speaker"),
-	SOC_DAPM_PIN_SWITCH("Int Mic"),
+	SOC_DAPM_PIN_SWITCH("Buildin Mic"),
 	SOC_DAPM_PIN_SWITCH("Headphone"),
 	SOC_DAPM_PIN_SWITCH("Headset Mic"),
 };
