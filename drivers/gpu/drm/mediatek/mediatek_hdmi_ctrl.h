@@ -135,6 +135,7 @@ struct mediatek_hdmi_context {
 	struct clk *hdmi_id_clk_gate;
 	struct clk *hdmi_pll_clk_gate;
 	struct clk *hdmi_dpi_clk_gate;
+	struct clk *hdmi_dpi_eng_clk_gate;
 	struct clk *hdmi_aud_bclk_gate;
 	struct clk *hdmi_aud_spdif_gate;
 	#if defined(CONFIG_DEBUG_FS)

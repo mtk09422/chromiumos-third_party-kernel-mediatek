@@ -553,6 +553,11 @@ bool mtk_hdmi_hw_config_sys(struct mediatek_hdmi_context *hdmi_context,
 		return false;
 	}
 
+	if (clk_prepare_enable(hdmi_context->hdmi_dpi_eng_clk_gate)) {
+		mtk_hdmi_err("enable dpi_eng_clk clk failed!\n");
+		return false;
+	}
+
 	if (clk_prepare_enable(hdmi_context->hdmi_id_clk_gate)) {
 		mtk_hdmi_err("enable id_clk clk failed!\n");
 		return false;

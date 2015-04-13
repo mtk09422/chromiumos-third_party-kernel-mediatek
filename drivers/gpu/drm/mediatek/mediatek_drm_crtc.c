@@ -313,7 +313,7 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 
 	buffer = to_mtk_gem_obj(mtk_fb->gem_obj[0])->buffer;
 
-	DRM_INFO("DBG_YT mtk_drm_crtc_mode_set %X\n", buffer->mva_addr);
+	DRM_INFO("DBG_YT mtk_drm_crtc_mode_set[%d] %X\n", mtk_crtc->pipe, buffer->mva_addr);
 	OVLLayerConfig(&mtk_crtc->base, buffer->mva_addr, fb->pixel_format);
 	/*
 	 * copy the mode data adjusted by mode_fixup() into crtc->mode
@@ -581,6 +581,7 @@ int mtk_drm_crtc_create(struct drm_device *dev, unsigned int nr)
 	}
 
 	priv->crtc[nr] = &mtk_crtc->base;
+	mtk_crtc->pipe = nr;
 
 	drm_crtc_init(dev, &mtk_crtc->base, &mediatek_crtc_funcs);
 	drm_crtc_helper_add(&mtk_crtc->base, &mediatek_crtc_helper_funcs);

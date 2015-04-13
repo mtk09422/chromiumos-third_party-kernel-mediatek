@@ -1088,7 +1088,7 @@ static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 	drm_encoder_helper_add(&dsi->encoder, &mtk_dsi_encoder_helper_funcs);
 
 
-	dsi->encoder.possible_crtcs = 0x3;
+	dsi->encoder.possible_crtcs = 0x1;
 
 
 	/* Pre-empt DP connector creation if there's a bridge */

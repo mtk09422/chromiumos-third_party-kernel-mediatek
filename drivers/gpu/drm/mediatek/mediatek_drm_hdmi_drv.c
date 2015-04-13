@@ -444,6 +444,14 @@ static int mtk_hdmi_dt_parse_pdata(struct mediatek_hdmi_context *hdmi_context,
 		goto errcode;
 	}
 
+	hdmi_context->hdmi_dpi_eng_clk_gate =
+	    of_clk_get_by_name(np, "dpi-eng-clk-gate");
+	if (IS_ERR(hdmi_context->hdmi_dpi_eng_clk_gate)) {
+		mtk_hdmi_err(" get hdmi_dpi_eng_clk_gate failed : %p ,\n",
+			     hdmi_context->hdmi_dpi_eng_clk_gate);
+		goto errcode;
+	}
+
 	hdmi_context->hdmi_aud_bclk_gate =
 	    of_clk_get_by_name(np, "aud-bclk-gate");
 	if (IS_ERR(hdmi_context->hdmi_aud_bclk_gate)) {
@@ -520,6 +528,8 @@ static int mtk_hdmi_dt_parse_pdata(struct mediatek_hdmi_context *hdmi_context,
 		      hdmi_context->hdmi_pll_clk_gate);
 	mtk_hdmi_info("hdmi_context->hdmi_dpi_clk_gate :0x%p\n",
 		      hdmi_context->hdmi_dpi_clk_gate);
+	mtk_hdmi_info("hdmi_context->hdmi_dpi_eng_clk_gate :0x%p\n",
+		      hdmi_context->hdmi_dpi_eng_clk_gate);
 	mtk_hdmi_info("hdmi_context :0x%p\n", hdmi_context);
 
 	return 0;
