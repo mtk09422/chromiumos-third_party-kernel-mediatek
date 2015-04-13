@@ -169,7 +169,7 @@ static const struct regmap_config mtk_afe_regmap_config = {
 	.max_register = AFE_ADDA2_TOP_CON0,
 	.readable_reg = mtk_afe_readable_reg,
 	.volatile_reg = mtk_afe_volatile_reg,
-	.cache_type = REGCACHE_NONE,
+	.cache_type = REGCACHE_RBTREE,
 };
 
 /* FIXME can we remove this */
