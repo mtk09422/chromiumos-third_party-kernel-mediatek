@@ -198,29 +198,29 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	mediatek_drm_debugfs_init(&mtk_crtc->base);
 
 	/* MainDispPathClear(&mtk_crtc->base); */
-	DispClockSetup(dev->dev, &(mtk_crtc->disp_clks));
+	disp_clock_setup(dev->dev, &(mtk_crtc->disp_clks));
 
 	DRM_INFO("DispClockOn\n");
-	DispClockOn(mtk_crtc->disp_clks);
+	disp_clock_on(mtk_crtc->disp_clks);
 
 	DRM_INFO("MainDispPathSetup\n");
-	MainDispPathSetup(&mtk_crtc->base);
+	main_disp_path_setup(&mtk_crtc->base);
 
 	DRM_INFO("MainDispPathPowerOn\n");
-	MainDispPathPowerOn(&mtk_crtc->base);
-	ExtDispPathPowerOn(&mtk_crtc->base);
+	main_disp_path_power_on(&mtk_crtc->base);
+	ext_disp_path_power_on(&mtk_crtc->base);
 
-	DRM_INFO("ExtDispPathSetup\n");
-	ExtDispPathSetup(&mtk_crtc->base);
+	DRM_INFO("ext_disp_path_setup\n");
+	ext_disp_path_setup(&mtk_crtc->base);
 
 	{
 		struct device_node *node;
 		struct platform_device *pdev;
 
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 0, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 1, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 2, 0);
-		OVLLayerSwitch(mtk_crtc->ovl_regs, 0, 3, 0);
+		ovl_layer_switch(mtk_crtc->ovl_regs, 0, 0, 0);
+		ovl_layer_switch(mtk_crtc->ovl_regs, 0, 1, 0);
+		ovl_layer_switch(mtk_crtc->ovl_regs, 0, 2, 0);
+		ovl_layer_switch(mtk_crtc->ovl_regs, 0, 3, 0);
 		DRM_INFO("DBG_YT disable ovl layer\n");
 
 		node = of_parse_phandle(dev->dev->of_node, "iommus", 0);

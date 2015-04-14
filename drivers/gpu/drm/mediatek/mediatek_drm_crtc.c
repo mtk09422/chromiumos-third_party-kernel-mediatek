@@ -103,7 +103,7 @@ finish:
 	mtk_crtc->cursor_obj = obj;
 
 	if (buffer) /* need else: to furn off cursor */
-		OVLLayerConfigCursor(&mtk_crtc->base, buffer->mva_addr,
+		ovl_layer_config_cursor(&mtk_crtc->base, buffer->mva_addr,
 			mtk_crtc->cursor_x, mtk_crtc->cursor_y);
 
 	return 0;
@@ -133,7 +133,7 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	mtk_crtc->cursor_x = x;
 	mtk_crtc->cursor_y = y;
 
-	OVLLayerConfigCursor(&mtk_crtc->base, buffer->mva_addr, x, y);
+	ovl_layer_config_cursor(&mtk_crtc->base, buffer->mva_addr, x, y);
 
 	return 0;
 }
@@ -142,7 +142,8 @@ static void mtk_drm_crtc_update_cb(struct drm_reservation_cb *rcb, void *params)
 {
 	struct mtk_drm_crtc *mtk_crtc = params;
 
-	OVLLayerConfig(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr, mtk_crtc->base.primary->fb->pixel_format);
+	ovl_layer_config(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr,
+		mtk_crtc->base.primary->fb->pixel_format);
 
 	if (mtk_crtc->event) {
 		struct drm_device *dev = mtk_crtc->base.dev;
@@ -314,7 +315,7 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 	buffer = to_mtk_gem_obj(mtk_fb->gem_obj[0])->buffer;
 
 	DRM_INFO("DBG_YT mtk_drm_crtc_mode_set[%d] %X\n", mtk_crtc->pipe, buffer->mva_addr);
-	OVLLayerConfig(&mtk_crtc->base, buffer->mva_addr, fb->pixel_format);
+	ovl_layer_config(&mtk_crtc->base, buffer->mva_addr, fb->pixel_format);
 	/*
 	 * copy the mode data adjusted by mode_fixup() into crtc->mode
 	 * so that hardware can be seet to proper mode.
