@@ -588,14 +588,14 @@ static const struct mtk_composite top_muxes[] __initconst = {
 	DIV_GATE(TOP_APLL1_DIV2, "apll1_div2", "aud_1_sel", 0x12c, 10, 0x124, 8, 8),
 	DIV_GATE(TOP_APLL1_DIV3, "apll1_div3", "aud_1_sel", 0x12c, 11, 0x124, 8, 16),
 	DIV_GATE(TOP_APLL1_DIV4, "apll1_div4", "aud_1_sel", 0x12c, 12, 0x124, 8, 24),
-	DIV_GATE(TOP_APLL1_DIV5, "apll1_div5", "aud_1_sel", 0x12c, 13, 0x12c, 4, 0),
+	DIV_GATE(TOP_APLL1_DIV5, "apll1_div5", "apll1_div4", 0x12c, 13, 0x12c, 4, 0),
 
 	DIV_GATE(TOP_APLL2_DIV0, "apll2_div0", "aud_2_sel", 0x12c, 16, 0x120, 4, 28),
 	DIV_GATE(TOP_APLL2_DIV1, "apll2_div1", "aud_2_sel", 0x12c, 17, 0x128, 8, 0),
 	DIV_GATE(TOP_APLL2_DIV2, "apll2_div2", "aud_2_sel", 0x12c, 18, 0x128, 8, 8),
 	DIV_GATE(TOP_APLL2_DIV3, "apll2_div3", "aud_2_sel", 0x12c, 19, 0x128, 8, 16),
 	DIV_GATE(TOP_APLL2_DIV4, "apll2_div4", "aud_2_sel", 0x12c, 20, 0x128, 8, 24),
-	DIV_GATE(TOP_APLL2_DIV5, "apll2_div5", "aud_2_sel", 0x12c, 21, 0x12c, 4, 4),
+	DIV_GATE(TOP_APLL2_DIV5, "apll2_div5", "apll2_div4", 0x12c, 21, 0x12c, 4, 4),
 
 	MUX(TOP_I2S0_M_CK_SEL, "i2s0_m_ck_sel", i2s0_m_ck_parents, 0x120, 4, 1),
 	MUX(TOP_I2S1_M_CK_SEL, "i2s1_m_ck_sel", i2s1_m_ck_parents, 0x120, 5, 1),

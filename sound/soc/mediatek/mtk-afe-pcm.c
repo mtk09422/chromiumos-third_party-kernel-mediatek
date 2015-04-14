@@ -826,7 +826,7 @@ static int mtk_afe_dais_prepare(struct snd_pcm_substream *substream,
 	dev_dbg(afe->dev, "%s: %d\n", __func__, substream->runtime->rate);
 
 	if (io->m_ck) {
-		ret = clk_set_rate(io->m_ck, runtime->rate * 256);
+		ret = clk_set_rate(io->m_ck, runtime->rate * io->mck_mul);
 		if (ret) {
 			dev_err(afe->dev, "Failed to set m_ck rate\n");
 			return ret;
@@ -835,7 +835,7 @@ static int mtk_afe_dais_prepare(struct snd_pcm_substream *substream,
 
 	if (io->b_ck) {
 		ret = clk_set_rate(io->b_ck, runtime->rate *
-				   runtime->channels * 32 * 16);
+				   runtime->channels * 32);
 		if (ret) {
 			dev_err(afe->dev, "Failed to set b_ck rate\n");
 			return ret;
@@ -1276,6 +1276,9 @@ static int mtk_afe_init_audio_clk(struct mtk_afe *afe)
 	afe->ios[MTK_AFE_IO_I2S].m_ck = afe->clocks[MTK_CLK_I2S1_M];
 	afe->ios[MTK_AFE_IO_HDMI].m_ck = afe->clocks[MTK_CLK_I2S3_M];
 	afe->ios[MTK_AFE_IO_HDMI].b_ck = afe->clocks[MTK_CLK_I2S3_B];
+	afe->ios[MTK_AFE_IO_2ND_I2S].mck_mul = 256;
+	afe->ios[MTK_AFE_IO_I2S].mck_mul = 256;
+	afe->ios[MTK_AFE_IO_HDMI].mck_mul = 128;
 
 	clk_set_rate(afe->clocks[MTK_CLK_BCK0], 22579200);
 	clk_set_rate(afe->clocks[MTK_CLK_BCK1], 24576000);

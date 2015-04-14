@@ -55,6 +55,7 @@ struct mtk_afe_io {
 	const struct mtk_afe_io_data *data;
 	struct clk *m_ck;
 	struct clk *b_ck;
+	u32 mck_mul;
 	u32 *connections;
 	int num_connections;
 	int mem[2]; /* playback and capture */
