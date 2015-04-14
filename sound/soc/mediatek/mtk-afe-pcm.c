@@ -793,28 +793,28 @@ static int mtk_afe_hdmi_prepare(struct mtk_afe *afe,
 	switch (runtime->channels) {
 	case 7:
 	case 8:
-		val |= MTK_AFE_TDM_CH_START_O30_O31;
+		val = MTK_AFE_TDM_CH_START_O30_O31;
 		val |= (MTK_AFE_TDM_CH_START_O32_O33 << 4);
 		val |= (MTK_AFE_TDM_CH_START_O34_O35 << 8);
 		val |= (MTK_AFE_TDM_CH_START_O36_O37 << 12);
 		break;
 	case 5:
 	case 6:
-		val |= MTK_AFE_TDM_CH_START_O30_O31;
+		val = MTK_AFE_TDM_CH_START_O30_O31;
 		val |= (MTK_AFE_TDM_CH_START_O32_O33 << 4);
 		val |= (MTK_AFE_TDM_CH_START_O34_O35 << 8);
 		val |= (MTK_AFE_TDM_CH_ZERO << 12);
 		break;
 	case 3:
 	case 4:
-		val |= MTK_AFE_TDM_CH_START_O30_O31;
+		val = MTK_AFE_TDM_CH_START_O30_O31;
 		val |= (MTK_AFE_TDM_CH_START_O32_O33 << 4);
 		val |= (MTK_AFE_TDM_CH_ZERO << 8);
 		val |= (MTK_AFE_TDM_CH_ZERO << 12);
 		break;
 	case 1:
 	case 2:
-		val |= MTK_AFE_TDM_CH_START_O30_O31;
+		val = MTK_AFE_TDM_CH_START_O30_O31;
 		val |= (MTK_AFE_TDM_CH_ZERO << 4);
 		val |= (MTK_AFE_TDM_CH_ZERO << 8);
 		val |= (MTK_AFE_TDM_CH_ZERO << 12);
