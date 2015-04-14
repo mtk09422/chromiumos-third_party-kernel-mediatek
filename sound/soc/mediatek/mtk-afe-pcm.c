@@ -23,6 +23,7 @@
 #include <linux/of_address.h>
 #include <linux/pm_runtime.h>
 #include <sound/soc.h>
+#include <linux/debugfs.h>   /* FIXME: for debug */
 #include "mtk-afe-common.h"
 #include "mtk-afe-connection.h"
 #include <dt-bindings/sound/mtk-afe.h>
@@ -74,6 +75,8 @@
 #define AFE_ADDA2_TOP_CON0	0x0600
 
 #define AFE_HDMI_OUT_CON0	0x0370
+#define AFE_APLL1_TUNER_CFG	0x03f0
+#define AFE_APLL2_TUNER_CFG	0x03f4
 
 #define AFE_IRQ_MCU_CON		0x03a0
 #define AFE_IRQ_STATUS		0x03a4
@@ -160,6 +163,123 @@ enum mtk_afe_i2s_rate {
 	MTK_AFE_I2S_RATE_96K = 12,
 	MTK_AFE_I2S_RATE_174K = 13,
 	MTK_AFE_I2S_RATE_192K = 14,
+};
+
+/* FIXME: for debug */
+#define AUDIO_APLL1_CON0        0x02A0
+#define AUDIO_APLL1_CON1        0x02A4
+#define AUDIO_APLL1_CON2        0x02A8
+#define AUDIO_APLL1_PWR_CON0    0x02B0
+#define AUDIO_APLL2_CON0        0x02B4
+#define AUDIO_APLL2_CON1        0x02B8
+#define AUDIO_APLL2_CON2        0x02C0
+#define AUDIO_APLL2_PWR_CON0    0x02C4
+#define AUDIO_CLK_CFG_6		0x00A0
+#define AUDIO_CLK_CFG_7		0x00B0
+
+/* FIXME APLL tuner move to CCF */
+#define AP_PLL_CON5		0x0014
+void mtk_afe_pll_set_reg(struct mtk_afe *afe, uint32_t offset,
+			 uint32_t value, uint32_t mask)
+{
+	uint32_t val;
+
+	val = readl(afe->apmixedsys_base_addr + offset);
+	val &= ~mask;
+	val |= value & mask;
+	writel(val, afe->apmixedsys_base_addr + offset);
+}
+
+/* FIXME SPDIF clk move to CCF */
+enum mtk_afe_apll_clk_freq {
+	MTK_AFE_APLL1_CLK_FREQ = (22579200 * 8),
+	MTK_AFE_APLL2_CLK_FREQ = (24576000 * 8),
+};
+
+#define AUDIO_CLK_AUDDIV_0	0x0120
+#define AUDIO_CLK_AUDDIV_1	0x0124
+#define AUDIO_CLK_AUDDIV_2	0x0128
+#define AUDIO_CLK_AUDDIV_3	0x012C
+
+void mtk_afe_topck_set_reg(struct mtk_afe *afe, uint32_t offset,
+			   uint32_t value, uint32_t mask)
+{
+	uint32_t val;
+
+	val = readl(afe->topckgen_base_addr + offset);
+	val &= ~mask;
+	val |= value & mask;
+	writel(val, afe->topckgen_base_addr + offset);
+}
+
+/* FIXME: for debug */
+static inline uint32_t mtk_afe_topck_get_reg(struct mtk_afe *afe,
+					     uint32_t offset)
+{
+	return readl(afe->topckgen_base_addr + offset);
+}
+
+/* FIXME: for debug */
+static inline uint32_t mtk_afe_pll_get_reg(struct mtk_afe *afe,
+					   uint32_t offset)
+{
+	return readl(afe->apmixedsys_base_addr + offset);
+}
+
+static struct dentry *mt8173_afe_debugfs;
+
+static int mt8173_afe_debug_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t mt8173_afe_debug_read(struct file *file, char __user *buf,
+				     size_t count, loff_t *pos)
+{
+	struct mtk_afe *afe = file->private_data;
+	const int size = 4096;
+	char buffer[size];
+	int n = 0;
+
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_CFG_6 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_CFG_6));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_CFG_7 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_CFG_7));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_0 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_AUDDIV_0));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_1 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_AUDDIV_1));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_2 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_AUDDIV_2));
+	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_3 = 0x%x\n",
+		       mtk_afe_topck_get_reg(afe, AUDIO_CLK_AUDDIV_3));
+
+	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AP_PLL_CON5));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON0 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL1_CON0));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON1 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL1_CON1));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON2 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL1_CON2));
+	n += scnprintf(buffer + n, size - n, "APLL1_PWR_CON0 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL1_PWR_CON0));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON0 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL2_CON0));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON1 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL2_CON1));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON2 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL2_CON2));
+	n += scnprintf(buffer + n, size - n, "APLL2_PWR_CON0 = 0x%x\n",
+		       mtk_afe_pll_get_reg(afe, AUDIO_APLL2_PWR_CON0));
+
+	return simple_read_from_buffer(buf, count, pos, buffer, n);
+}
+
+static const struct file_operations mt8173_afe_debug_ops = {
+	.open = mt8173_afe_debug_open,
+	.read = mt8173_afe_debug_read,
 };
 
 static const struct snd_pcm_hardware mtk_afe_hardware = {
@@ -315,8 +435,21 @@ static void mtk_afe_pcm_free(struct snd_pcm *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
+static int mtk_afe_pcm_probe(struct snd_soc_platform *platform)
+{
+	struct mtk_afe *afe = snd_soc_platform_get_drvdata(platform);
+
+	mt8173_afe_debugfs =
+		debugfs_create_file("afe_reg", S_IFREG | S_IRUGO,
+				    NULL,
+				    (void *)afe,
+				    &mt8173_afe_debug_ops);
+	return 0;
+}
+
 static const struct snd_soc_platform_driver mtk_afe_pcm_platform = {
 	.ops = &mtk_afe_pcm_ops,
+	.probe = mtk_afe_pcm_probe,
 	.pcm_new = mtk_afe_pcm_new,
 	.pcm_free = mtk_afe_pcm_free,
 };
@@ -598,6 +731,21 @@ static int mtk_afe_i2s2_prepare(struct mtk_afe *afe,
 static int mtk_afe_hdmi_start(struct mtk_afe *afe,
 			      struct snd_pcm_substream *substream)
 {
+	/* FIXME SPDIF clk move to CCF */
+	unsigned int rate = substream->runtime->rate;
+	unsigned int mclk_div;
+
+	if (rate % 11025 == 0) {
+		mtk_afe_topck_set_reg(afe, AUDIO_CLK_AUDDIV_0, 0 << 9, 1 << 9);
+		mclk_div = (MTK_AFE_APLL1_CLK_FREQ / 128 / rate) - 1;
+	} else {
+		mtk_afe_topck_set_reg(afe, AUDIO_CLK_AUDDIV_0, 1 << 9, 1 << 9);
+		mclk_div = (MTK_AFE_APLL2_CLK_FREQ / 128 / rate) - 1;
+	}
+	mtk_afe_topck_set_reg(afe, AUDIO_CLK_AUDDIV_3,
+			      mclk_div << 24, 0xff000000);
+	mtk_afe_topck_set_reg(afe, AUDIO_CLK_AUDDIV_3, 0 << 14, 1 << 14);
+
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
 			   (1 << 20) | (1 << 21), 0);
 
@@ -618,6 +766,9 @@ static void mtk_afe_hdmi_pause(struct mtk_afe *afe,
 
 	/* disable Out control */
 	regmap_update_bits(afe->regmap, AFE_HDMI_OUT_CON0, 1, 0);
+
+	/* FIXME SPDIF clk move to CCF */
+	mtk_afe_topck_set_reg(afe, AUDIO_CLK_AUDDIV_3, 1 << 14, 1 << 14);
 
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
 			   (1 << 20) | (1 << 21), (1 << 20) | (1 << 21));
@@ -724,6 +875,20 @@ static int mtk_afe_dais_startup(struct snd_pcm_substream *substream,
 		}
 		regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
 				   (1 << 8) | (1 << 9), 0);
+
+		/* FIXME APLL tuner move to CCF */
+		afe->apll_enable++;
+		if (afe->apll_enable == 1) {
+			regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
+					   (1 << 18) | (1 << 19), 0);
+			regmap_update_bits(afe->regmap,
+					   AFE_APLL1_TUNER_CFG,
+					   0xfff7, 0x8033);
+			regmap_update_bits(afe->regmap,
+					   AFE_APLL2_TUNER_CFG,
+					   0xfff7, 0x8035);
+			mtk_afe_pll_set_reg(afe, AP_PLL_CON5, 0x3, 0x3);
+		}
 	}
 
 	if (io->b_ck) {
@@ -757,6 +922,21 @@ static void mtk_afe_dais_shutdown(struct snd_pcm_substream *substream,
 				   (1 << 8) | (1 << 9),
 				   (1 << 8) | (1 << 9));
 		clk_disable_unprepare(io->m_ck);
+
+		/* FIXME APLL tuner move to CCF */
+		afe->apll_enable--;
+		if (afe->apll_enable == 0) {
+			regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
+					   (1 << 18) | (1 << 19),
+					   (1 << 18) | (1 << 19));
+			regmap_update_bits(afe->regmap,
+					   AFE_APLL1_TUNER_CFG, 0x1, 0);
+			regmap_update_bits(afe->regmap,
+					   AFE_APLL2_TUNER_CFG, 0x1, 0);
+			mtk_afe_pll_set_reg(afe, AP_PLL_CON5, 0x0, 0x3);
+		}
+		if (afe->apll_enable < 0)
+			afe->apll_enable = 0;
 	}
 	if (io->b_ck)
 		clk_disable_unprepare(io->b_ck);
@@ -1375,7 +1555,7 @@ static int mtk_afe_pcm_dev_probe(struct platform_device *pdev)
 	int ret, i;
 	unsigned int irq_id;
 	struct mtk_afe *afe;
-	struct device_node *dainode;
+	struct device_node *dainode, *np;
 	struct resource *res;
 
 	afe = devm_kzalloc(&pdev->dev, sizeof(*afe), GFP_KERNEL);
@@ -1412,6 +1592,22 @@ static int mtk_afe_pcm_dev_probe(struct platform_device *pdev)
 	if (!IS_ERR(afe->sram_address)) {
 		afe->sram_phy_address = res->start;
 		afe->sram_size = resource_size(res);
+	}
+
+	/* FIXME SPDIF clk move to CCF */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-topckgen");
+	afe->topckgen_base_addr = of_iomap(np, 0);
+	if (!afe->topckgen_base_addr) {
+		dev_err(afe->dev, "cannot get topckgen_base_addr\n");
+		return -EADDRNOTAVAIL;
+	}
+
+	/* FIXME APLL tuner move to CCF */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-apmixedsys");
+	afe->apmixedsys_base_addr = of_iomap(np, 0);
+	if (!afe->apmixedsys_base_addr) {
+		dev_err(afe->dev, "cannot get apmixedsys_base_addr\n");
+		return -EADDRNOTAVAIL;
 	}
 
 	/* initial audio related clock */

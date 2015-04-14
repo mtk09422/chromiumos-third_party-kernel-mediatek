@@ -93,6 +93,12 @@ struct mtk_afe {
 	/* address for ioremap audio hardware register */
 	void __iomem *base_addr;
 	void __iomem *sram_address;
+
+	/* FIXME: to remove */
+	void __iomem *apmixedsys_base_addr; /* FIXME APLL tuner move to CCF */
+	int apll_enable;
+	void __iomem *topckgen_base_addr; /* FIXME SPDIF clk move to CCF */
+
 	u32 sram_phy_address;
 	u32 sram_size;
 	struct device *dev;
