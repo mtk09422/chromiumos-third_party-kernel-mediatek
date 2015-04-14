@@ -608,6 +608,8 @@
 	it6151mipirx@6c {
 		compatible = "ite,it6151mipirx";
 		reg = <0x6c>;
+		bdgpwr-gpio = <&pio 93 GPIO_ACTIVE_HIGH>;
+		bdgrst-gpio = <&pio 94 GPIO_ACTIVE_HIGH>;
 	};
 	it6151dptx@5c {
 		compatible = "ite,it6151dptx";
