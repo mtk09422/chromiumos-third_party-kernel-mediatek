@@ -435,10 +435,173 @@ static void mtk_afe_pcm_free(struct snd_pcm *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
+/* TESTONLY for debug hdmi */
+static unsigned int hdmi_loop_type;
+static unsigned int hdmi_fs;
+
+enum {
+	MTK_AFE_HDMI_LOOP_NONE = 0,
+	MTK_AFE_HDMI_LOOP_SDAT0,
+	MTK_AFE_HDMI_LOOP_SDAT1,
+	MTK_AFE_HDMI_LOOP_SDAT2,
+	MTK_AFE_HDMI_LOOP_SDAT3,
+};
+
+static int mtk_hdmi_loopback_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = hdmi_loop_type;
+	return 0;
+}
+
+#define AFE_ASRC_CON0		0x0500
+#define AFE_ASRC_CON13		0x0550
+#define AFE_ASRC_CON14		0x0554
+#define AFE_ASRC_CON15		0x0558
+#define AFE_ASRC_CON16		0x055c
+#define AFE_ASRC_CON17		0x0560
+#define AFE_ASRC_CON20		0x056c
+#define AFE_ASRC_CON21		0x0570
+
+static int mtk_afe_set_i2s_asrc_config(struct mtk_afe *afe,
+				       unsigned int sample_rate)
+{
+	switch (sample_rate) {
+	case 44100:
+		regmap_write(afe->regmap, AFE_ASRC_CON13, 0x0);
+		regmap_write(afe->regmap, AFE_ASRC_CON14, 0x1b9000);
+		regmap_write(afe->regmap, AFE_ASRC_CON15, 0x1b9000);
+		regmap_write(afe->regmap, AFE_ASRC_CON16, 0x3f5987);
+		regmap_write(afe->regmap, AFE_ASRC_CON17, 0x1fbd);
+		regmap_write(afe->regmap, AFE_ASRC_CON20, 0x9c00);
+		regmap_write(afe->regmap, AFE_ASRC_CON21, 0x8B00);
+		regmap_write(afe->regmap, AFE_ASRC_CON0, 0x71);
+		break;
+	case 48000:
+		regmap_write(afe->regmap, AFE_ASRC_CON13, 0x0);
+		regmap_write(afe->regmap, AFE_ASRC_CON14, 0x1e0000);
+		regmap_write(afe->regmap, AFE_ASRC_CON15, 0x1e0000);
+		regmap_write(afe->regmap, AFE_ASRC_CON16, 0x3f5987);
+		regmap_write(afe->regmap, AFE_ASRC_CON17, 0x1fbd);
+		regmap_write(afe->regmap, AFE_ASRC_CON20, 0x8f00);
+		regmap_write(afe->regmap, AFE_ASRC_CON21, 0x7f00);
+		regmap_write(afe->regmap, AFE_ASRC_CON0, 0x71);
+		break;
+	case 32000:
+		regmap_write(afe->regmap, AFE_ASRC_CON13, 0x0);
+		regmap_write(afe->regmap, AFE_ASRC_CON14, 0x140000);
+		regmap_write(afe->regmap, AFE_ASRC_CON15, 0x140000);
+		regmap_write(afe->regmap, AFE_ASRC_CON16, 0x3f5987);
+		regmap_write(afe->regmap, AFE_ASRC_CON17, 0x1fbd);
+		regmap_write(afe->regmap, AFE_ASRC_CON20, 0xd800);
+		regmap_write(afe->regmap, AFE_ASRC_CON21, 0xbd00);
+		regmap_write(afe->regmap, AFE_ASRC_CON0, 0x71);
+		break;
+	default:
+		dev_err(afe->dev, "%s sample rate %u not handled\n",
+			__func__, sample_rate);
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static void mtk_afe_set_2nd_i2s_enable(struct mtk_afe *afe,
+				       uint32_t rate, bool enable);
+static void mtk_afe_set_i2s_enable(struct mtk_afe *afe,
+				   uint32_t rate, bool enable);
+static int mtk_afe_set_2nd_i2s(struct mtk_afe *afe, bool doublew,
+			       uint32_t rate, bool bck_inv, bool slave);
+static int mtk_afe_set_i2s(struct mtk_afe *afe, uint32_t rate);
+static int mtk_afe_set_adda_dac_out(struct mtk_afe *afe, uint32_t rate);
+
+static int mtk_hdmi_loopback_set(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct mtk_afe *afe = snd_soc_component_get_drvdata(comp);
+	unsigned int type = ucontrol->value.integer.value[0];
+	unsigned int lpbk_io = MTK_AFE_IO_I2S;
+
+	if (hdmi_loop_type == type)
+		return 0;
+
+	if (hdmi_loop_type != MTK_AFE_HDMI_LOOP_NONE) {
+		/* TODO: test in real HDMI */
+		mtk_afe_set_2nd_i2s_enable(afe, hdmi_fs, false);
+		/* disable tdm_i2s_loopback */
+		regmap_update_bits(afe->regmap, AFE_TDM_CON2,
+				   1 << 20, 0 << 20);
+
+		/* disconnect I0/I1, O3/O4 */
+		mtk_afe_interconn_disconnect(afe, 0, 3);
+		mtk_afe_interconn_disconnect(afe, 1, 4);
+
+		if (lpbk_io == MTK_AFE_IO_PMIC) {
+			regmap_update_bits(afe->regmap, AFE_ADDA_DL_SRC2_CON0,
+					   1, 0);
+			regmap_update_bits(afe->regmap, AFE_I2S_CON1, 1, 0);
+			regmap_update_bits(afe->regmap, AFE_ADDA_UL_DL_CON0,
+					   1, false);
+		} else {
+			mtk_afe_set_i2s_enable(afe, hdmi_fs, false);
+		}
+	}
+
+	hdmi_loop_type = type;
+	if (type == MTK_AFE_HDMI_LOOP_NONE)
+		return 0;
+
+	/* connect I0/I1, O3/O4 */
+	mtk_afe_interconn_connect(afe, 0, 3, 0);
+	mtk_afe_interconn_connect(afe, 1, 4, 0);
+	mtk_afe_set_i2s_asrc_config(afe, hdmi_fs);
+	mtk_afe_set_2nd_i2s(afe, true, hdmi_fs, true, true);
+
+	clk_prepare_enable(afe->clocks[MTK_CLK_I2S0_M]);
+	clk_set_rate(afe->clocks[MTK_CLK_I2S0_M], hdmi_fs * 256);
+	mtk_afe_set_2nd_i2s_enable(afe, hdmi_fs, true);
+
+	regmap_update_bits(afe->regmap, AFE_TDM_CON2, 1 << 21,
+			   (type - MTK_AFE_HDMI_LOOP_SDAT0) << 21);
+
+	/* enable tdm_i2s_loopback */
+	regmap_update_bits(afe->regmap, AFE_TDM_CON2, 1 << 20, 1 << 20);
+
+	/* enable sound output to codec */
+	if (lpbk_io == MTK_AFE_IO_PMIC) {
+		mtk_afe_set_adda_dac_out(afe, hdmi_fs);
+		regmap_update_bits(afe->regmap, AFE_ADDA_DL_SRC2_CON0, 1, 1);
+		regmap_update_bits(afe->regmap, AFE_I2S_CON1, 1, 1);
+		regmap_update_bits(afe->regmap, AFE_ADDA_UL_DL_CON0, 1, true);
+	} else {
+		mtk_afe_set_i2s(afe, hdmi_fs);
+		clk_prepare_enable(afe->clocks[MTK_CLK_I2S1_M]);
+		clk_set_rate(afe->clocks[MTK_CLK_I2S1_M], hdmi_fs * 256);
+		mtk_afe_set_i2s_enable(afe, hdmi_fs, true);
+	}
+	return 0;
+}
+
+static const char * const mtk_hdmi_loopback_func[] = {"off", "sda0", "sda1",
+							 "sda2", "sda3"};
+static const struct soc_enum mtk__pcm_hdmi_control_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mtk_hdmi_loopback_func),
+			    mtk_hdmi_loopback_func),
+};
+
+static const struct snd_kcontrol_new mtk__pcm_hdmi_controls[] = {
+	SOC_ENUM_EXT("HDMI_Loopback_Select", mtk__pcm_hdmi_control_enum[0],
+		     mtk_hdmi_loopback_get,
+		     mtk_hdmi_loopback_set),
+};
+
 static int mtk_afe_pcm_probe(struct snd_soc_platform *platform)
 {
 	struct mtk_afe *afe = snd_soc_platform_get_drvdata(platform);
 
+	/* TESTONLY for debug hdmi */
+	snd_soc_add_platform_controls(platform, mtk__pcm_hdmi_controls,
+				      ARRAY_SIZE(mtk__pcm_hdmi_controls));
 	mt8173_afe_debugfs =
 		debugfs_create_file("afe_reg", S_IFREG | S_IRUGO,
 				    NULL,
@@ -827,6 +990,9 @@ static int mtk_afe_hdmi_prepare(struct mtk_afe *afe,
 
 	regmap_update_bits(afe->regmap, AFE_HDMI_OUT_CON0,
 			   0x000000f0, runtime->channels << 4);
+
+	/* TESTONLY for debug hdmi */
+	hdmi_fs = runtime->rate;
 	return 0;
 }
 
