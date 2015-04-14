@@ -774,14 +774,6 @@ int mtk_output_dsi_enable(struct mtk_dsi *dsi)
 	DSI_SetMode(dsi);
 
 
-/*
-	ret = drm_panel_enable(dsi->output.panel);
-	if (ret < 0) {
-		mtk_dsi_poweroff(dsi);
-		return ret;
-	}
-*/
-
 	DSI_PS_Control(dsi);
 	DSI_Config_VDO_Timing(dsi);
 
@@ -801,7 +793,6 @@ int mtk_output_dsi_enable(struct mtk_dsi *dsi)
 int mtk_output_dsi_disable(struct mtk_dsi *dsi)
 {
 
-	return 0;
 	if (dsi->enabled == false)
 		return 0;
 
@@ -829,11 +820,13 @@ static const struct drm_encoder_funcs mtk_dsi_encoder_funcs = {
 
 static void mtk_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
 {
+/*
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
 	struct drm_panel *panel = dsi->panel;
+*/
 
-return;
-
+	mtk_dsi_info("%s dpms mode = %d !\n", __func__, mode);
+/*
 	if (mode != DRM_MODE_DPMS_ON) {
 		drm_panel_disable(panel);
 		mtk_output_dsi_disable(dsi);
@@ -841,6 +834,7 @@ return;
 		mtk_output_dsi_enable(dsi);
 		drm_panel_enable(panel);
 	}
+*/
 }
 
 
@@ -1247,8 +1241,6 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	struct resource *regs;
 	int err;
 	int ret;
-	unsigned int it6151_rst = 94;
-	unsigned int it6151_pwr1v2_gpio = 93;
 
 
 
@@ -1269,6 +1261,16 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	dsi->vm.vfront_porch = 10;
 	dsi->vm.vsync_len = 12;
 
+
+	err = mtk_dsi_of_read_u32(dev->of_node, "mediatek,width",
+				     &dsi->vm.hactive);
+	if (err < 0)
+		return err;
+
+	err = mtk_dsi_of_read_u32(dev->of_node, "mediatek,height",
+				     &dsi->vm.vactive);
+	if (err < 0)
+		return err;
 
 	err = mtk_dsi_of_read_u32(dev->of_node, "mediatek,mipi-tx-burst-freq",
 				     &dsi->pll_clk_rate);
@@ -1346,26 +1348,8 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 
 
-	mtk_output_dsi_enable(dsi);
-
 	platform_set_drvdata(pdev, dsi);
 
-
-/*     for test       */
-
-
-#if 1
-
-
-gpio_request(it6151_pwr1v2_gpio, "it6151pwr12-gpio");
-gpio_direction_output(it6151_pwr1v2_gpio, 1);
-
-gpio_request(it6151_rst, "it6151pwr12-gpio");
-gpio_direction_output(it6151_rst, 0);
-udelay(5);
-gpio_direction_output(it6151_rst, 1);
-
-#endif
 
 	ret = component_add(&pdev->dev, &mtk_dsi_component_ops);
 	if (ret)

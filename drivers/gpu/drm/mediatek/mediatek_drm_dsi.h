@@ -333,4 +333,13 @@ static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)
 #define connector_to_dsi(c) container_of(c, struct mtk_dsi, conn)
 
 
+#define mtk_dsi_err(fmt, ...) \
+	pr_err("[mediatek drm dsi] ERROR!!! fun:%s, line:%d  " \
+	fmt, __func__, __LINE__,  ##__VA_ARGS__)
+#define mtk_dsi_info(fmt, ...) \
+	pr_info("[mediatek drm dsi] INFO fun:%s, line:%d  " \
+	fmt, __func__, __LINE__,  ##__VA_ARGS__)
+#define mtk_dsi_output(fmt, ...) \
+		pr_info(fmt, ##__VA_ARGS__)
+
 

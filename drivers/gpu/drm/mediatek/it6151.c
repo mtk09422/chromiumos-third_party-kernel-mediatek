@@ -21,7 +21,6 @@ struct it6151_bridge {
 	struct drm_encoder *encoder;
 	struct drm_bridge *bridge;
 	struct regulator_bulk_data *supplies;
-	u32 gpio_bl_en_n;
 	u32 gpio_pwr12_en_n;
 	u32 gpio_rst_n;
 	bool enabled;
@@ -256,6 +255,8 @@ static int it6151_get_modes(struct drm_connector *connector)
 	struct drm_display_mode *mode;
 	int count = 0;
 
+	pr_info("%s !\n", __func__);
+
 	mode = drm_mode_duplicate(connector->dev, ptr);
 	if (mode) {
 		drm_mode_probed_add(connector, mode);
@@ -413,19 +414,26 @@ void it6151_pre_enable(struct drm_bridge *bridge)
 	int ret;
 
 
+	pr_info("%s !\n", __func__);
+
 	if (ite_bridge->enabled)
 		return;
 
-	if (gpio_is_valid(ite_bridge->gpio_bl_en_n))
-		gpio_set_value(ite_bridge->gpio_bl_en_n, 1);
+	if (ite_bridge->gpio_pwr12_en_n) {
+		ret = gpio_direction_output(ite_bridge->gpio_pwr12_en_n, 1);
+		if (ret < 0) {
+			DRM_ERROR("set it6151-pwr-gpio failed (%d)\n", ret);
+			return;
+		}
+	}
 
-	if (gpio_is_valid(ite_bridge->gpio_pwr12_en_n))
-		gpio_set_value(ite_bridge->gpio_pwr12_en_n, 1);
 
-	if (gpio_is_valid(ite_bridge->gpio_rst_n)) {
-		gpio_set_value(ite_bridge->gpio_rst_n, 0);
-		udelay(10);
-		gpio_set_value(ite_bridge->gpio_rst_n, 1);
+	if (ite_bridge->gpio_rst_n) {
+		ret = gpio_direction_output(ite_bridge->gpio_rst_n, 1);
+		if (ret < 0) {
+			DRM_ERROR("set it6151-reset-gpio failed (%d)\n", ret);
+			return;
+		}
 	}
 
 	ret = it6151_bdg_enable(ite_bridge);
@@ -440,17 +448,32 @@ static void it6151_enable(struct drm_bridge *bridge)
 static void it6151_disable(struct drm_bridge *bridge)
 {
 	struct it6151_bridge *ite_bridge = bridge->driver_private;
+	int ret;
+
+	pr_info("%s !\n", __func__);
+
+	return;
 
 	if (!ite_bridge->enabled)
 		return;
 
 	ite_bridge->enabled = false;
 
-	if (gpio_is_valid(ite_bridge->gpio_rst_n))
-		gpio_set_value(ite_bridge->gpio_rst_n, 1);
+	if (ite_bridge->gpio_pwr12_en_n) {
+		ret = gpio_direction_output(ite_bridge->gpio_pwr12_en_n, 0);
+		if (ret < 0) {
+			DRM_ERROR("set it6151-pwr-gpio failed (%d)\n", ret);
+			return;
+		}
+	}
 
-	if (gpio_is_valid(ite_bridge->gpio_pwr12_en_n))
-		gpio_set_value(ite_bridge->gpio_pwr12_en_n, 0);
+	if (ite_bridge->gpio_rst_n) {
+		ret = gpio_direction_output(ite_bridge->gpio_rst_n, 0);
+		if (ret < 0) {
+			DRM_ERROR("set it6151-reset-gpio failed (%d)\n", ret);
+			return;
+		}
+	}
 }
 
 static void it6151_post_disable(struct drm_bridge *bridge)
@@ -492,6 +515,8 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 	struct drm_bridge *bridge;
 	struct it6151_bridge *ite_bridge;
 
+	pr_info("%s !\n", __func__);
+
 	bridge = devm_kzalloc(dev->dev, sizeof(*bridge), GFP_KERNEL);
 	if (!bridge)
 		return -ENOMEM;
@@ -503,7 +528,7 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 
 
 /*
-	ite_bridge->supplies = devm_regulator_get(dev->dev, "reg-vgp2");
+	ite_bridge->supplies = devm_regulator_get(dev->dev, "disp-bdg-supply");
 	if (IS_ERR(ite_bridge->supplies)) {
 		printk( "cannot get vgp2\n");
 		return -ENOMEM;
@@ -529,57 +554,8 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 	ite_bridge->encoder = encoder;
 	ite_bridge->bridge = bridge;
 
-/*
-	of_property_read_u32(node, "bl_enable-gpio",
-						 &ite_bridge->gpio_bl_en_n);
-
-
-	if (gpio_is_valid(ite_bridge->gpio_bl_en_n)) {
-		ret = gpio_request_one(ite_bridge->gpio_bl_en_n,
-		GPIOF_OUT_INIT_HIGH, "PANEL_BL_EN");
-		if (ret)
-			return ret;
-
-	}
-
-	//ite_bridge->gpio_pwr12_en_n = of_get_named_gpio(node,
-	"it6151-pwr12-gpio", 0);
-	of_property_read_u32(node, "it6151-pwr12-gpio",
-						 &ite_bridge->gpio_pwr12_en_n);
-
-
-
-	if (gpio_is_valid(ite_bridge->gpio_pwr12_en_n)) {
-		ret = gpio_request_one(ite_bridge->gpio_pwr12_en_n,
-		GPIOF_OUT_INIT_HIGH, "it6151-pwr12-gpio");
-		if (ret) {
-			gpio_free(ite_bridge->gpio_pwr12_en_n);
-			return ret;
-		}
-	}
-
-
-	//ite_bridge->gpio_rst_n = of_get_named_gpio(node,
-		"it6151-reset-gpio", 0);
-
-	of_property_read_u32(node, "it6151-reset-gpio",
-						 &ite_bridge->gpio_rst_n);
-
-
-	if (gpio_is_valid(ite_bridge->gpio_rst_n)) {
-		ret = gpio_request_one(ite_bridge->gpio_rst_n,
-		GPIOF_OUT_INIT_LOW, "it6151-reset-gpio");
-		if (ret) {
-			gpio_free(ite_bridge->gpio_rst_n);
-			return ret;
-		}
-	}
-	*/
-
-
-
-
-	/*ret = drm_bridge_init(dev, bridge, &it6151_bridge_funcs);*/
+	ite_bridge->gpio_pwr12_en_n = of_get_named_gpio(node, "bdgpwr-gpio", 0);
+	ite_bridge->gpio_rst_n = of_get_named_gpio(node, "bdgrst-gpio", 0);
 
 	bridge->funcs = &it6151_bridge_funcs;
 	ret = drm_bridge_attach(dev, bridge);
@@ -605,7 +581,7 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 
 	drm_mode_connector_attach_encoder(&ite_bridge->connector, encoder);
 
-	it6151_pre_enable(bridge);
+	/*it6151_pre_enable(bridge);*/
 
 
 	return 0;
