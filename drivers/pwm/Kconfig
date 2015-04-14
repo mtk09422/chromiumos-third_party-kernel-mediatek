@@ -177,6 +177,15 @@ config PWM_LPSS_PLATFORM
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-lpss-platform.
 
+config PWM_MEDIATEK
+	tristate "MEDIATEK PWM driver"
+	depends on OF
+	help
+	  Generic PWM framework driver for mediatek.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called pwm-mediatek.
+
 config PWM_MXS
 	tristate "Freescale MXS PWM support"
 	depends on ARCH_MXS && OF
