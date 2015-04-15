@@ -468,21 +468,22 @@ void MainDispPathPowerOff(struct drm_crtc *crtc)
 void MainDispPathSetup(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	struct device *pdev = ((struct drm_device *)crtc->dev)->dev;
+	struct device_node *node;
 
 	unsigned int width, height;
 	int err;
 
-	err = of_property_read_u32(pdev->of_node, "mediatek,width",
-		&width);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-dsi");
+
+	err = of_property_read_u32(node, "mediatek,width", &width);
 	if (err < 0)
 		return;
 
-	err = of_property_read_u32(pdev->of_node, "mediatek,height",
-		&height);
+	err = of_property_read_u32(node, "mediatek,height", &height);
 	if (err < 0)
 		return;
 
+	width = ((width + 3)>>2)<<2;
 	DRM_INFO("DBG_YT MainDispPathSetup %d %d\n", width, height);
 
 	/* Setup OVL0 */
