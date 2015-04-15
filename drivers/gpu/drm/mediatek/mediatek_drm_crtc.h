@@ -12,83 +12,18 @@
  */
 
 #include "mediatek_drm_ddp.h"
+#ifndef MEDIATEK_DRM_UPSTREAM
 #include "drm_sync_helper.h"
+#endif /* MEDIATEK_DRM_UPSTREAM */
 
 
 #define MAX_FB_BUFFER	4
 #define DEFAULT_ZPOS	-1
 
 /*
- * MediaTek drm common overlay structure.
- *
- * @fb_x: offset x on a framebuffer to be displayed.
- *	- the unit is screen coordinates.
- * @fb_y: offset y on a framebuffer to be displayed.
- *	- the unit is screen coordinates.
- * @fb_width: width of a framebuffer.
- * @fb_height: height of a framebuffer.
- * @crtc_x: offset x on hardware screen.
- * @crtc_y: offset y on hardware screen.
- * @crtc_width: window width to be displayed (hardware screen).
- * @crtc_height: window height to be displayed (hardware screen).
- * @mode_width: width of screen mode.
- * @mode_height: height of screen mode.
- * @refresh: refresh rate.
- * @scan_flag: interlace or progressive way.
- *	(it could be DRM_MODE_FLAG_*)
- * @bpp: pixel size.(in bit)
- * @pixel_format: fourcc pixel format of this overlay
- * @dma_addr: array of bus(accessed by dma) address to the memory region
- *	      allocated for a overlay.
- * @vaddr: array of virtual memory address to this overlay.
- * @zpos: order of overlay layer(z position).
- * @default_win: a window to be enabled.
- * @color_key: color key on or off.
- * @index_color: if using color key feature then this value would be used
- *			as index color.
- * @local_path: in case of lcd type, local path mode on or off.
- * @transparency: transparency on or off.
- * @activated: activated or not.
- *
- * this structure is common to mtk SoC and its contents would be copied
- * to hardware specific overlay info.
- */
-struct mtk_drm_overlay {
-	unsigned int fb_x;
-	unsigned int fb_y;
-	unsigned int fb_width;
-	unsigned int fb_height;
-	unsigned int crtc_x;
-	unsigned int crtc_y;
-	unsigned int crtc_width;
-	unsigned int crtc_height;
-	unsigned int mode_width;
-	unsigned int mode_height;
-	unsigned int refresh;
-	unsigned int scan_flag;
-	unsigned int bpp;
-	unsigned int pitch;
-	uint32_t pixel_format;
-	dma_addr_t dma_addr[MAX_FB_BUFFER];
-	void __iomem *vaddr[MAX_FB_BUFFER];
-	int zpos;
-
-	bool default_win;
-	bool color_key;
-	unsigned int index_color;
-	bool local_path;
-	bool transparency;
-	bool activated;
-
-	void *mtk_gem_buf[MAX_FB_BUFFER];
-};
-
-/*
  * MediaTek specific crtc structure.
  *
- * @drm_crtc: crtc object.
- * @overlay: contain information common to display controller and hdmi and
- *	contents of this overlay object would be copied to sub driver size.
+ * @base: crtc object.
  * @pipe: a crtc index created at load() with a new crtc object creation
  *	and the crtc object would be set to private->crtc array
  *	to get a crtc object corresponding to this pipe from private->crtc
@@ -96,7 +31,6 @@ struct mtk_drm_overlay {
  *	drm framework doesn't support multiple irq yet.
  *	we can refer to the crtc to current hardware interrupt occurred through
  *	this pipe value.
- * @dpms: store the crtc dpms value
  */
 struct mtk_drm_crtc {
 	struct drm_crtc			base;
@@ -113,17 +47,15 @@ struct mtk_drm_crtc {
 	void __iomem			*dsi_ana_reg;
 	struct MTK_DISP_REGS		*disp_regs;
 	struct MTK_DISP_CLKS		*disp_clks;
+#ifndef MEDIATEK_DRM_UPSTREAM
 	unsigned int			cursor_x, cursor_y;
 	unsigned int			cursor_w, cursor_h;
 	struct drm_gem_object		*cursor_obj;
+#endif /* MEDIATEK_DRM_UPSTREAM */
 	unsigned int			pipe;
-	/* struct mtk_drm_overlay	overlay;
-	unsigned int			dpms;
-	add count for EGL_CHROMIUM_get_sync_values
-	uint64_t				scb; */
 	struct drm_pending_vblank_event	*event;
 	struct mtk_drm_gem_buf *flip_buffer;
-	struct workqueue_struct *wq;
+#ifndef MEDIATEK_DRM_UPSTREAM
 
 	unsigned fence_context;
 	atomic_t fence_seqno;
@@ -131,6 +63,7 @@ struct mtk_drm_crtc {
 	struct drm_reservation_cb rcb;
 	struct fence *pending_fence;
 	bool pending_needs_vblank;
+#endif /* MEDIATEK_DRM_UPSTREAM */
 };
 
 #define to_mtk_crtc(x) container_of(x, struct mtk_drm_crtc, base)
