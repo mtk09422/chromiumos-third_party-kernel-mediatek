@@ -1062,7 +1062,7 @@ static int mtk_drm_attach_lcm_bridge(struct drm_device *dev,
 	if (find_bridge("ite,it6151mipirx", "ite,it6151dptx", bridge)) {
 		ret = it6151_init(dev, encoder, bridge->mipirx_client,
 				bridge->dptx_client, bridge->node_mipirx);
-		if (ret != 0)
+		if (!ret)
 			return 1;
 	}
 
