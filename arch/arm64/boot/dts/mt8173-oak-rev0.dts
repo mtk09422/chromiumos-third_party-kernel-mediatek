@@ -605,15 +605,18 @@
 	clock-frequency = <100000>;
 	#address-cells = <0x1>;
 	#size-cells = <0>;
-	it6151mipirx@6c {
-		compatible = "ite,it6151mipirx";
-		reg = <0x6c>;
-		bdgpwr-gpio = <&pio 93 GPIO_ACTIVE_HIGH>;
-		bdgrst-gpio = <&pio 94 GPIO_ACTIVE_HIGH>;
-	};
-	it6151dptx@5c {
-		compatible = "ite,it6151dptx";
+
+	ite6151: edp-bridge@5c {
+		compatible = "ite,it6151";
 		reg = <0x5c>;
+		rxreg = <0x6c>;
+		power-gpio = <&pio 93 GPIO_ACTIVE_HIGH>;
+		reset-gpio = <&pio 94 GPIO_ACTIVE_HIGH>;
+		port {
+			dsi_in: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
 	};
 };
 
@@ -648,6 +651,19 @@
 	mediatek,height = <768>;
 	mediatek,mipi-tx-burst-freq = <150>;
 	mediatek,panel = <&panel>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@1 {
+			reg = <1>;
+
+			dsi_out: endpoint {
+				remote-endpoint = <&dsi_in>;
+			};
+		};
+	};
 };
 
 #include "mt8173-cros-ec-keyboard.dtsi"
