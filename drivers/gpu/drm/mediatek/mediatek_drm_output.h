@@ -75,8 +75,6 @@ static inline struct mtk_output *connector_to_output(
 		connector);
 }
 
-int mtk_output_init(struct drm_device *dev);
-
 static inline int mtk_output_enable(struct mtk_output *output)
 {
 	if (output && output->ops && output->ops->enable)
@@ -92,8 +90,6 @@ static inline int mtk_output_disable(struct mtk_output *output)
 
 	return output ? -ENOSYS : -EINVAL;
 }
-
-int mtk_output_probe(struct mtk_output *output);
 
 #endif
 

@@ -28,6 +28,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
 #include <linux/of_platform.h>
+#include <linux/of_graph.h>
 #include <linux/component.h>
 
 #include <linux/regulator/consumer.h>
@@ -46,7 +47,6 @@
 
 #include "mediatek_drm_gem.h"
 #include "mediatek_drm_dsi.h"
-#include "it6151.h"
 
 
 
@@ -1017,53 +1017,17 @@ struct bridge_init {
 	struct device_node *node_dptx;
 };
 
-static bool find_bridge(const char *mipirx,
-		const char *dptx, struct bridge_init *bridge)
+static int mtk_drm_attach_lcm_bridge(struct drm_bridge *bridge,
+	struct drm_encoder *encoder)
 {
-
-	bridge->mipirx_client = NULL;
-	bridge->node_mipirx = of_find_compatible_node(NULL, NULL, mipirx);
-
-
-	if (!bridge->node_mipirx)
-		return false;
-
-	bridge->mipirx_client = of_find_i2c_device_by_node(bridge->node_mipirx);
-	if (!bridge->mipirx_client)
-		return false;
-
-
-
-	bridge->dptx_client = NULL;
-	bridge->node_dptx = of_find_compatible_node(NULL, NULL, dptx);
-	if (!bridge->node_dptx)
-		return false;
-
-
-
-	bridge->dptx_client = of_find_i2c_device_by_node(bridge->node_dptx);
-	if (!bridge->dptx_client)
-		return false;
-
-
-
-	return true;
-}
-
-static int mtk_drm_attach_lcm_bridge(struct drm_device *dev,
-		struct drm_encoder *encoder)
-{
-	struct bridge_init *bridge;
 	int ret;
 
-
-	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
-
-	if (find_bridge("ite,it6151mipirx", "ite,it6151dptx", bridge)) {
-		ret = it6151_init(dev, encoder, bridge->mipirx_client,
-				bridge->dptx_client, bridge->node_mipirx);
-		if (!ret)
-			return 1;
+	encoder->bridge = bridge;
+	bridge->encoder = encoder;
+	ret = drm_bridge_attach(encoder->dev, bridge);
+	if (ret) {
+		DRM_ERROR("Failed to attach bridge to drm\n");
+		return ret;
 	}
 
 	return 0;
@@ -1086,8 +1050,8 @@ static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 
 
 	/* Pre-empt DP connector creation if there's a bridge */
-	ret = mtk_drm_attach_lcm_bridge(dsi->drm_dev, &dsi->encoder);
-	if (ret)
+	ret = mtk_drm_attach_lcm_bridge(dsi->bridge, &dsi->encoder);
+	if (!ret)
 		return 0;
 
 
@@ -1137,7 +1101,6 @@ static void mtk_dsi_destroy_conn_enc(struct mtk_dsi *dsi)
 	drm_connector_unregister(&dsi->conn);
 	drm_connector_cleanup(&dsi->conn);
 }
-
 
 static int mtk_dsi_bind(struct device *dev, struct device *master,
 				void *data)
@@ -1237,7 +1200,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 
 	struct mtk_dsi *dsi = NULL;
 	struct device *dev = &pdev->dev;
-	struct device_node *panel_node;
+	struct device_node *panel_node, *bridge_node, *endpoint;
 	struct resource *regs;
 	int err;
 	int ret;
@@ -1278,6 +1241,17 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	if (err < 0)
 		return err;
 
+	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
+	if (endpoint) {
+		bridge_node = of_graph_get_remote_port_parent(endpoint);
+		if (bridge_node) {
+			dsi->bridge = of_drm_find_bridge(bridge_node);
+			of_node_put(bridge_node);
+			if (!dsi->bridge)
+				return -EPROBE_DEFER;
+		} else
+			return -EPROBE_DEFER;
+	}
 
 	dsi->dsi0_engine_clk_cg = devm_clk_get(dev, "dsi0_engine_disp_ck");
 	if (IS_ERR(dsi->dsi0_engine_clk_cg)) {

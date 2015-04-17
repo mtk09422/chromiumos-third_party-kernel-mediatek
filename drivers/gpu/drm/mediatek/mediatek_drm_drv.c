@@ -191,7 +191,6 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	if (err < 0)
 		goto err_crtc;
 
-	/*mtk_output_init(dev);*/
 	mtk_enable_vblank(mtk_crtc->od_regs);
 
 	drm_kms_helper_poll_init(dev);

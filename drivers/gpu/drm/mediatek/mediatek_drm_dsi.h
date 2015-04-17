@@ -297,6 +297,7 @@ struct mtk_dsi {
 	struct drm_encoder encoder;
 	struct drm_connector conn;
 	struct drm_panel *panel;
+	struct drm_bridge *bridge;
 	struct mipi_dsi_host host;
 	struct regulator *disp_supplies;
 

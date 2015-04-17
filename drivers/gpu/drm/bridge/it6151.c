@@ -159,8 +159,8 @@ struct it6151_driver_data {
 
 struct it6151_bridge {
 	struct drm_connector connector;
+	struct drm_bridge bridge;
 	struct i2c_client *client;
-	struct drm_encoder *encoder;
 	struct it6151_driver_data *driver_data;
 	int gpio_rst_n;
 	u16 rx_reg;
@@ -438,7 +438,8 @@ static void it6151_pre_enable(struct drm_bridge *bridge)
 
 static void it6151_enable(struct drm_bridge *bridge)
 {
-	struct it6151_bridge *ite_bridge = bridge->driver_private;
+	struct it6151_bridge *ite_bridge =
+		container_of(bridge, struct it6151_bridge, bridge);
 
 	gpio_direction_output(ite_bridge->gpio_rst_n, 0);
 	udelay(15);
@@ -451,7 +452,8 @@ static void it6151_enable(struct drm_bridge *bridge)
 
 static void it6151_disable(struct drm_bridge *bridge)
 {
-	struct it6151_bridge *ite_bridge = bridge->driver_private;
+	struct it6151_bridge *ite_bridge =
+		container_of(bridge, struct it6151_bridge, bridge);
 
 	if (!ite_bridge->enabled)
 		return;
@@ -466,13 +468,6 @@ static void it6151_post_disable(struct drm_bridge *bridge)
 {
 	/* drm framework doesn't check NULL. */
 }
-
-static struct drm_bridge_funcs it6151_bridge_funcs = {
-	.pre_enable = it6151_pre_enable,
-	.enable = it6151_enable,
-	.disable = it6151_disable,
-	.post_disable = it6151_post_disable,
-};
 
 static int it6151_get_modes(struct drm_connector *connector)
 {
@@ -503,7 +498,7 @@ static struct drm_encoder *it6151_best_encoder(struct drm_connector *connector)
 	struct it6151_bridge *ite_bridge;
 
 	ite_bridge = container_of(connector, struct it6151_bridge, connector);
-	return ite_bridge->encoder;
+	return ite_bridge->bridge.encoder;
 }
 
 static struct drm_connector_helper_funcs it6151_connector_helper_funcs = {
@@ -530,27 +525,61 @@ static struct drm_connector_funcs it6151_connector_funcs = {
 	.destroy = it6151_connector_destroy,
 };
 
-int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
-	struct i2c_client *client, struct device_node *node)
+int it6151_bridge_attach(struct drm_bridge *bridge)
 {
+	struct it6151_bridge *ite_bridge =
+		container_of(bridge, struct it6151_bridge, bridge);
 	int ret;
-	struct drm_bridge *bridge;
+
+	if (!bridge->encoder) {
+		DRM_ERROR("Parent encoder object not found");
+		return -ENODEV;
+	}
+
+	ret = drm_connector_init(bridge->dev, &ite_bridge->connector,
+		&it6151_connector_funcs, DRM_MODE_CONNECTOR_eDP);
+
+	if (ret) {
+		DRM_ERROR("Failed to initialize connector with drm\n");
+		return ret;
+	}
+
+	drm_connector_helper_add(&ite_bridge->connector,
+		&it6151_connector_helper_funcs);
+
+	drm_connector_register(&ite_bridge->connector);
+	drm_mode_connector_attach_encoder(&ite_bridge->connector,
+		bridge->encoder);
+
+	return ret;
+}
+
+
+static struct drm_bridge_funcs it6151_bridge_funcs = {
+	.pre_enable = it6151_pre_enable,
+	.enable = it6151_enable,
+	.disable = it6151_disable,
+	.post_disable = it6151_post_disable,
+	.attach = it6151_bridge_attach,
+};
+
+static int it6151_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
+{
+	struct device *dev = &client->dev;
 	struct it6151_bridge *ite_bridge;
+	int ret;
 	u32 rx_reg, tx_reg;
 
-	bridge = devm_kzalloc(dev->dev, sizeof(*bridge), GFP_KERNEL);
-	if (!bridge)
-		return -ENOMEM;
-
-	ite_bridge = devm_kzalloc(dev->dev, sizeof(*ite_bridge), GFP_KERNEL);
+	ite_bridge = devm_kzalloc(dev, sizeof(*ite_bridge), GFP_KERNEL);
 	if (!ite_bridge)
 		return -ENOMEM;
 
-	ite_bridge->encoder = encoder;
 	ite_bridge->client = client;
 	ite_bridge->driver_data = it6151_get_driver_data();
 
-	ite_bridge->gpio_rst_n = of_get_named_gpio(node, "reset-gpio", 0);
+	ite_bridge->gpio_rst_n =
+		of_get_named_gpio(dev->of_node, "reset-gpio", 0);
 	if (gpio_is_valid(ite_bridge->gpio_rst_n)) {
 		ret = gpio_request_one(ite_bridge->gpio_rst_n,
 			GPIOF_OUT_INIT_LOW, "mtk_rst");
@@ -558,37 +587,27 @@ int it6151_init(struct drm_device *dev, struct drm_encoder *encoder,
 			return ret;
 	}
 
-	ret = of_property_read_u32(node, "reg",	&tx_reg);
+	ret = of_property_read_u32(dev->of_node, "reg",	&tx_reg);
 	if (ret) {
 		DRM_ERROR("Can't read reg value\n");
 		goto err;
 	}
 	ite_bridge->tx_reg = tx_reg;
 
-	ret = of_property_read_u32(node, "rxreg", &rx_reg);
+	ret = of_property_read_u32(dev->of_node, "rxreg", &rx_reg);
 	if (ret) {
 		DRM_ERROR("Can't read rxreg value\n");
 		goto err;
 	}
 	ite_bridge->rx_reg = rx_reg;
 
-	bridge->funcs = &it6151_bridge_funcs;
-	ret = drm_bridge_attach(dev, bridge);
+	ite_bridge->bridge.funcs = &it6151_bridge_funcs;
+	ite_bridge->bridge.of_node = dev->of_node;
+	ret = drm_bridge_add(&ite_bridge->bridge);
 	if (ret)
 		goto err;
 
-	bridge->driver_private = ite_bridge;
-	encoder->bridge = bridge;
-
-	ret = drm_connector_init(dev, &ite_bridge->connector,
-		&it6151_connector_funcs, DRM_MODE_CONNECTOR_eDP);
-	if (ret)
-		goto err;
-
-	drm_connector_helper_add(&ite_bridge->connector,
-		&it6151_connector_helper_funcs);
-	drm_connector_register(&ite_bridge->connector);
-	drm_mode_connector_attach_encoder(&ite_bridge->connector, encoder);
+	i2c_set_clientdata(client, ite_bridge);
 
 	return 0;
 
@@ -598,3 +617,45 @@ err:
 
 	return ret;
 }
+
+static int it6151_remove(struct i2c_client *client)
+{
+	struct it6151_bridge *ite_bridge = i2c_get_clientdata(client);
+
+	drm_bridge_remove(&ite_bridge->bridge);
+
+	if (gpio_is_valid(ite_bridge->gpio_rst_n))
+		gpio_free(ite_bridge->gpio_rst_n);
+
+	return 0;
+}
+
+static const struct i2c_device_id it6151_i2c_table[] = {
+	{"ite,it6151", 0},
+	{},
+};
+MODULE_DEVICE_TABLE(i2c, it6151_i2c_table);
+
+static const struct of_device_id it6151_match[] = {
+	{ .compatible = "ite,it6151" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, it6151_match);
+
+static struct i2c_driver it6151_driver = {
+	.id_table	= it6151_i2c_table,
+	.probe		= it6151_probe,
+	.remove		= it6151_remove,
+	.driver		= {
+		.name	= "ite,it6151",
+		.owner	= THIS_MODULE,
+		.of_match_table = it6151_match,
+	},
+};
+module_i2c_driver(it6151_driver);
+
+MODULE_AUTHOR("Jitao Shi <jitao.shi@mediatek.com>");
+MODULE_AUTHOR("CK Hu <ck.hu@mediatek.com>");
+MODULE_DESCRIPTION("ITE it6151 DSI-eDP converter driver");
+MODULE_LICENSE("GPL v2");
+
