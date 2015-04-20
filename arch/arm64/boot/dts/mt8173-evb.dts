@@ -437,6 +437,15 @@
 	clock-frequency = <100000>;
 };
 
+&cpu0 {
+	proc-supply = <&mt6397_vpca15_reg>;
+};
+
+&cpu2 {
+	proc-supply = <&da9211_vcpu_reg>;
+	sram-supply = <&mt6397_vsramca7_reg>;
+};
+
 &u3phy {
 	p1-gpio = <&pio 130 GPIO_ACTIVE_HIGH>;
 };
