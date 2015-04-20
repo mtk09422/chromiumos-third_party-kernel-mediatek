@@ -981,6 +981,7 @@ static const char* const mt8173_critical_topckgen_clocks[] __initconst = {
 	"rtc_sel",
 	"axi_mfg_in_sel",
 	"usb30_sel",
+	"mem_mfg_in_sel",
 };
 
 static const char* const mt8173_critical_infra_clocks[] __initconst = {
@@ -1014,9 +1015,6 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	init_clk_protect_critical(mt8173_critical_topckgen_clocks,
-			ARRAY_SIZE(mt8173_critical_topckgen_clocks));
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,mt8173-topckgen", mtk_topckgen_init);
 
@@ -1036,10 +1034,6 @@ static void __init mtk_infrasys_init(struct device_node *node)
 			__func__, r);
 
 	mtk_register_reset_controller(node, 2, 0x30);
-
-	init_clk_protect_critical(mt8173_critical_infra_clocks,
-			ARRAY_SIZE(mt8173_critical_infra_clocks));
-
 }
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,mt8173-infracfg", mtk_infrasys_init);
 
@@ -1057,9 +1051,6 @@ static void __init mtk_pericfg_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	init_clk_protect_critical(mt8173_critical_peri_clocks,
-			ARRAY_SIZE(mt8173_critical_peri_clocks));
 
 	mtk_register_reset_controller(node, 2, 0);
 }
@@ -1117,10 +1108,6 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt8173-apmixedsys",
 		mtk_apmixedsys_init);
 
-static const char * const mt8173_critical_mfgsys_clocks[] __initconst = {
-	"mem_mfg_in_sel",
-};
-
 static void __init mtk_mfgsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1142,9 +1129,6 @@ static void __init mtk_mfgsys_init(struct device_node *node)
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	init_clk_protect_critical(mt8173_critical_mfgsys_clocks,
-		ARRAY_SIZE(mt8173_critical_mfgsys_clocks));
 }
 CLK_OF_DECLARE(mtk_mfgsys, "mediatek,mt8173-mfgsys", mtk_mfgsys_init);
 
@@ -1318,3 +1302,20 @@ static void __init mt_scpsys_init(struct device_node *node)
 			__func__, r);
 }
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt8173-scpsys", mt_scpsys_init);
+
+static int __init clk_critical_init(void)
+{
+	init_clk_protect_critical(mt8173_critical_topckgen_clocks,
+			ARRAY_SIZE(mt8173_critical_topckgen_clocks));
+
+	init_clk_protect_critical(mt8173_critical_infra_clocks,
+			ARRAY_SIZE(mt8173_critical_infra_clocks));
+
+	init_clk_protect_critical(mt8173_critical_peri_clocks,
+			ARRAY_SIZE(mt8173_critical_peri_clocks));
+
+	return 0;
+}
+
+module_init(clk_critical_init);
+
