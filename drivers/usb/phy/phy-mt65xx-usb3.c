@@ -20,6 +20,7 @@
 #include <linux/export.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
 #include <linux/io.h>
 #include <linux/gpio.h>
 #include <linux/of.h>
@@ -343,13 +344,6 @@ static int get_u3phy_clks(struct mt65xx_u3phy *u3phy)
 {
 	struct clk *tmp;
 
-	tmp = devm_clk_get(u3phy->dev, "scp_sys_usb");
-	if (IS_ERR(tmp)) {
-		dev_err(u3phy->dev, "error to get scp-sys-usb\n");
-		return PTR_ERR(tmp);
-	}
-	u3phy->scp_sys = tmp;
-
 	tmp = devm_clk_get(u3phy->dev, "peri_usb0");
 	if (IS_ERR(tmp)) {
 		dev_err(u3phy->dev, "error to get peri_usb0\n");
@@ -362,7 +356,7 @@ static int get_u3phy_clks(struct mt65xx_u3phy *u3phy)
 		dev_err(u3phy->dev, "error to get peri_usb1\n");
 		return PTR_ERR(tmp);
 	}
-	u3phy->peri_usb0 = tmp;
+	u3phy->peri_usb1 = tmp;
 	dev_dbg(u3phy->dev, "mu3d get clks ok\n");
 
 	return 0;
@@ -375,19 +369,14 @@ static int u3phy_clks_enable(struct mt65xx_u3phy *u3phy)
 
 	u3_xtal_clock_enable(u3phy);
 
-	ret = clk_prepare_enable(u3phy->scp_sys);
-	if (ret) {
-		dev_err(u3phy->dev, "failed to enable scp-sys-clk\n");
-		goto scp_sys_err;
-	}
 	ret = clk_prepare_enable(u3phy->peri_usb0);
 	if (ret) {
 		dev_err(u3phy->dev, "failed to enable peri-usb0\n");
 		goto clken_usb0_err;
 	}
-	ret = clk_prepare_enable(u3phy->peri_usb0);
+	ret = clk_prepare_enable(u3phy->peri_usb1);
 	if (ret) {
-		dev_err(u3phy->dev, "failed to enable peri-usb0\n");
+		dev_err(u3phy->dev, "failed to enable peri-usb1\n");
 		goto clken_usb1_err;
 	}
 
@@ -399,9 +388,6 @@ clken_usb1_err:
 	clk_disable_unprepare(u3phy->peri_usb0);
 
 clken_usb0_err:
-	clk_disable_unprepare(u3phy->scp_sys);
-
-scp_sys_err:
 	return -EINVAL;
 }
 
@@ -409,7 +395,6 @@ static void u3phy_clks_disable(struct mt65xx_u3phy *u3phy)
 {
 	clk_disable_unprepare(u3phy->peri_usb1);
 	clk_disable_unprepare(u3phy->peri_usb0);
-	clk_disable_unprepare(u3phy->scp_sys);
 	u3_xtal_clock_disable(u3phy);
 }
 
@@ -464,6 +449,10 @@ static int mt65xx_u3phy_init(struct usb_phy *phy)
 			goto reg_err;
 		}
 
+		ret = pm_runtime_get_sync(u3phy->dev);
+		if (ret < 0)
+			goto pm_err;
+
 		ret = u3phy_clks_enable(u3phy);
 		if (ret) {
 			dev_err(u3phy->dev, "failed to enable clks\n");
@@ -485,6 +474,7 @@ static int mt65xx_u3phy_init(struct usb_phy *phy)
 
 port_err:
 	u3phy_clks_disable(u3phy);
+pm_err:
 clks_err:
 	regulator_disable(u3phy->vusb33);
 reg_err:
@@ -504,6 +494,7 @@ static void mt65xx_u3phy_shutdown(struct usb_phy *phy)
 	if (0 == u3phy->is_on) {
 		u3phy_power_off(u3phy);
 		u3phy_clks_disable(u3phy);
+		pm_runtime_put_sync(u3phy->dev);
 		regulator_disable(u3phy->vusb33);
 		vbus_gpio_pulldown(u3phy);
 	}
@@ -627,6 +618,8 @@ static int mt65xx_u3phy_probe(struct platform_device *pdev)
 		goto vbus_err;
 	}
 
+	pm_runtime_enable(&pdev->dev);
+
 	u3phy->phy.dev = u3phy->dev;
 	u3phy->phy.label = "mt65xx-usb3phy";
 	u3phy->phy.type = USB_PHY_TYPE_USB3;
@@ -672,6 +665,7 @@ static int mt65xx_u3phy_remove(struct platform_device *pdev)
 	iounmap(u3phy->ap_pll);
 	regulator_put(u3phy->vusb33);
 	usb_remove_phy(&u3phy->phy);
+	pm_runtime_disable(&pdev->dev);
 
 	return 0;
 }

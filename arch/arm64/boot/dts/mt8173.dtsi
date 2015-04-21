@@ -695,13 +695,13 @@
 			compatible = "mediatek,mt8173-u3phy";
 			reg = <0 0x11271000 0 0x3000>,
 			      <0 0x11280000 0 0x20000>;
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_USB>;
 			usb-host = <&usb>;
 			reg-vusb33-supply = <&mt6397_vusb_reg>;
 			usb3_ref_clk = <&apmixedsys>;
-			clocks = <&scpsys SCP_SYS_USB>,
-				 <&pericfg PERI_USB0>,
+			clocks = <&pericfg PERI_USB0>,
 				 <&pericfg PERI_USB1>;
-			clock-names = "scp_sys_usb", "peri_usb0", "peri_usb1";
+			clock-names = "peri_usb0", "peri_usb1";
 		};
 
 		usb: usb30@11270000 {
