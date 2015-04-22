@@ -249,6 +249,20 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		err = mtk_smi_larb_get(&pdev->dev);
 		if (err)
 			DRM_ERROR("mtk_smi_larb_get fail %d\n", err);
+
+		node = of_parse_phandle(dev->dev->of_node, "larb", 1);
+		if (!node)
+			return 0;
+
+		pdev = of_find_device_by_node(node);
+		if (WARN_ON(!pdev)) {
+			of_node_put(node);
+			return -EINVAL;
+		}
+
+		err = mtk_smi_larb_get(&pdev->dev);
+		if (err)
+			DRM_ERROR("mtk_smi_larb_get fail %d\n", err);
 	}
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
