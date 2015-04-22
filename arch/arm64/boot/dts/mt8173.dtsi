@@ -533,7 +533,7 @@
 			      <0 0x14023000 0 0x1000>;	/* OD */
 			#interrupts = <0 182 0x8>;	/* RDMA */
 			interrupts = <0 196 0x8>;	/* OD */
-			larb = <&larb0>;
+			larb = <&larb0>, <&larb4>;
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
 				<&iommu M4U_PORT_DISP_RDMA0>,
 				<&iommu M4U_PORT_DISP_OVL1>,
