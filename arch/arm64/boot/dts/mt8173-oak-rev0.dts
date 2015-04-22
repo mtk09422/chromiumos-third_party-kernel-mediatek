@@ -641,6 +641,15 @@
 	};
 };
 
+&cpu0 {
+	proc-supply = <&mt6397_vpca15_reg>;
+};
+
+&cpu2 {
+	proc-supply = <&da9211_vcpu_reg>;
+	sram-supply = <&mt6397_vsramca7_reg>;
+};
+
 /*in fact is a switch between micro(low to device) and type A(high to host)*/
 &u3phy {
 	p1-gpio = <&pio 3 GPIO_ACTIVE_HIGH>;
