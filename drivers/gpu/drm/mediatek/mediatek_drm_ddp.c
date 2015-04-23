@@ -112,6 +112,7 @@ enum {
 	MUTEX_MOD_COLOR0    = 18,
 	MUTEX_MOD_AAL       = 20,
 	MUTEX_MOD_UFOE      = 22,
+	MUTEX_MOD_PWM0      = 23,
 	MUTEX_MOD_OD        = 25,
 };
 
@@ -185,7 +186,8 @@ static void disp_config_main_path_mutex(void __iomem *mutex_base)
 
 	writel((1 << MUTEX_MOD_OVL0 | 1 << MUTEX_MOD_RDMA0 |
 		1 << MUTEX_MOD_COLOR0 | 1 << MUTEX_MOD_AAL |
-		1 << MUTEX_MOD_UFOE | 1 << MUTEX_MOD_OD),
+		1 << MUTEX_MOD_UFOE | 1 << MUTEX_MOD_PWM0 |
+		1 << MUTEX_MOD_OD),
 		mutex_base + DISP_REG_CONFIG_MUTEX_MOD(id));
 
 	writel(MUTEX_SOF_DSI0, mutex_base + DISP_REG_CONFIG_MUTEX_SOF(id));
