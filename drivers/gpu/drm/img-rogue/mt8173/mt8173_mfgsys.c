@@ -20,6 +20,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/regulator/consumer.h>
+#include <linux/pm_runtime.h>
 
 #include "pvrsrv_error.h"
 
@@ -29,7 +30,8 @@
 struct regulator *g_vgpu;
 struct clk *g_mmpll;
 
-static struct clk *g_mfgclk_sys;
+static struct clk *g_mfgclk_mem_in_sel;
+static struct clk *g_mfgclk_axi_in_sel;
 static struct clk *g_mfgclk_axi;
 static struct clk *g_mfgclk_mem;
 static struct clk *g_mfgclk_g3d;
@@ -38,7 +40,6 @@ static struct clk *g_mfgclk_26m;
 static void __iomem *gbRegBase;
 struct platform_device *mtkBackupPVRLDMDev = NULL;
 
-static bool bGetClock;
 static bool bMfgInit;
 
 
@@ -54,11 +55,13 @@ static int MtkEnableMfgClock(void)
 		      bGetClock, g_mfgclk_axi, g_mfgclk_mem,
 		      g_mfgclk_g3d, g_mfgclk_26m);
 
-	if (bGetClock == false)
-		return PVRSRV_OK;
+	pm_runtime_get_sync(&mtkBackupPVRLDMDev->dev);
 
-	clk_prepare(g_mfgclk_sys);
-	clk_enable(g_mfgclk_sys);
+	clk_prepare(g_mfgclk_mem_in_sel);
+	clk_enable(g_mfgclk_mem_in_sel);
+
+	clk_prepare(g_mfgclk_axi_in_sel);
+	clk_enable(g_mfgclk_axi_in_sel);
 
 	clk_prepare(g_mfgclk_axi);
 	clk_enable(g_mfgclk_axi);
@@ -80,9 +83,6 @@ static int MtkDisableMfgClock(void)
 {
 	mtk_mfg_debug("MtkDisableMfgClock[%d]\n", bGetClock);
 	return PVRSRV_OK;
-	if (bGetClock == false)
-		return PVRSRV_OK;
-
 	clk_disable(g_mfgclk_26m);
 	clk_unprepare(g_mfgclk_26m);
 
@@ -95,9 +95,13 @@ static int MtkDisableMfgClock(void)
 	clk_disable(g_mfgclk_axi);
 	clk_unprepare(g_mfgclk_axi);
 
-	clk_disable(g_mfgclk_sys);
-	clk_unprepare(g_mfgclk_sys);
+	clk_disable(g_mfgclk_axi_in_sel);
+	clk_unprepare(g_mfgclk_axi_in_sel);
 
+	clk_disable(g_mfgclk_mem_in_sel);
+	clk_unprepare(g_mfgclk_mem_in_sel);
+
+	pm_runtime_put_sync(&mtkBackupPVRLDMDev->dev);
 	return PVRSRV_OK;
 }
 
@@ -118,6 +122,14 @@ static int MTKEnableHWAPM(void)
 static int MTKDisableHWAPM(void)
 {
 	mtk_mfg_debug("MTKDisableHWAPM...\n");
+	DRV_WriteReg32(gbRegBase + 0x24, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0x28, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0xe0, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0xe4, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0xe8, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0xec, 0x00000000);
+	DRV_WriteReg32(gbRegBase + 0xa0, 0x00000000);
+
 	return PVRSRV_OK;
 }
 
@@ -159,16 +171,22 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	g_mfgclk_sys = devm_clk_get(&pdev->dev, "scp_sys_mfg");
-	if (IS_ERR(g_mfgclk_sys)) {
-		err = PTR_ERR(g_mfgclk_sys);
+	g_mfgclk_mem_in_sel = devm_clk_get(&pdev->dev, "mfg_mem_in_sel");
+	if (IS_ERR(g_mfgclk_mem_in_sel)) {
+		err = PTR_ERR(g_mfgclk_mem_in_sel);
 		goto err_iounmap_reg_base;
+	}
+
+	g_mfgclk_axi_in_sel = devm_clk_get(&pdev->dev, "mfg_axi_in_sel");
+	if (IS_ERR(g_mfgclk_axi_in_sel)) {
+		err = PTR_ERR(g_mfgclk_axi_in_sel);
+		goto err_clk_put_mem_in_sel;
 	}
 
 	g_mfgclk_axi = devm_clk_get(&pdev->dev, "mfg_axi");
 	if (IS_ERR(g_mfgclk_axi)) {
 		err = PTR_ERR(g_mfgclk_axi);
-		goto err_clk_put_mfgclk_sys;
+		goto err_clk_put_axi_in_sel;
 	}
 
 	g_mfgclk_mem = devm_clk_get(&pdev->dev, "mfg_mem");
@@ -201,7 +219,6 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 		goto err_clk_put_mmpll;
 	}
 
-	bGetClock = true;
 	mtkBackupPVRLDMDev = pdev;
 
 	mtk_mfg_debug("MTKMFGGetClocks[%d] clocks %p %p %p %p\n",
@@ -220,8 +237,9 @@ int MTKMFGGetClocks(struct platform_device *pdev)
 				      regulator_is_enabled(g_vgpu));
 	}
 
+	pm_runtime_enable(&pdev->dev);
 
-	if (bGetClock && !bMfgInit)
+	if (!bMfgInit)
 		MTKMFGSystemInit();
 
 	return 0;
@@ -236,8 +254,10 @@ err_clk_put_mfgclk_mem:
 	devm_clk_put(&pdev->dev, g_mfgclk_mem);
 err_clk_put_mfgclk_axi:
 	devm_clk_put(&pdev->dev, g_mfgclk_axi);
-err_clk_put_mfgclk_sys:
-	devm_clk_put(&pdev->dev, g_mfgclk_sys);
+err_clk_put_axi_in_sel:
+	devm_clk_put(&pdev->dev, g_mfgclk_axi_in_sel);
+err_clk_put_mem_in_sel:
+	devm_clk_put(&pdev->dev, g_mfgclk_mem_in_sel);
 err_iounmap_reg_base:
 	iounmap(gbRegBase);
 	return err;
