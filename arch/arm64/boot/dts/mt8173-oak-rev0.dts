@@ -94,6 +94,23 @@
 	panel: panel {
 		compatible = "innolux,n116bge";
 	};
+
+        backlight_lcd: backlight_lcd {
+                compatible = "pwm-backlight";
+                pwms = <&pwm0 0 1000000>;
+                brightness-levels = <
+                      0  16  32  48  64  80  96 112
+                    128 144 160 176 192 208 224 240
+                    255
+                >;
+                default-brightness-level = <9>;
+                power-supply = <&mt6397_vio18_reg>;
+                enable-gpios = <&pio6397 23 1>;
+
+                pinctrl-names = "default";
+                pinctrl-0 = <&disp_pwm0_pins>;
+                status = "okay";
+        };
 };
 
 &afe {
@@ -505,6 +522,12 @@
 		};
 	};
 
+	disp_pwm0_pins: disp_pwm0_pins{
+		pins1 {
+			pinmux = <MT8173_PIN_87_DISP_PWM0__FUNC_DISP_PWM0>;
+			bias-pull-up;
+		};
+	};
 };
 
 &usb{
