@@ -713,6 +713,18 @@
 			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_LOW>;
 			mediatek,phy = <&u3phy>;
 		};
+
+		pwm0: pwm@1401e000 {
+			compatible = "mediatek,mt8173-disp-pwm";
+			reg = <0 0x1401e000 0 0x1000>;
+			#pwm-cells = <2>;
+			clocks = <&topckgen TOP_PWM_SEL>,
+				 <&mmsys MM_DISP_PWM0MM>,
+				 <&mmsys MM_DISP_PWM026M>;
+			clock-names = "pwm_sel",
+				      "mm_disp_pwm0mm",
+				      "mm_disp_pwm026m";
+		};
 	};
 };
 
