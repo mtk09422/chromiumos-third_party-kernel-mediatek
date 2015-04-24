@@ -621,8 +621,8 @@
 			      <0 0x1401A000 0 0x1000>,	/* UFOE */
 			      <0 0x14020000 0 0x1000>,	/* MUTEX */
 			      <0 0x14023000 0 0x1000>;	/* OD */
-			#interrupts = <0 182 0x8>;	/* RDMA */
-			interrupts = <0 196 0x8>;	/* OD */
+			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
 			larb = <&larb0>, <&larb4>;
 			iommus = <&iommu M4U_PORT_DISP_OVL0>,
 				 <&iommu M4U_PORT_DISP_RDMA0>,
