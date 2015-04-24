@@ -34,6 +34,8 @@
 #define DISP_REG_CONFIG_MUTEX_MOD(n)     (0x2C + 0x20 * n)
 #define DISP_REG_CONFIG_MUTEX_SOF(n)     (0x30 + 0x20 * n)
 
+#define DISP_REG_OVL_INTEN                       0x0004
+#define DISP_REG_OVL_INTSTA                      0x0008
 #define DISP_REG_OVL_EN                          0x000C
 #define DISP_REG_OVL_RST                         0x0014
 #define DISP_REG_OVL_ROI_SIZE                    0x0020
@@ -155,19 +157,34 @@ enum {
 };
 
 
-void mtk_enable_vblank(void __iomem *disp_base)
+void mtk_enable_vblank(struct drm_crtc *crtc)
 {
-	writel(0x1, disp_base + DISP_OD_INTEN);
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (mtk_crtc->pipe == 0)
+		writel(0x1, mtk_crtc->od_regs + DISP_OD_INTEN);
+	else
+		writel(0x2, mtk_crtc->ovl_regs[1] + DISP_REG_OVL_INTEN);
 }
 
-void mtk_disable_vblank(void __iomem *disp_base)
+void mtk_disable_vblank(struct drm_crtc *crtc)
 {
-	writel(0x0, disp_base + DISP_OD_INTEN);
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (mtk_crtc->pipe == 0)
+		writel(0x0, mtk_crtc->od_regs + DISP_OD_INTEN);
+	else
+		writel(0x0, mtk_crtc->ovl_regs[1] + DISP_REG_OVL_INTEN);
 }
 
-void mtk_clear_vblank(void __iomem *disp_base)
+void mtk_clear_vblank(struct drm_crtc *crtc)
 {
-	writel(0x0, disp_base + DISP_OD_INTS);
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (mtk_crtc->pipe == 0)
+		writel(0x0, mtk_crtc->od_regs + DISP_OD_INTS);
+	else
+		writel(0x0, mtk_crtc->ovl_regs[1] + DISP_REG_OVL_INTSTA);
 }
 
 static void disp_config_main_path_connection(void __iomem *disp_base)
@@ -414,13 +431,14 @@ static unsigned int ovl_fmt_convert(unsigned int fmt)
 
 #ifndef MEDIATEK_DRM_UPSTREAM
 void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
-	int x, int y)
+	int x, int y, bool enabled)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	void __iomem *drm_disp_base;
 	unsigned int reg;
 /*	unsigned int layer = 1; */
 	unsigned int width = 64;
+	unsigned int height = 64;
 	unsigned int src_pitch = 64 * 4;
 	bool keyEn = 0;
 	bool aen = 1;			/* alpha enable */
@@ -434,8 +452,11 @@ void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 	if (width + x > crtc->mode.hdisplay)
 		width = crtc->mode.hdisplay - min(x, crtc->mode.hdisplay);
 
+	if (height + y > crtc->mode.vdisplay)
+		height = crtc->mode.vdisplay - min(y, crtc->mode.vdisplay);
+
 	src_con = readl(drm_disp_base + DISP_REG_OVL_SRC_CON);
-	if (mtk_crtc->cursor_obj)
+	if (enabled == true)
 		new_set = src_con | 0x2;
 	else
 		new_set = src_con & ~(0x2);
@@ -449,7 +470,7 @@ void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
 		writel(reg, drm_disp_base + DISP_REG_OVL_L1_CON);
 		writel(src_pitch & 0xFFFF, drm_disp_base + DISP_REG_OVL_L1_PITCH);
 	}
-	writel(64 << 16 | width, drm_disp_base + DISP_REG_OVL_L1_SRC_SIZE);
+	writel(height << 16 | width, drm_disp_base + DISP_REG_OVL_L1_SRC_SIZE);
 	writel(y << 16 | x, drm_disp_base + DISP_REG_OVL_L1_OFFSET);
 	writel(addr, drm_disp_base + DISP_REG_OVL_L1_ADDR);
 }

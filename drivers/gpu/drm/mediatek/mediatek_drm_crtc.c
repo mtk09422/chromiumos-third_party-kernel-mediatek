@@ -60,7 +60,8 @@ void mtk_drm_crtc_irq(struct mtk_drm_crtc *mtk_crtc)
 		ovl_layer_config_cursor(&mtk_crtc->base,
 			mtk_crtc->pending_ovl_cursor_addr,
 			mtk_crtc->pending_ovl_cursor_x,
-			mtk_crtc->pending_ovl_cursor_y);
+			mtk_crtc->pending_ovl_cursor_y,
+			mtk_crtc->pending_ovl_cursor_enabled);
 	}
 #endif /* MEDIATEK_DRM_UPSTREAM */
 
@@ -121,11 +122,13 @@ finish:
 		mtk_crtc->pending_ovl_cursor_addr = buffer->mva_addr;
 		mtk_crtc->pending_ovl_cursor_x = mtk_crtc->cursor_x;
 		mtk_crtc->pending_ovl_cursor_y = mtk_crtc->cursor_y;
+		mtk_crtc->pending_ovl_cursor_enabled = true;
 		mtk_crtc->pending_ovl_cursor_config = true;
 	} else {
 		mtk_crtc->pending_ovl_cursor_addr = 0;
 		mtk_crtc->pending_ovl_cursor_x = mtk_crtc->cursor_x;
 		mtk_crtc->pending_ovl_cursor_y = mtk_crtc->cursor_y;
+		mtk_crtc->pending_ovl_cursor_enabled = false;
 		mtk_crtc->pending_ovl_cursor_config = true;
 	}
 
@@ -159,6 +162,7 @@ static int mtk_drm_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 	mtk_crtc->pending_ovl_cursor_addr = buffer->mva_addr;
 	mtk_crtc->pending_ovl_cursor_x = x;
 	mtk_crtc->pending_ovl_cursor_y = y;
+	mtk_crtc->pending_ovl_cursor_enabled = true;
 	mtk_crtc->pending_ovl_cursor_config = true;
 
 	return 0;
@@ -286,8 +290,18 @@ static int mtk_drm_crtc_page_flip(struct drm_crtc *crtc,
 			mtk_fb->gem_obj[0]->dma_buf->resv);
 	} else
 #endif /* MEDIATEK_DRM_UPSTREAM */
-	ovl_layer_config(&mtk_crtc->base, mtk_crtc->flip_buffer->mva_addr,
-		mtk_crtc->base.primary->fb->pixel_format, true);
+	{
+		mtk_crtc->pending_ovl_addr = mtk_crtc->flip_buffer->mva_addr;
+		mtk_crtc->pending_ovl_format =
+				mtk_crtc->base.primary->fb->pixel_format;
+		mtk_crtc->pending_enabled = true;
+		mtk_crtc->pending_ovl_config = true;
+
+		spin_lock_irqsave(&dev->event_lock, flags);
+		if (mtk_crtc->event)
+			mtk_crtc->pending_needs_vblank = true;
+		spin_unlock_irqrestore(&dev->event_lock, flags);
+	}
 
 	return ret;
 }
@@ -368,8 +382,12 @@ static int mtk_drm_crtc_mode_set(struct drm_crtc *crtc,
 
 static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 {
-	DRM_INFO("mtk_drm_crtc_disable\n");
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	DRM_INFO("mtk_drm_crtc_disable %d\n", crtc->base.id);
+
 	ovl_layer_config(crtc, 0, 0, false);
+	ovl_layer_config_cursor(crtc, 0, mtk_crtc->cursor_x, mtk_crtc->cursor_y, false);
 }
 
 static struct drm_crtc_funcs mediatek_crtc_funcs = {

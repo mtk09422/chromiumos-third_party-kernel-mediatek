@@ -51,7 +51,17 @@ static irqreturn_t mtk_drm_irq(int irq, void *data)
 {
 	struct mtk_drm_crtc *mtk_crtc = data;
 
-	mtk_clear_vblank(mtk_crtc->od_regs);
+	mtk_clear_vblank(&mtk_crtc->base);
+	mtk_drm_crtc_irq(mtk_crtc);
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t mtk_drm_irq2(int irq, void *data)
+{
+	struct mtk_drm_crtc *mtk_crtc = data;
+
+	mtk_clear_vblank(&mtk_crtc->base);
 	mtk_drm_crtc_irq(mtk_crtc);
 
 	return IRQ_HANDLED;
@@ -188,11 +198,20 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 		goto err_crtc;
 	}
 
+	irq = platform_get_irq(dev->platformdev, 1);
+	err = devm_request_irq(dev->dev, irq, mtk_drm_irq2, IRQF_TRIGGER_LOW,
+		dev_name(dev->dev), mtk_crtc_ext);
+	if (err < 0) {
+		dev_err(dev->dev, "devm_request_irq %d fail %d\n", irq, err);
+		dev->irq_enabled = false;
+		goto err_crtc;
+	}
+
 	err = drm_vblank_init(dev, MAX_CRTC);
 	if (err < 0)
 		goto err_crtc;
 
-	mtk_enable_vblank(mtk_crtc->od_regs);
+	mtk_enable_vblank(&mtk_crtc->base);
 
 	drm_kms_helper_poll_init(dev);
 	mediatek_drm_debugfs_init(&mtk_crtc->base);
@@ -342,8 +361,7 @@ static int mtk_drm_enable_vblank(struct drm_device *drm, int pipe)
 	}
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[pipe]);
-	if (pipe == 0)
-		mtk_enable_vblank(mtk_crtc->od_regs);
+	mtk_enable_vblank(&mtk_crtc->base);
 
 	return 0;
 }
@@ -358,8 +376,7 @@ static void mtk_drm_disable_vblank(struct drm_device *drm, int pipe)
 		DRM_ERROR(" - %s: invalid crtc (%d)\n", __func__, pipe);
 
 	mtk_crtc = to_mtk_crtc(priv->crtc[pipe]);
-	if (pipe == 0)
-		mtk_disable_vblank(mtk_crtc->od_regs);
+	mtk_disable_vblank(&mtk_crtc->base);
 }
 
 static const struct vm_operations_struct mediatek_drm_gem_vm_ops = {

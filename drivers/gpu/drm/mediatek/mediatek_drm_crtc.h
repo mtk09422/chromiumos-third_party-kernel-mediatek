@@ -75,6 +75,7 @@ struct mtk_drm_crtc {
 	unsigned int pending_ovl_cursor_addr;
 	int pending_ovl_cursor_x;
 	int pending_ovl_cursor_y;
+	int pending_ovl_cursor_enabled;
 #endif /* MEDIATEK_DRM_UPSTREAM */
 };
 

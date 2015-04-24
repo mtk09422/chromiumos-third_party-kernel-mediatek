@@ -39,14 +39,14 @@ struct MTK_DISP_CLKS {
 	struct clk *od_disp_ck;
 };
 
-void mtk_enable_vblank(void __iomem *drm_disp_base);
-void mtk_disable_vblank(void __iomem *drm_disp_base);
-void mtk_clear_vblank(void __iomem *drm_disp_base);
+void mtk_enable_vblank(struct drm_crtc *crtc);
+void mtk_disable_vblank(struct drm_crtc *crtc);
+void mtk_clear_vblank(struct drm_crtc *crtc);
 void ovl_layer_config(struct drm_crtc *crtc, unsigned int addr,
 	unsigned int format, bool enabled);
 #ifndef MEDIATEK_DRM_UPSTREAM
 void ovl_layer_config_cursor(struct drm_crtc *crtc, unsigned int addr,
-	int x, int y);
+	int x, int y, bool enabled);
 #endif /* MEDIATEK_DRM_UPSTREAM */
 
 void main_disp_path_power_on(struct drm_crtc *crtc);
