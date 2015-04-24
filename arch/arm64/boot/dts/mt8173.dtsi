@@ -14,6 +14,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/reset-controller/mt8173-resets.h>
+#include <dt-bindings/power/mt8173-power.h>
 #include <dt-bindings/clock/mt8173-clk.h>
 #include <dt-bindings/iommu/mt8173-iommu-port.h>
 #include "mt8173-pinfunc.h"
@@ -156,6 +157,12 @@
 			compatible = "mediatek,mt8173-scpsys";
 			#power-domain-cells = <1>;
 			reg = <0 0x10006000 0 0x1000>;
+			clocks = <&topckgen TOP_VDEC_SEL>,
+				 <&topckgen TOP_MFG_SEL>,
+				 <&topckgen TOP_VENC_SEL>,
+				 <&topckgen TOP_MM_SEL>,
+				 <&topckgen TOP_VENC_LT_SEL>;
+			clock-names = "vdec", "mfg", "venc", "disp", "ven2";
 		};
 
 		pericfg: pericfg@10003000 {
