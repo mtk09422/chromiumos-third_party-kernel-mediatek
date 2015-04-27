@@ -326,13 +326,27 @@ static int mtk_hdmi_i2c_probe(struct platform_device *pdev)
 			 GFP_KERNEL);
 	if (!i2c) {
 		mtk_hdmi_err("no enough memory\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto errcode;
+	}
+
+	i2c->clk = of_clk_get_by_name(np, "ddc-i2c");
+	if (IS_ERR(i2c->clk)) {
+		mtk_hdmi_err(" get ddc_clk failed : %p ,\n",
+			     i2c->clk);
+		goto errcode;
+	}
+
+	if (clk_prepare_enable(i2c->clk)) {
+		mtk_hdmi_err("enable ddc clk failed!\n");
+		goto errcode;
 	}
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!mem) {
 		mtk_hdmi_err("get memory source fail!\n");
-		return -EFAULT;
+		ret = -EFAULT;
+		goto errcode;
 	}
 
 	i2c->regs = devm_ioremap_resource(&pdev->dev, mem);
@@ -355,12 +369,14 @@ static int mtk_hdmi_i2c_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, i2c);
 
 	mtk_hdmi_info("i2c->adap: %p\n", &i2c->adap);
+	mtk_hdmi_info("i2c->clk: %p\n", i2c->clk);
 	mtk_hdmi_info("physical adr: 0x%llx, end: 0x%llx\n", mem->start,
 		      mem->end);
 
 	return 0;
 
 errcode:
+	clk_disable_unprepare(i2c->clk);
 	i2c_del_adapter(&i2c->adap);
 	devm_kfree(&pdev->dev, i2c);
 	return ret;
@@ -370,6 +386,7 @@ static int mtk_hdmi_i2c_remove(struct platform_device *pdev)
 {
 	struct mediatek_hdmi_i2c_context *i2c = platform_get_drvdata(pdev);
 
+	clk_disable_unprepare(i2c->clk);
 	i2c_del_adapter(&i2c->adap);
 	devm_kfree(&pdev->dev, i2c);
 
