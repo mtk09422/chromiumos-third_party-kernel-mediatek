@@ -574,6 +574,8 @@
 			gpios = <&pio 19 GPIO_ACTIVE_HIGH>, /* hdmi sck */
 				<&pio 20 GPIO_ACTIVE_HIGH>; /* hdmi sd  */
 			reg = <0 0x11012000 0 0x1C>;
+			clocks = <&pericfg PERI_I2C5>;
+			clock-names = "ddc-i2c";
 		};
 
 		dsi: dsi {
