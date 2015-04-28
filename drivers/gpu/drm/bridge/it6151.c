@@ -162,6 +162,8 @@ struct it6151_bridge {
 	struct drm_bridge bridge;
 	struct i2c_client *client;
 	struct it6151_driver_data *driver_data;
+	void *edid;
+	int edid_len;
 	int gpio_rst_n;
 	u16 rx_reg;
 	u16 tx_reg;
@@ -471,20 +473,18 @@ static void it6151_post_disable(struct drm_bridge *bridge)
 
 static int it6151_get_modes(struct drm_connector *connector)
 {
-	const struct drm_display_mode *ptr = &it6151_drm_default_modes[0];
-	struct drm_display_mode *mode;
-	int count = 0;
+	struct it6151_bridge *ite_bridge;
+	int num_modes = 0;
 
-	mode = drm_mode_duplicate(connector->dev, ptr);
-	if (mode) {
-		drm_mode_probed_add(connector, mode);
-		count++;
+	ite_bridge = container_of(connector, struct it6151_bridge, connector);
+
+	if (ite_bridge->edid) {
+		drm_mode_connector_update_edid_property(connector,
+			ite_bridge->edid);
+		num_modes = drm_add_edid_modes(connector, ite_bridge->edid);
 	}
 
-	connector->display_info.width_mm = mode->hdisplay;
-	connector->display_info.height_mm = mode->vdisplay;
-
-	return count;
+	return num_modes;
 }
 
 static int it6151_mode_valid(struct drm_connector *connector,
@@ -568,8 +568,10 @@ static int it6151_probe(struct i2c_client *client,
 {
 	struct device *dev = &client->dev;
 	struct it6151_bridge *ite_bridge;
+	struct device_node *np = dev->of_node;
 	int ret;
 	u32 rx_reg, tx_reg;
+	const u8 *edidp;
 
 	ite_bridge = devm_kzalloc(dev, sizeof(*ite_bridge), GFP_KERNEL);
 	if (!ite_bridge)
@@ -577,6 +579,14 @@ static int it6151_probe(struct i2c_client *client,
 
 	ite_bridge->client = client;
 	ite_bridge->driver_data = it6151_get_driver_data();
+
+	edidp = of_get_property(np, "edid", &ite_bridge->edid_len);
+
+
+	if (edidp)
+		ite_bridge->edid = kmemdup(edidp, ite_bridge->edid_len,
+			GFP_KERNEL);
+
 
 	ite_bridge->gpio_rst_n =
 		of_get_named_gpio(dev->of_node, "reset-gpio", 0);
@@ -626,6 +636,8 @@ static int it6151_remove(struct i2c_client *client)
 
 	if (gpio_is_valid(ite_bridge->gpio_rst_n))
 		gpio_free(ite_bridge->gpio_rst_n);
+
+	kfree(ite_bridge->edid);
 
 	return 0;
 }
