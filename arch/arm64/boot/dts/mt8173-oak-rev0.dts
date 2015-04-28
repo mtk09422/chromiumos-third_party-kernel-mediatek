@@ -662,6 +662,14 @@
 		rxreg = <0x6c>;
 		power-gpio = <&pio 93 GPIO_ACTIVE_HIGH>;
 		reset-gpio = <&pio 94 GPIO_ACTIVE_HIGH>;
+		edid = [00 ff ff ff ff ff ff 00 0d ae 32 11 00 00 00 00
+			13 17 01 04 95 1a 0e 78 02 14 35 92 55 53 95 29
+			24 50 54 00 00 00 01 01 01 01 01 01 01 01 01 01
+			01 01 01 01 01 01 da 1d 56 e2 50 00 20 30 88 1e
+			8c 00 00 90 10 00 00 18 00 00 00 fe 00 4e 31 31
+			36 42 47 45 2d 45 41 32 0a 20 00 00 00 fe 00 43
+			4d 4e 0a 20 20 20 20 20 20 20 20 20 00 00 00 fe
+			00 4e 31 31 36 42 47 45 2d 45 41 32 0a 20 00 48];
 		port {
 			dsi_in: endpoint {
 				remote-endpoint = <&dsi_out>;
