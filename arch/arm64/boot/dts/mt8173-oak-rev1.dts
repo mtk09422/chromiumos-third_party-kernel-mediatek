@@ -72,10 +72,11 @@
 	};
 
 	sound {
-		compatible = "mediatek,mt8173-max98090";
-		mediatek,audio-codec = <&max98090>;
+		compatible = "mediatek,mt8173-rt5650-rt5676";
+		mediatek,audio-codec = <&rt5650 &rt5676>;
+		rt5650-clk-en-gpios = <&pio 16 GPIO_ACTIVE_HIGH>;
+		rt5676-clk-en-gpios = <&pio 17 GPIO_ACTIVE_HIGH>;
 		reg-vgp1-supply = <&mt6397_vgp1_reg>;
-		reg-vgp4-supply = <&mt6397_vgp4_reg>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&aud_i2s2>;
 		status = "okay";
@@ -165,13 +166,24 @@
 	clock-frequency = <100000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
-	max98090: audio-codec@10 {
-		compatible = "maxim,max98090";
-		reg = <0x10>;
+	rt5676: audio-codec@2c {
+		compatible = "realtek,rt5676";
+		reg = <0x2c>;
 		interrupt-parent = <&pio>;
-		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+		interrupts = <2 IRQ_TYPE_EDGE_BOTH>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&max98090_irq>;
+		pinctrl-0 = <&rt5676_irq>;
+		status = "okay";
+	};
+
+	rt5650: audio-codec@1a {
+		compatible = "realtek,rt5650";
+		reg = <0x1a>;
+		interrupt-parent = <&pio>;
+		interrupts = <3 IRQ_TYPE_EDGE_BOTH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rt5650_irq>;
+		status = "okay";
 	};
 };
 
@@ -445,10 +457,17 @@
 			bias-pull-down;
 		};
 	};
-	max98090_irq: max98090_irq {
+	rt5676_irq: rt5676_irq {
 		pins1 {
-			pinmux = <MT8173_PIN_9_EINT9__FUNC_GPIO9>;
-			bias-pull-up;
+			pinmux = <MT8173_PIN_2_EINT2__FUNC_GPIO2>;
+			bias-pull-down;
+		};
+	};
+
+	rt5650_irq: rt5650_irq {
+		pins1 {
+			pinmux = <MT8173_PIN_3_EINT3__FUNC_GPIO3>;
+			bias-pull-down;
 		};
 	};
 
