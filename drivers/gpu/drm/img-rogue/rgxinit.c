@@ -2740,7 +2740,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
 		}
-		
+/*
 		if (!bCompatibleV)
 		{
 			PVR_LOG(("(FAIL) RGXDevInitCompatCheck: Incompatible HW BVNC (%d.%s.%d.%d) and FW BVNC (%d.%s.%d.%d).",
@@ -2755,6 +2755,7 @@ static PVRSRV_ERROR RGXDevInitCompatCheck_BVNC_HWAgainstDriver(PVRSRV_RGXDEV_INF
 			eError = PVRSRV_ERROR_BVNC_MISMATCH;
 			return eError;
 		}
+*/
 	}
 	else
 	{
