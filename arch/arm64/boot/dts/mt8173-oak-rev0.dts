@@ -111,6 +111,15 @@
                 pinctrl-0 = <&disp_pwm0_pins>;
                 status = "okay";
         };
+
+	sdio_fixed_3v3: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pio 100 0>;
+		enable-active-high;
+	};
 };
 
 &afe {
@@ -570,6 +579,7 @@
 	max-frequency = <25000000>;
 	cap-sd-highspeed;
 	#sd-uhs-sdr25;
+	vmmc-supply = <&sdio_fixed_3v3>;
 	vqmmc-supply = <&mt6397_vgp3_reg>;
 	non-removable;
 };
