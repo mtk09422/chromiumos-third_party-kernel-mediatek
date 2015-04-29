@@ -49,7 +49,7 @@
 		>;
 		default-brightness-level = <9>;
 		power-supply = <&mt6397_vio18_reg>;
-		enable-gpios = <&pio 95 1>;
+		enable-gpios = <&pio 95 GPIO_ACTIVE_HIGH>;
 
 		pinctrl-names = "default";
 		pinctrl-0 = <&disp_pwm0_pins>;
