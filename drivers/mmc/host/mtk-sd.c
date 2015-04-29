@@ -774,7 +774,7 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 			MSDC_INTEN_RSPCRCERR | MSDC_INTEN_CMDTMO |
 			MSDC_INTEN_ACMDRDY | MSDC_INTEN_ACMDCRCERR |
 			MSDC_INTEN_ACMDTMO);
-
+	writel(cmd->arg, host->base + SDC_ARG);
 
 	switch (host->cmd_rsp) {
 	case 0:
@@ -1040,9 +1040,9 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 	int min_uv, max_uv;
 	int ret = 0;
 
-	pm_runtime_get_sync(host->dev);
 	if (!IS_ERR(mmc->supply.vqmmc)) {
 
+		pm_runtime_get_sync(host->dev);
 
 		if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
 			min_uv = 3300000;
@@ -1248,8 +1248,6 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 					ios->vdd);
 			if (ret) {
 				dev_err(host->dev, "Failed to set vmmc power!\n");
-				pm_runtime_mark_last_busy(host->dev);
-				pm_runtime_put_autosuspend(host->dev);
 				return;
 			}
 		}
@@ -1370,7 +1368,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->caps |= MMC_CAP_ERASE | MMC_CAP_CMD23;
 	/* MMC core transfer sizes tunable parameters */
 	mmc->max_segs = MAX_BD_NUM;
-	mmc->max_seg_size = 64 * 1024 - 512; /* must < 64k */
+	mmc->max_seg_size = 64 * 1024;
 	mmc->max_blk_size = 2048;
 	mmc->max_req_size = 512 * 1024;
 	mmc->max_blk_count = mmc->max_req_size;
