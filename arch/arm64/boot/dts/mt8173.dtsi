@@ -221,6 +221,16 @@
 				};
 			};
 
+			spi_pins_a: spi1@0 {
+				pins_spi {
+					   pins = <MT8173_PIN_102_MSDC2_DAT2__FUNC_SPI_CK_1_>,
+						  <MT8173_PIN_103_MSDC2_DAT3__FUNC_SPI_MI_1_>,
+						  <MT8173_PIN_104_MSDC2_CLK__FUNC_SPI_MO_1_>,
+						  <MT8173_PIN_105_MSDC2_CMD__FUNC_SPI_CS_1_>;
+					   bias-disable;
+				};
+			};
+
 			hdmi_pin:hdmiplg {
 				pins1 {
 					pinmux = <MT8173_PIN_21_HTPLG__FUNC_GPIO21>;
@@ -417,6 +427,15 @@
 			clock-div = <16>;
 			clocks = <&pericfg PERI_I2C2>, <&pericfg PERI_AP_DMA>;
 			clock-names = "main", "dma";
+			status = "disabled";
+		};
+
+		spi: spi@1100a000 {
+			compatible = "mediatek,mt8173-spi";
+			reg = <0 0x1100a000 0 0x1000>;
+			interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg PERI_SPI0>;
+			clock-names = "main";
 			status = "disabled";
 		};
 
