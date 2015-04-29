@@ -21,7 +21,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
-#include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <linux/spinlock.h>
 
@@ -224,7 +223,6 @@
 #define MSDC_OCR_AVAIL      (MMC_VDD_28_29 | MMC_VDD_29_30 \
 		| MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33)
 
-#define MTK_MMC_AUTOSUSPEND_DELAY	500
 #define CMD_TIMEOUT         (HZ/10 * 5)	/* 100ms x5 */
 #define DAT_TIMEOUT         (HZ    * 5)	/* 1000ms x5 */
 
@@ -537,38 +535,6 @@ static void msdc_set_mclk(struct msdc_host *host, int ddr, u32 hz)
 	dev_dbg(host->dev, "sclk: %d, ddr: %d\n", host->sclk, ddr);
 }
 
-#ifdef CONFIG_PM
-static int msdc_gate_clock(struct msdc_host *host)
-{
-	int ret = 0;
-	unsigned long flags;
-
-	spin_lock_irqsave(&host->lock, flags);
-	/* disable SD/MMC/SDIO bus clock */
-	sdr_set_field(host->base + MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
-	/* turn off SDHC functional clock */
-	clk_disable(host->src_clk);
-	spin_unlock_irqrestore(&host->lock, flags);
-	return ret;
-}
-
-static void msdc_ungate_clock(struct msdc_host *host)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&host->lock, flags);
-	clk_enable(host->src_clk);
-	/* enable SD/MMC/SDIO bus clock:
-	 * it will be automatically gated when the bus is idle
-	 * (set MSDC_CFG_CKPDN bit to have it always on)
-	 */
-	sdr_set_field(host->base + MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
-	while (!(readl(host->base + MSDC_CFG) & MSDC_CFG_CKSTB))
-		cpu_relax();
-	spin_unlock_irqrestore(&host->lock, flags);
-}
-#endif
-
 static inline u32 msdc_cmd_find_resp(struct msdc_host *host,
 		struct mmc_request *mrq, struct mmc_command *cmd)
 {
@@ -736,9 +702,6 @@ static void msdc_request_done(struct msdc_host *host, struct mmc_request *mrq)
 	if (mrq->data)
 		msdc_unprepare_data(host, mrq);
 	mmc_request_done(host->mmc, mrq);
-
-	pm_runtime_mark_last_busy(host->dev);
-	pm_runtime_put_autosuspend(host->dev);
 }
 
 /* returns true if command is fully handled; returns false otherwise */
@@ -900,8 +863,6 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 	spin_unlock_irqrestore(&host->lock, flags);
 
-	pm_runtime_get_sync(host->dev);
-
 	if (mrq->data)
 		msdc_prepare_data(host, mrq);
 
@@ -1042,8 +1003,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (!IS_ERR(mmc->supply.vqmmc)) {
 
-		pm_runtime_get_sync(host->dev);
-
 		if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
 			min_uv = 3300000;
 			max_uv = 3300000;
@@ -1052,9 +1011,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 			max_uv = 1800000;
 		} else {
 			dev_err(host->dev, "Unsupported signal voltage!\n");
-
-			pm_runtime_mark_last_busy(host->dev);
-			pm_runtime_put_autosuspend(host->dev);
 			return -EINVAL;
 		}
 
@@ -1066,8 +1022,6 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		}
 	}
 
-	pm_runtime_mark_last_busy(host->dev);
-	pm_runtime_put_autosuspend(host->dev);
 	return ret;
 }
 
@@ -1232,8 +1186,6 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	int ret;
 	u32 ddr = 0;
 
-	pm_runtime_get_sync(host->dev);
-
 	if (ios->timing == MMC_TIMING_UHS_DDR50)
 		ddr = 1;
 
@@ -1278,9 +1230,6 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (host->mclk != ios->clock || host->ddr != ddr)
 		msdc_set_mclk(host, ddr, ios->clock);
-
-	pm_runtime_mark_last_busy(host->dev);
-	pm_runtime_put_autosuspend(host->dev);
 }
 
 static struct mmc_host_ops mt_msdc_ops = {
@@ -1392,11 +1341,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mmc);
 	clk_prepare(host->src_clk);
 
-	pm_runtime_enable(host->dev);
-	pm_runtime_get_sync(host->dev);
-	pm_runtime_set_autosuspend_delay(host->dev, MTK_MMC_AUTOSUSPEND_DELAY);
-	pm_runtime_use_autosuspend(host->dev);
-
 	ret = devm_request_irq(&pdev->dev, (unsigned int) host->irq, msdc_irq,
 		IRQF_TRIGGER_LOW | IRQF_ONESHOT, pdev->name, host);
 	if (ret)
@@ -1404,15 +1348,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	ret = mmc_add_host(mmc);
 	if (ret)
-		goto end;
+		goto release;
 
-	pm_runtime_mark_last_busy(host->dev);
-	pm_runtime_put_autosuspend(host->dev);
 	return 0;
 
-end:
-	pm_runtime_put_sync(host->dev);
-	pm_runtime_disable(host->dev);
 release:
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
@@ -1425,7 +1364,6 @@ release_mem:
 		dma_free_coherent(&pdev->dev,
 			MAX_BD_NUM * sizeof(struct mt_bdma_desc),
 			host->dma.bd, host->dma.bd_addr);
-
 host_free:
 	mmc_free_host(mmc);
 
@@ -1440,14 +1378,10 @@ static int msdc_drv_remove(struct platform_device *pdev)
 	mmc = platform_get_drvdata(pdev);
 	host = mmc_priv(mmc);
 
-	pm_runtime_get_sync(host->dev);
-
 	platform_set_drvdata(pdev, NULL);
 	mmc_remove_host(host->mmc);
 	msdc_deinit_hw(host);
 
-	pm_runtime_put_sync(host->dev);
-	pm_runtime_disable(host->dev);
 	dma_free_coherent(&pdev->dev,
 			MAX_GPD_NUM * sizeof(struct mt_gpdma_desc),
 			host->dma.gpd, host->dma.gpd_addr);
@@ -1458,31 +1392,6 @@ static int msdc_drv_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-#ifdef CONFIG_PM
-static int msdc_runtime_suspend(struct device *dev)
-{
-	int ret = 0;
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-	struct msdc_host *host = mmc_priv(mmc);
-
-	ret = msdc_gate_clock(host);
-	return ret;
-}
-
-static int msdc_runtime_resume(struct device *dev)
-{
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-	struct msdc_host *host = mmc_priv(mmc);
-
-	msdc_ungate_clock(host);
-	return 0;
-}
-#endif
-
-static const struct dev_pm_ops msdc_dev_pm_ops = {
-	SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume, NULL)
-};
 
 static const struct of_device_id msdc_of_ids[] = {
 	{   .compatible = "mediatek,mt8135-mmc", },
@@ -1495,7 +1404,6 @@ static struct platform_driver mt_msdc_driver = {
 	.driver = {
 		.name = "mtk-msdc",
 		.of_match_table = msdc_of_ids,
-		.pm = &msdc_dev_pm_ops,
 	},
 };
 
