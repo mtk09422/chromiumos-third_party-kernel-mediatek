@@ -31,8 +31,11 @@
 static int mt8173_rt5650_rt5676_event(struct snd_soc_dapm_widget *w,
 				      struct snd_kcontrol *kcontrol, int event)
 {
+/* wait pmic gpio ready */
+/*
 	gpio_set_value(GPIO_RT5650_MCLK_EN, SND_SOC_DAPM_EVENT_ON(event));
 	gpio_set_value(GPIO_RT5676_MCLK_EN, SND_SOC_DAPM_EVENT_ON(event));
+*/
 	return 0;
 }
 
@@ -213,6 +216,8 @@ static int mt8173_rt5650_rt5676_dev_probe(struct platform_device *pdev)
 	mt8173_rt5650_rt5676_codec_conf[0].of_node =
 		mt8173_rt5650_rt5676_codecs[1].of_node;
 
+/* wait pmic gpio ready */
+/*
 	ret = devm_gpio_request_one(&pdev->dev,
 				    GPIO_RT5650_MCLK_EN,
 				    GPIOF_OUT_INIT_LOW, "mclk_en_5650");
@@ -229,7 +234,7 @@ static int mt8173_rt5650_rt5676_dev_probe(struct platform_device *pdev)
 			__func__, ret);
 		return ret;
 	}
-
+*/
 	/* set 5650 codec AVDD/DACREF/CPVDD/DBVDD voltage */
 	reg_vgp1 = devm_regulator_get(&pdev->dev, "reg-vgp1");
 	if (IS_ERR(reg_vgp1)) {
