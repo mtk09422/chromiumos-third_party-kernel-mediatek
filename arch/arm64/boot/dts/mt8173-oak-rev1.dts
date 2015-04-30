@@ -274,7 +274,7 @@
 	trackpad@15 {
 		compatible = "elan,i2c_touchpad";
 		interrupt-parent = <&pio>;
-		interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <124 IRQ_TYPE_LEVEL_LOW>;
 		reg = <0x15>;
 		vcc-supply = <&mt6397_vgp6_reg>;
 		wakeup-source;
