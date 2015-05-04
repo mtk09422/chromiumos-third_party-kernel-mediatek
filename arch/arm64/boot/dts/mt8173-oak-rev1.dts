@@ -566,6 +566,7 @@
 				regulator-max-microvolt = <1350000>;
 				regulator-ramp-delay = <12500>;
 				regulator-enable-ramp-delay = <115>;
+				regulator-always-on;
 			};
 
 			mt6397_vsramca15_reg: buck_vsramca15 {
