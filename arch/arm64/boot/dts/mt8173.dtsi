@@ -53,6 +53,8 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x000>;
+			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&infracfg INFRA_CA53SEL>,
 				 <&apmixedsys APMIXED_MAINPLL>;
 			clock-names = "cpu", "intermediate";
@@ -63,6 +65,7 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x001>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0>;
 		};
 
 		cpu2: cpu@100 {
@@ -70,6 +73,7 @@
 			compatible = "arm,cortex-a57";
 			reg = <0x100>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&infracfg INFRA_CA57SEL>,
 				 <&apmixedsys APMIXED_MAINPLL>;
 			clock-names = "cpu", "intermediate";
@@ -80,12 +84,27 @@
 			compatible = "arm,cortex-a57";
 			reg = <0x101>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0>;
+		};
+
+		idle-states {
+			entry-method = "arm,psci";
+
+			CPU_SLEEP_0: cpu-sleep-0 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010000>;
+				entry-latency-us = <739>;
+				exit-latency-us = <680>;
+				min-residency-us = <1088>;
+				local-timer-stop;
+			};
 		};
 	};
 
 	psci {
 		compatible = "arm,psci";
 		method = "smc";
+		cpu_suspend   = <0xC4000001>;
 		cpu_off	      = <0x84000002>;
 		cpu_on	      = <0xC4000003>;
 	};

@@ -37,6 +37,7 @@ static int arm64_enter_idle_state(struct cpuidle_device *dev,
 				  struct cpuidle_driver *drv, int idx)
 {
 	int ret;
+	int this_cpu = smp_processor_id();
 
 	if (!idx) {
 		cpu_do_idle();
@@ -50,7 +51,8 @@ static int arm64_enter_idle_state(struct cpuidle_device *dev,
 		 * call the CPU ops suspend protocol with idle index as a
 		 * parameter.
 		 */
-		ret = cpu_suspend(idx);
+		if (this_cpu != 0)
+			ret = cpu_suspend(idx);
 
 		cpu_pm_exit();
 	}
